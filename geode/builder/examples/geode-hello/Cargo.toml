@@ -1,0 +1,21 @@
+[package]
+name = "example-geode-hello"
+version = "0.1.0"
+authors = ["Automata Team"]
+edition = "2018"
+license = "Apache-2.0"
+
+# specifies the enclave dependencies
+[package.metadata.geode]
+enclaves = [
+    "../enclave-hello" # the path to the enclave crate
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sgx_types = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_urts = {  rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+
+[build-dependencies]
+geode-builder = { path = "../../"}

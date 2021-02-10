@@ -1,0 +1,37 @@
+[workspace]
+
+
+## The default members are packages with dependencies that are trivial to install
+##
+## These members will be selected when running `cargo check` or `cargo build` directly
+default-members = [
+    "node/primitives",
+    "node/rpc",
+    "node/runtime",
+    "node/cli",
+    "node/pallets/*",
+    "geode/builder",
+    "geode/macros",
+    "geode/types"
+]
+
+## This full list of members will be selected when running 
+## - `cargo check --workspace`
+## - `cargo build --workspace`
+members = [
+    "node/primitives",
+    "node/rpc",
+    "node/runtime",
+    "node/cli",
+    "node/pallets/*",
+    "geode/builder",
+    "geode/crypto",
+    "geode/types",
+    # non-default members
+    "geode/macros",
+    "geode/sgx-ra",
+]
+
+
+[profile.release]
+panic = 'unwind'

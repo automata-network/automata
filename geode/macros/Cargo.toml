@@ -1,0 +1,17 @@
+[package]
+name = "geode-macros"
+version = "0.1.0"
+authors = ["Automata Team"]
+edition = "2018"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default     = ["std"]
+sgx_enclave = ["geode-types/sgx_enclave"]
+std         = ["geode-types/std"]
+
+
+[dependencies]
+sgx_types             = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+geode-types           = { path = "../types", default-features=false, optional = true}

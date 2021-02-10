@@ -1,0 +1,44 @@
+[package]
+name = "geode-crypto"
+version = "0.1.0"
+authors = ["Automata Team"]
+edition = "2018"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default          = ["std"]
+sgx_enclave      = ["sgx_types", "sgx_tcrypto", "sgx_tkey_exchange", "sgx_tstd", "geode-types/sgx_enclave", "geode-macros/sgx_enclave", "rand", "serde_json-sgx", "serde-sgx"]
+
+ring_support     = ["ring", "std"]
+aes_support      = ["rand/std", "aes", "cmac", "std"]
+aas_support      = ["rand/std", "ring_support"]
+std              = ["sgx_types", "ring_support", "aes_support", "aas_support", "sgx_ucrypto", "geode-types/std", "geode-macros/std", "serde_json", "serde"]
+
+[dependencies]
+geode-macros        = { optional = true, path = "../macros", default-features = false }
+geode-types         = { optional = true, path = "../types", default-features = false }
+ring                  = { optional = true, version = "0.16.13" }
+cmac                  = { optional = true, version = "0.2.0" }
+aes                   = { optional = true, version = "0.3.2" }
+rand                  = { optional = true, version = "0.7.3", default-features = false }
+sgx_types             = { optional = true, rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_tkey_exchange     = { optional = true, rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_tstd              = { optional = true, rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_ucrypto           = { optional = true, rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git"}
+sgx_tcrypto           = { optional = true, rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git"}
+
+serde                 = { optional = true, version = "1.0", default-features = false, features = ["derive"] }
+serde_json            = { optional = true, version = "1.0" }
+serde-sgx             = { optional = true, git = "https://github.com/mesalock-linux/serde-sgx", features = ["derive"], package = "serde" }
+serde_json-sgx        = { optional = true, git = "https://github.com/mesalock-linux/serde-json-sgx", package = "serde_json" }
+
+schnorrkel            = { version = "0.9.1", default-features = false }
+x25519-dalek          = { version = "1.1", default-features = false, features = ["u64_backend"]}
+curve25519-dalek      = { version = "2.1", default-features = false, features = ["u64_backend"]}
+rust-secp256k1        = { version = "0.20", default-features = false, features = ["recovery"], package = "secp256k1" }
+tiny-keccak           = { version = "2.0", features = ["keccak"] }
+
+[dev-dependencies]
+hex                   = { version = "0.4" }

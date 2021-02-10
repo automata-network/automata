@@ -1,0 +1,57 @@
+[package]
+name = "geode-types"
+version = "0.1.0"
+authors = ["Automata Team"]
+edition = "2018"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default         = ["std"]
+
+sgx_enclave     = ["sgx_serde_dep", "sgx_tstd", "sgx_types" ]
+std             = ["serde_dep", "openssl_support", "aes_support", "sgx_types" ]
+substrate       = ["serde-substrate/alloc", "serde-big-array-substrate", "serde-big-array", "sp-std"]
+
+openssl_support = ["openssl"]
+ring_support    = ["ring"]
+aes_support     = ["aes", "cmac"]
+
+serde_dep       = ["serde/std", "serde-big-array"]
+sgx_serde_dep   = ["serde-sgx", "serde-big-array-sgx"]
+
+
+[dependencies]
+sgx_types             = { optional = true, rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_tstd              = { optional = true, rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+
+serde-substrate       = { optional = true, git = "https://github.com/advanca/serde.git", default-features = false, features = ["derive"], package = "serde" }
+serde-big-array-substrate = { optional = true, rev = "6493830194efc6ce1a6fc4c8be5d1859675fc0de", git = "https://github.com/advanca/serde-big-array.git", version = "0.3.0", default-features = false, package = "serde-big-array" }
+
+serde                 = { optional = true, version = "1.0", default-features = false, features = ["derive"] }
+serde-big-array       = { optional = true, version = "0.3.0", default-features = false }
+serde-sgx             = { optional = true, package = "serde", git = "https://github.com/mesalock-linux/serde-sgx", features = ["derive"] }
+serde-big-array-sgx   = { optional = true, package = "serde-big-array", git = "https://github.com/mesalock-linux/serde-big-array-sgx" }
+
+openssl               = { optional = true, version = "0.10.29" }
+ring                  = { optional = true, version = "0.16.13" }
+cmac                  = { optional = true, version = "0.2.0" }
+aes                   = { optional = true, version = "0.3.2" }
+
+sp-std                = { optional = true, version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-core               = { version = "2.0.0", default-features = false, features = ["full_crypto"], git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+
+schnorrkel            = { version = "0.9.1", default-features = false }
+curve25519-dalek      = { version = "2.1.0", default-features = false, features = ["u64_backend"]}
+rust-secp256k1        = { version = "0.20", default-features = false, features = ["recovery"], package = "secp256k1" }
+x25519-dalek          = { version = "1.1", default-features = false, features = ["u64_backend"] }
+ethereum-types        = { version = "0.10", default-features = false, features = [] }
+tiny-keccak           = { version = "2.0", features = ["keccak"] }
+
+hex                   = { version = "0.4", default-features = false }
+
+
+[dev-dependencies]
+serde_json            = { version = "1.0" }
+# [target.'cfg(not(features = "enclave"))'.dependencies]

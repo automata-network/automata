@@ -1,0 +1,36 @@
+
+name: Rust
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    - name: install toolchain and other components
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        components: rustfmt
+    - name: install wasm
+      run: ./scripts/init.sh
+    - name: format check
+      run: cargo fmt -- --check
+    - name: run build on default members
+      run: cargo build
+    - name: unit test
+      run: cargo test

@@ -1,0 +1,32 @@
+[package]
+name = "geode-sgx-ra"
+version = "0.1.0"
+authors = ["Automata Team"]
+edition = "2018"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sgx_types     = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+serde         = { version = "1.0", features = ["derive"] }
+serde_json    = { version = "1.0" }
+serde-big-array = { version = "0.3.0" }
+reqwest       = { version = "0.10.4", features=["blocking"]}
+base64        = { version = "0.12.0" }
+base16        = { version = "0.2.1" }
+ring          = { version = "0.16.13"}
+cmac          = { version = "0.2.0" }
+aes           = { version = "0.3.2" }
+generic-array = { version = "0.12.3" }
+typenum       = { version = "1.12.0" }
+log           = { version = "0.4.8" }
+memoffset     = { version = "0.5.4" }
+rand          = { version = "0.7.3" }
+strum         = "0.18.0"
+strum_macros  = "0.18.0"
+geode-crypto  = { path = "../crypto", features = ["std"] }
+geode-types   = { path = "../types", features = ["std"] }
+hex           = "0.4.2"
+bitflags      = "1.2"
+
