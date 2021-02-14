@@ -35,6 +35,12 @@ pub struct Build {
     local_dependencies: Vec<PathBuf>,
 }
 
+impl Default for enclave::Build {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Build {
     /// Create new build when used standalone
     pub fn new() -> Build {

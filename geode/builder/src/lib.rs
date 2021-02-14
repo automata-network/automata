@@ -57,7 +57,7 @@ fn subprocess(program: &str, args: &[&str], current_dir: Option<&PathBuf>) {
     }
 }
 
-fn generate_extern_proxy(output: &PathBuf, files: &Vec<PathBuf>) {
+fn generate_extern_proxy(output: &PathBuf, files: &[PathBuf]) {
     let out_dir = output.parent().unwrap();
 
     let content = files

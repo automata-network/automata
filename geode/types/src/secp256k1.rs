@@ -88,7 +88,7 @@ impl Secp256k1RecoverableSignature {
         data[..32].copy_from_slice(&self.r);
         data[32..64].copy_from_slice(&self.s);
         data[64] = self.v;
-        format!("0x{}", hex::encode(&data)).to_owned()
+        format!("0x{}", hex::encode(&data))
     }
 }
 
@@ -102,8 +102,8 @@ impl From<rust_secp256k1::recovery::RecoverableSignature> for Secp256k1Recoverab
         s.copy_from_slice(&sig[32..]);
         Secp256k1RecoverableSignature {
             v: recid.to_i32().try_into().unwrap(),
-            r: r,
-            s: s,
+            r,
+            s,
         }
     }
 }
@@ -206,7 +206,7 @@ impl From<rust_secp256k1::Signature> for Secp256k1Signature {
         r.copy_from_slice(&serialized_bytes[..32]);
         s.copy_from_slice(&serialized_bytes[32..]);
 
-        Secp256k1Signature { r: r, s: s }
+        Secp256k1Signature { r, s }
     }
 }
 
@@ -223,23 +223,23 @@ impl From<Secp256k1Signature> for rust_secp256k1::Signature {
 
 impl fmt::Display for Secp256k1PrivateKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Secp256k1PrivateKey\n").unwrap();
-        write!(f, "r: {}\n", hex::encode(self.r))
+        writeln!(f, "Secp256k1PrivateKey").unwrap();
+        writeln!(f, "r: {}", hex::encode(self.r))
     }
 }
 
 impl fmt::Display for Secp256k1PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Secp256k1PublicKey\n").unwrap();
-        write!(f, "gx: {}\n", hex::encode(self.gx)).unwrap();
-        write!(f, "gy: {}\n", hex::encode(self.gy))
+        writeln!(f, "Secp256k1PublicKey").unwrap();
+        writeln!(f, "gx: {}", hex::encode(self.gx)).unwrap();
+        writeln!(f, "gy: {}", hex::encode(self.gy))
     }
 }
 
 impl fmt::Display for Secp256k1Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Secp256k1Signature\n").unwrap();
-        write!(f, "r: {}\n", hex::encode(self.r)).unwrap();
-        write!(f, "s: {}\n", hex::encode(self.s))
+        writeln!(f, "Secp256k1Signature").unwrap();
+        writeln!(f, "r: {}", hex::encode(self.r)).unwrap();
+        writeln!(f, "s: {}", hex::encode(self.s))
     }
 }
