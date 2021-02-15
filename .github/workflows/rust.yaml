@@ -11,6 +11,7 @@ on:
 
 env:
   INTEL_SGX_SDK: https://download.01.org/intel-sgx/sgx-linux/2.12/distro/ubuntu18.04-server/sgx_linux_x64_sdk_2.12.100.3.bin
+  INTEL_SGX_SDK_INSTALL_PATH: /opt
 
 jobs:
   format:
@@ -26,22 +27,22 @@ jobs:
           command: fmt
           args: --all -- --check
 
-  check:
+  build:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
       - name: Install Intel SGX SDK
         run: |
-          curl -sSf $INTEL_SGX_SDK > /tmp/intel_sgx_sdk_installer
+          curl -sSf ${INTEL_SGX_SDK} > /tmp/intel_sgx_sdk_installer
           chmod +x /tmp/intel_sgx_sdk_installer
-          echo -e 'no\n/opt/intel' | /tmp/intel_sgx_sdk_installer
+          echo -e 'no\n${INTEL_SGX_SDK_INSTALL_PATH}' | /tmp/intel_sgx_sdk_installer
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           target: wasm32-unknown-unknown
       - uses: actions-rs/cargo@v1
         with:
-          command: check
+          command: build
           args: --workspace
 
   test:
@@ -50,9 +51,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install Intel SGX SDK
         run: |
-          curl -sSf $INTEL_SGX_SDK > /tmp/intel_sgx_sdk_installer
+          curl -sSf ${INTEL_SGX_SDK} > /tmp/intel_sgx_sdk_installer
           chmod +x /tmp/intel_sgx_sdk_installer
-          echo -e 'no\n/opt/intel' | /tmp/intel_sgx_sdk_installer
+          echo -e 'no\n${INTEL_SGX_SDK_INSTALL_PATH}' | /tmp/intel_sgx_sdk_installer
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -68,9 +69,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install Intel SGX SDK
         run: |
-          curl -sSf $INTEL_SGX_SDK > /tmp/intel_sgx_sdk_installer
+          curl -sSf ${INTEL_SGX_SDK} > /tmp/intel_sgx_sdk_installer
           chmod +x /tmp/intel_sgx_sdk_installer
-          echo -e 'no\n/opt/intel' | /tmp/intel_sgx_sdk_installer
+          echo -e 'no\n${INTEL_SGX_SDK_INSTALL_PATH}' | /tmp/intel_sgx_sdk_installer
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
