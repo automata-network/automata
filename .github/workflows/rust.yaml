@@ -107,17 +107,22 @@ jobs:
           args: --workspace
 
   build_and_test:
+    name: Build and Test (experimental)
     runs-on: ubuntu-18.04
     env:
       SCCACHE_TAR_URL: https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
       SCCACHE_CACHE_SIZE: "4G"
     steps:
       - uses: actions/checkout@v2
+      - name: Setup environment variables for subsequent steps
+        run: |
+          echo "$HOME/.local/bin/" >> $GITHUB_PATH
+          echo "SCCACHE=$HOME/.local/bin/sccache" >> $GITHUB_ENV
       - uses: actions/cache@v2
         id: cache-sccache
         with:
           path: |
-            /usr/local/bin/sccache
+            ${{ env.SCCACHE }}
           key: ${{ runner.os }}-sccache-${{ env.SCCACHE_TAR_URL }}
       - uses: actions/cache@v2
         id: cache-cargo
@@ -144,13 +149,18 @@ jobs:
         with:
           path: |
             ~/.cache/sccache
-          key: ${{ runner.os }}-sccache-local-disk
+          key: ${{ runner.os }}-sccache-local-disk-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-sccache-local-disk-${{ hashFiles('**/Cargo.lock') }}
+            ${{ runner.os }}-sccache-local-disk
       - name: Install sccache
         if: steps.cache-sccache.outputs.cache-hit != 'true'
+        id: install-sccache
         run: |
           curl -LsSf ${SCCACHE_TAR_URL} > /tmp/sccache.tar.gz
-          sudo tar axvf /tmp/sccache.tar.gz --strip-components=1 -C /usr/local/bin --wildcards --no-anchored 'sccache'
-          sudo chmod +x /usr/local/bin/sccache
+          mkdir -p $(dirname $SCCACHE)
+          tar axvf /tmp/sccache.tar.gz --strip-components=1 -C $(dirname $SCCACHE) --wildcards --no-anchored 'sccache'
+          chmod +x ${SCCACHE}
           sccache --version
           sccache -s
       - name: Install Intel SGX SDK
@@ -165,13 +175,19 @@ jobs:
           target: wasm32-unknown-unknown
       - uses: actions-rs/cargo@v1
         env:
-          RUSTC_WRAPPER: /usr/local/bin/sccache
+          RUSTC_WRAPPER: ${{ env.SCCACHE }}
+          # disable incremental compilation to increase sccache hit rate
+          CARGO_INCREMENTAL: "0"
         with:
           command: build
-          args: --workspace   
+          args: --workspace
+      - name: Check sccache status
+        run: sccache -s    
       - uses: actions-rs/cargo@v1
         env:
-          RUSTC_WRAPPER: /usr/local/bin/sccache
+          RUSTC_WRAPPER: ${{ env.SCCACHE }}
+          # disable incremental compilation to increase sccache hit rate
+          CARGO_INCREMENTAL: "0"
         with:
           command: test
           args: --workspace
