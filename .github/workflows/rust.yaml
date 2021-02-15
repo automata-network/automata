@@ -55,7 +55,7 @@ jobs:
       - name: Install Intel SGX SDK
         if: steps.cache-sgx.outputs.cache-hit != 'true'
         run: |
-          curl -sSf ${SGX_SDK_URL} > ${SGX_SDK_INSTALLER}
+          curl -LsSf ${SGX_SDK_URL} > ${SGX_SDK_INSTALLER}
           chmod +x ${SGX_SDK_INSTALLER}
           echo -e 'no\n${SGX_SDK_DEST}' | ${SGX_SDK_INSTALLER}
       - uses: actions-rs/toolchain@v1
@@ -94,7 +94,7 @@ jobs:
       - name: Install Intel SGX SDK
         if: steps.cache-sgx.outputs.cache-hit != 'true'
         run: |
-          curl -sSf ${SGX_SDK_URL} > ${SGX_SDK_INSTALLER}
+          curl -LsSf ${SGX_SDK_URL} > ${SGX_SDK_INSTALLER}
           chmod +x ${SGX_SDK_INSTALLER}
           echo -e 'no\n${SGX_SDK_DEST}' | ${SGX_SDK_INSTALLER}
       - uses: actions-rs/toolchain@v1
@@ -148,7 +148,7 @@ jobs:
       - name: Install sccache
         if: steps.cache-sccache.outputs.cache-hit != 'true'
         run: |
-          curl -sSf ${SCCACHE_TAR_URL} > /tmp/sccache.tar.gz
+          curl -LsSf ${SCCACHE_TAR_URL} > /tmp/sccache.tar.gz
           sudo tar axvf /tmp/sccache.tar.gz --strip-components=1 -C /usr/local/bin --wildcards --no-anchored 'sccache'
           sudo chmod +x /usr/local/bin/sccache
           sccache --version
@@ -156,7 +156,7 @@ jobs:
       - name: Install Intel SGX SDK
         if: steps.cache-sgx.outputs.cache-hit != 'true'
         run: |
-          curl -sSf ${SGX_SDK_URL} > ${SGX_SDK_INSTALLER}
+          curl -LsSf ${SGX_SDK_URL} > ${SGX_SDK_INSTALLER}
           chmod +x ${SGX_SDK_INSTALLER}
           echo -e 'no\n${SGX_SDK_DEST}' | ${SGX_SDK_INSTALLER}
       - uses: actions-rs/toolchain@v1
@@ -192,7 +192,7 @@ jobs:
       - name: Install Intel SGX SDK
         if: steps.cache-sgx.outputs.cache-hit != 'true'
         run: |
-          curl -sSf ${SGX_SDK_URL} > ${SGX_SDK_INSTALLER}
+          curl -LsSf ${SGX_SDK_URL} > ${SGX_SDK_INSTALLER}
           chmod +x ${SGX_SDK_INSTALLER}
           echo -e 'no\n${SGX_SDK_DEST}' | ${SGX_SDK_INSTALLER}
       - uses: actions-rs/toolchain@v1
