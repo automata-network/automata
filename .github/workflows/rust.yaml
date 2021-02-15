@@ -10,8 +10,9 @@ on:
   workflow_dispatch:
 
 env:
-  INTEL_SGX_SDK: https://download.01.org/intel-sgx/sgx-linux/2.12/distro/ubuntu18.04-server/sgx_linux_x64_sdk_2.12.100.3.bin
-  INTEL_SGX_SDK_INSTALL_PATH: /opt
+  SGX_SDK_URL: https://download.01.org/intel-sgx/sgx-linux/2.12/distro/ubuntu18.04-server/sgx_linux_x64_sdk_2.12.100.3.bin
+  SGX_SDK_INSTALLER: /tmp/sgxsdk_installer
+  SGX_SDK_DEST: /opt
 
 jobs:
   format:
@@ -31,11 +32,32 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        id: cache-cargo
+        with:
+          # The paths are taken from
+          # https://doc.rust-lang.org/nightly/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ${{ runner.os }}-cargo-
+      - uses: actions/cache@v2
+        id: cache-sgx
+        with:
+          path: |
+            ${{ env.SGX_SDK_DEST }}/sgxsdk
+          key: ${{ runner.os }}-sgx-${{ env.SGX_SDK_URL }}
       - name: Install Intel SGX SDK
+        if: steps.cache-sgx.outputs.cache-hit != 'true'
         run: |
-          curl -sSf ${INTEL_SGX_SDK} > /tmp/intel_sgx_sdk_installer
-          chmod +x /tmp/intel_sgx_sdk_installer
-          echo -e 'no\n${INTEL_SGX_SDK_INSTALL_PATH}' | /tmp/intel_sgx_sdk_installer
+          curl -sSf ${SGX_SDK_URL} > ${SGX_SDK_INSTALLER}
+          chmod +x ${SGX_SDK_INSTALLER}
+          echo -e 'no\n${SGX_SDK_DEST}' | ${SGX_SDK_INSTALLER}
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -51,13 +73,21 @@ jobs:
 
   clippy:
     runs-on: ubuntu-18.04
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        id: cache-sgx
+        with:
+          path: |
+            ${{ env.SGX_SDK_DEST }}/sgxsdk
+          key: ${{ runner.os }}-sgx-${{ env.SGX_SDK_URL }}
       - name: Install Intel SGX SDK
+        if: steps.cache-sgx.outputs.cache-hit != 'true'
         run: |
-          curl -sSf ${INTEL_SGX_SDK} > /tmp/intel_sgx_sdk_installer
-          chmod +x /tmp/intel_sgx_sdk_installer
-          echo -e 'no\n${INTEL_SGX_SDK_INSTALL_PATH}' | /tmp/intel_sgx_sdk_installer
+          curl -sSf ${SGX_SDK_URL} > ${SGX_SDK_INSTALLER}
+          chmod +x ${SGX_SDK_INSTALLER}
+          echo -e 'no\n${SGX_SDK_DEST}' | ${SGX_SDK_INSTALLER}
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
