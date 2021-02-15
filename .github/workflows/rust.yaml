@@ -196,7 +196,6 @@ jobs:
 
   clippy:
     runs-on: ubuntu-18.04
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
@@ -217,6 +216,7 @@ jobs:
           components: clippy
           target: wasm32-unknown-unknown
       - uses: actions-rs/cargo@v1
+        continue-on-error: true
         with:
           command: clippy
           args: --workspace -- -D warnings
