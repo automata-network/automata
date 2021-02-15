@@ -1,4 +1,3 @@
-
 name: Rust
 
 on:
@@ -9,28 +8,39 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+
+env:
+  INTEL_SGX_SDK: https://download.01.org/intel-sgx/sgx-linux/2.12/distro/ubuntu18.04-server/sgx_linux_x64_sdk_2.12.100.3.bin
+
 jobs:
-  check:
-    runs-on: ubuntu-latest
+  format:
+    runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    - name: install toolchain and other components
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        components: rustfmt
-    - name: install wasm
-      run: ./scripts/init.sh
-    - name: format check
-      run: cargo fmt -- --check
-    - name: run build on default members
-      run: cargo build
-    - name: unit test
-      run: cargo test
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  check:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Intel SGX SDK
+        run: |
+          curl -sSf $INTEL_SGX_SDK > /tmp/intel_sgx_sdk_installer
+          chmod +x /tmp/intel_sgx_sdk_installer
+          echo -e 'no\n/opt/intel' | /tmp/intel_sgx_sdk_installer
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: rustfmt
+          target: wasm32-unknown-unknown
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --workspace
