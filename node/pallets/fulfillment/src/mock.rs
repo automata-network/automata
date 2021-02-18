@@ -1,21 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{Config, Module};
 use frame_support::{impl_outer_origin, parameter_types, weights::Weight};
 use frame_system as system;
-use frame_system::limits::{BlockLength, BlockWeights};
 use sp_core::H256;
-use sp_runtime::{
-    testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
-};
+use sp_runtime::{testing::Header, traits::IdentityLookup, Perbill};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
-
-// Configure a mock runtime to test the pallet.
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Test;
@@ -52,12 +44,8 @@ impl frame_system::Config for Test {
     type SS58Prefix = SS58Prefix;
 }
 
-pub type System = frame_system::Module<Test>;
-pub type Geode = Module<Test>;
-
-// Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    let mut t = system::GenesisConfig::default()
+    let t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
     let mut ext = sp_io::TestExternalities::new(t);

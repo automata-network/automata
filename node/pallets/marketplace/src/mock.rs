@@ -4,14 +4,10 @@ use crate::{Config, Module};
 use frame_support::{
     impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types, weights::Weight,
 };
-use frame_system::{self as system, EventRecord, Phase};
+use frame_system as system;
 use pallet_balances as balances;
 use sp_core::H256;
-use sp_runtime::{
-    testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
-};
+use sp_runtime::{testing::Header, traits::IdentityLookup, Perbill};
 //use crate as marketplace;
 use crate::Event;
 use pallet_stake as stake;
@@ -20,8 +16,7 @@ use sp_std::prelude::*;
 mod marketplace {
     pub use crate::Event;
 }
-use frame_system::limits::{BlockLength, BlockWeights};
-use fulfillment::{Event as geodeEvent, GeodeOf, GeodeProperties, GeodeState};
+use fulfillment::Event as geodeEvent;
 
 pub type AccountId = u64;
 
@@ -44,8 +39,6 @@ impl_outer_dispatch! {
         marketplace::Marketplace,
     }
 }
-
-// Configure a mock runtime to test the pallet.
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Test;
@@ -118,7 +111,6 @@ pub type Marketplace = Module<Test>;
 pub type Geode = fulfillment::Module<Test>;
 pub type Stake = pallet_stake::Module<Test>;
 
-// Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Test>()
