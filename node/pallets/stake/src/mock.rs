@@ -4,17 +4,10 @@ use crate::{Config, Module};
 use frame_support::{
     impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types, weights::Weight,
 };
-use frame_system::{self as system, EventRecord, Phase};
+use frame_system as system;
 use pallet_balances as balances;
 use sp_core::H256;
-use sp_runtime::{
-    testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
-};
-//use crate as marketplace;
-use crate::Event;
-use frame_system::limits::{BlockLength, BlockWeights};
+use sp_runtime::{testing::Header, traits::IdentityLookup, Perbill};
 
 use crate as stake;
 
@@ -98,7 +91,6 @@ pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Stake = Module<Test>;
 
-// Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Test>()
@@ -111,18 +103,4 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     let mut ext = sp_io::TestExternalities::new(t);
     ext.execute_with(|| System::set_block_number(1));
     ext
-}
-
-pub(crate) fn marketpalce_events() -> Vec<Event<Test>> {
-    System::events()
-        .into_iter()
-        .map(|r| r.event)
-        .filter_map(|e| {
-            if let TestEvent::stake(inner) = e {
-                Some(inner)
-            } else {
-                None
-            }
-        })
-        .collect()
 }

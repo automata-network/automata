@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use home;
 use lazy_static::lazy_static;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const GIT_REPO: &'static str = "teaclave-sgx-sdk"; // https://github.com/apache/teaclave-sgx-sdk
-const GIT_COMMIT: &'static str = "a6a172e"; // the commit corresponding to tag v1.1.3
-pub const RUST_TOOLCHAIN: &'static str = "nightly-2020-10-25"; // the toolchain version required by teaclave-sgx-sdk
+const GIT_REPO: &str = "teaclave-sgx-sdk"; // https://github.com/apache/teaclave-sgx-sdk
+const GIT_COMMIT: &str = "a6a172e"; // the commit corresponding to tag v1.1.3
+pub const RUST_TOOLCHAIN: &str = "nightly-2020-10-25"; // the toolchain version required by teaclave-sgx-sdk
 
 lazy_static! {
     pub static ref SGX_SDK: String = {

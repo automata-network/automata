@@ -14,11 +14,11 @@ use std::str;
 lazy_static! {
     pub static ref SGX_MODE: String = {
         println!("cargo:rerun-if-env-changed=SGX_MODE");
-        env::var("SGX_MODE").unwrap_or(String::from("HW"))
+        env::var("SGX_MODE").unwrap_or_else(|_| String::from("HW"))
     };
     pub static ref SGX_SDK: String = {
         println!("cargo:rerun-if-env-changed=SGX_SDK");
-        env::var("SGX_SDK").unwrap_or(String::from("/opt/intel/sgxsdk"))
+        env::var("SGX_SDK").unwrap_or_else(|_| String::from("/opt/intel/sgxsdk"))
     };
     pub static ref SGX_COMMON_CFLAGS: Vec<&'static str> = {
         let mut args = vec!["-m64"];
@@ -121,10 +121,10 @@ impl Edger8rBuild {
     pub fn execute(&self) {
         copy_file_tree(&self.source_dir, &self.build_dir).unwrap();
 
-        let pic_args = "-cflags -ccopt,-fpie -lflags -runtime-variant,_pic,-ccopt,-pie,-ccopt -lflag -Wl,-z,now -no-links -libs str,unix Edger8r.native".split(" ").filter(|s| !s.is_empty()).collect::<Vec<&str>>();
+        let pic_args = "-cflags -ccopt,-fpie -lflags -runtime-variant,_pic,-ccopt,-pie,-ccopt -lflag -Wl,-z,now -no-links -libs str,unix Edger8r.native".split(' ').filter(|s| !s.is_empty()).collect::<Vec<&str>>();
 
         let args = "-lflag -ccopt -lflag Wl,-z,now -no-links -libs str,unix Edger8r.native"
-            .split(" ")
+            .split(' ')
             .filter(|s| !s.is_empty())
             .collect::<Vec<&str>>();
 
@@ -297,7 +297,7 @@ fn get_ocaml_version() -> (u64, u64) {
     let stdout = str::from_utf8(&output.stdout).unwrap();
 
     let mut splits = stdout
-        .split(".")
+        .split('.')
         .map(|x| x.parse::<u64>())
         .filter_map(|x| x.ok())
         .take(2);

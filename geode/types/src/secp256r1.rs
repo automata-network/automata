@@ -256,23 +256,23 @@ impl From<Secp256r1Signature> for sgx_ec256_signature_t {
 
 impl fmt::Display for Secp256r1PrivateKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Secp256r1PrivateKey\n").unwrap();
-        write!(f, "r: {}\n", hex::encode(self.r))
+        writeln!(f, "Secp256r1PrivateKey").unwrap();
+        writeln!(f, "r: {}", hex::encode(self.r))
     }
 }
 
 impl fmt::Display for Secp256r1PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Secp256r1PublicKey\n").unwrap();
-        write!(f, "gx: {}\n", hex::encode(self.gx)).unwrap();
-        write!(f, "gy: {}\n", hex::encode(self.gy))
+        writeln!(f, "Secp256r1PublicKey").unwrap();
+        writeln!(f, "gx: {}", hex::encode(self.gx)).unwrap();
+        writeln!(f, "gy: {}", hex::encode(self.gy))
     }
 }
 
 impl fmt::Display for Secp256r1Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Secp256r1Signature\n").unwrap();
-        write!(f, "x: {}\n", hex::encode(self.x)).unwrap();
-        write!(f, "y: {}\n", hex::encode(self.y))
+        writeln!(f, "Secp256r1Signature").unwrap();
+        writeln!(f, "x: {}", hex::encode(self.x)).unwrap();
+        writeln!(f, "y: {}", hex::encode(self.y))
     }
 }

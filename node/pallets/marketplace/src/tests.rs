@@ -1,18 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::mock::TestEvent;
+use crate::mock::*;
 use crate::sp_api_hidden_includes_decl_storage::hidden_include::traits::OnFinalize;
 use crate::RawEvent;
-use crate::{mock::*, Error};
-use frame_support::{
-    assert_err, assert_err_ignore_postinfo, assert_noop, assert_ok,
-    dispatch::{DispatchError, DispatchErrorWithPostInfo, Dispatchable},
-    impl_outer_dispatch, impl_outer_event, impl_outer_origin, parameter_types, storage,
-    traits::Filter,
-    weights::{Pays, Weight},
-};
+use frame_support::{assert_err, assert_ok};
 use fulfillment::{GeodeOf, GeodeProperties, GeodeState, RawEvent as geodeRawEvent};
-use sp_core::H256;
 use sp_std::prelude::*;
 
 fn create_geode_device<T: fulfillment::Config>(owner: T::AccountId) -> GeodeOf<T> {
@@ -49,7 +42,7 @@ fn last_event() -> TestEvent {
 
 fn get_orderid_from_event() -> AccountId {
     match marketpalce_events().last().unwrap() {
-        RawEvent::PutOrder(x, y) => {
+        RawEvent::PutOrder(_x, y) => {
             return *y;
         }
         _ => {
@@ -137,7 +130,7 @@ fn install_test() {
         assert_eq!(Stake::users(1).total, 50);
         assert_eq!(Stake::users(1).active, 50);
 
-        let attestation = vec![0u8];
+        let _attestation = vec![0u8];
         let device = create_geode_device::<Test>(1);
         assert_ok!(Geode::provider_register_geode(Origin::signed(1), device));
         let event = last_event();
@@ -198,7 +191,7 @@ fn order_test() {
         );
         //TODO:: Registed -> Attested     attestors only 2
 
-        println!("{:?}", geoid);
+        println!("{}", geoid);
         assert_ok!(Marketplace::put_order(Origin::signed(1), geoid, 5, 5));
         let orderid = get_orderid_from_event();
 

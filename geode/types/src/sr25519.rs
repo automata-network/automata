@@ -157,18 +157,18 @@ impl fmt::Debug for Sr25519Signature {
 
 impl fmt::Display for Sr25519PrivateKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Sr25519PrivateKey\n").unwrap();
-        write!(f, "secret: {}\n", hex::encode(self.secret)).unwrap();
-        write!(f, "nonce : {}\n", hex::encode(self.nonce))
+        writeln!(f, "Sr25519PrivateKey").unwrap();
+        writeln!(f, "secret: {}", hex::encode(self.secret)).unwrap();
+        writeln!(f, "nonce : {}", hex::encode(self.nonce))
     }
 }
 
 impl fmt::Display for Sr25519PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Sr25519PublicKey\n").unwrap();
-        write!(
+        writeln!(f, "Sr25519PublicKey").unwrap();
+        writeln!(
             f,
-            "compressed_point: {}\n",
+            "compressed_point: {}",
             hex::encode(self.compressed_point)
         )
     }

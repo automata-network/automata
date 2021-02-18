@@ -80,7 +80,7 @@ pub fn parse_string_h256(h256_str: &str) -> H256 {
 pub fn encode_string_h256(h256: &H256) -> String {
     // here we just make use of the display functionality of H256
     // the debug string prints in full form (hex)
-    format!("{:?}", h256).to_owned()
+    format!("{:?}", h256)
 }
 
 pub fn eth_secp256k1_to_accountid(pubkey: &Secp256k1PublicKey) -> Address {

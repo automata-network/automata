@@ -78,7 +78,7 @@ impl EIP712Domain {
         EIP712Domain {
             name: name.to_owned(),
             version: version.to_owned(),
-            chainId: chainId,
+            chainId,
             verifyingContract: contract,
         }
     }
@@ -162,10 +162,10 @@ where
         message: T,
     ) -> Self {
         EIP712Msg {
-            types: types,
-            domain: domain,
+            types,
+            domain,
             primaryType: primaryType.to_owned(),
-            message: message,
+            message,
         }
     }
 

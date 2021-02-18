@@ -116,9 +116,7 @@ impl Vote {
 
         let domain = EIP712Domain::new("Witness", "0.1.0", chainId, verifyingContract);
 
-        let msg = EIP712Msg::new(types, domain, "Vote", self.clone());
-
-        msg
+        EIP712Msg::new(types, domain, "Vote", self.clone())
     }
 }
 

@@ -189,7 +189,7 @@ impl<T: Config> Module<T> {
         order_id: OrderId<T>,
     ) -> DispatchResult {
         let mut ledger = <Users<T>>::get(&account);
-        ledger.seller.insert(order_id.clone(), amount);
+        ledger.seller.insert(order_id, amount);
         <Users<T>>::insert(&account, ledger);
         Ok(())
     }
@@ -263,7 +263,7 @@ impl<T: Config> Module<T> {
         seller_ledger.total += cost;
         seller_ledger.active += seller_ledger.seller[&order_id];
         seller_ledger.seller.remove(&order_id);
-        seller_ledger.seller.insert(order_id.clone(), cost);
+        seller_ledger.seller.insert(order_id, cost);
         Self::update_ledger(&seller, &seller_ledger);
 
         // TODO transfer the right of use to buyer
@@ -292,7 +292,7 @@ impl<T: Config> Module<T> {
 
     /// Divide time into spans.
     fn time_span_filter(time: &GeodeIdd<T::AccountId>) -> u64 {
-        time.offline_time.clone() / 100
+        time.offline_time / 100
     }
 
     /// if the offence is reported, return true.
@@ -366,7 +366,7 @@ impl<T: Config> Module<T> {
         unique_key: &ReportIdOf<T>,
         offender_detail: AutomataOffenceDetails<T::AccountId, T::BlockNumber>,
     ) {
-        <Reports<T>>::insert(unique_key, offender_detail.clone());
+        <Reports<T>>::insert(unique_key, offender_detail);
     }
 
     /// Get his historical offences and update this offence
@@ -379,7 +379,7 @@ impl<T: Config> Module<T> {
         let mut info = offence_info.unwrap();
         info.increase();
         <TempOffence<T>>::insert(id, info.clone());
-        return Some((info.current_offline, info.historical_offline));
+        Some((info.current_offline, info.historical_offline))
     }
 }
 
@@ -424,7 +424,7 @@ impl<T: Config, O: AutomataOffence<T::AccountId>>
         offence: O,
     ) -> Result<(), AutomataOffenceError> {
         if Self::can_report() {
-            return Err(AutomataOffenceError::NotReportSpan.into());
+            return Err(AutomataOffenceError::NotReportSpan);
         }
 
         let offender = offence.offender();
@@ -434,7 +434,7 @@ impl<T: Config, O: AutomataOffence<T::AccountId>>
         let unique_key = Self::report_sp_id::<O>(&spid, &offender);
 
         if Self::duplicate(unique_key) {
-            return Err(AutomataOffenceError::DuplicateReport.into());
+            return Err(AutomataOffenceError::DuplicateReport);
         }
 
         let reason = match &kind {
@@ -447,7 +447,7 @@ impl<T: Config, O: AutomataOffence<T::AccountId>>
 
         let offender_detail = AutomataOffenceDetails::<T::AccountId, T::BlockNumber> {
             offender,
-            reporters: reporters.clone(),
+            reporters,
             blocknum: <frame_system::Module<T>>::block_number(),
             reason,
             provider: spid.provider,
@@ -459,10 +459,9 @@ impl<T: Config, O: AutomataOffence<T::AccountId>>
 
         let extra_slash = offence.slash(current_offence, total_offence, <SlashRule>::get());
 
-        match Self::on_offence(offender_detail, extra_slash) {
-            Ok(_) => {}
-            Err(_) => {} //TODO:: Save the failed slash
-        }
+        if let Ok(_) = Self::on_offence(offender_detail, extra_slash) {
+        } else {
+        } //TODO:: Save the failed slash
 
         Ok(())
     }

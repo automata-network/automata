@@ -21,6 +21,12 @@ pub struct Build {
     enclaves: Vec<enclave::Build>,
 }
 
+impl Default for geode::Build {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Build {
     pub fn new() -> Build {
         let manifest_dir = Path::new(&CARGO_MANIFEST_DIR.to_string()).to_path_buf();
@@ -54,7 +60,7 @@ impl Build {
     pub fn build(&self) {
         let mut ecall_externs = vec![];
 
-        &self.enclaves.iter().for_each(|e| {
+        self.enclaves.iter().for_each(|e| {
             e.build_crate();
             e.generate_interfaces();
             ecall_externs.extend(e.collect_ecall_extern());
