@@ -1,0 +1,51 @@
+[package]
+name = "automata-test-rpc"
+version = "0.1.0"
+authors = ["Automata Team"]
+edition = "2018"
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+futures = "0.3.4"
+jsonrpc-core = "15.0.0"
+jsonrpc-derive = "15.0.0"
+jsonrpc-core-client = "15.0.0"
+jsonrpc-pubsub = "15.0.0"
+serde = { version = "1.0", features = ["derive"] }
+
+automata-primitives = { path = "../../primitives" }
+automata-test-runtime = { path = "../runtime" }
+
+sc-rpc-api = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-rpc = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-core = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-runtime = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-api = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+pallet-contracts-rpc = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+pallet-transaction-payment-rpc = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+substrate-frame-rpc-system = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-transaction-pool = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-transaction-pool = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-finality-grandpa = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-finality-grandpa-rpc = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-keystore = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-consensus-epochs = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-consensus = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-blockchain = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-light = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-client-api = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-chain-spec = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-block-builder = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-consensus-manual-seal = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-network = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-keystore = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-sync-state-rpc = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+
+fc-consensus = { git = "https://github.com/automata-network/frontier.git", branch = "ljc-update" }
+fp-consensus = { git = "https://github.com/automata-network/frontier.git", branch = "ljc-update" }
+fc-rpc = { git = "https://github.com/automata-network/frontier.git", branch = "ljc-update" }
+fp-rpc = { git = "https://github.com/automata-network/frontier.git", branch = "ljc-update" }
+fc-rpc-core = { git = "https://github.com/automata-network/frontier.git", branch = "ljc-update" }
