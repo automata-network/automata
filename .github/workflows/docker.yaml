@@ -10,6 +10,8 @@ jobs:
   build_and_push:
     name: Build and Push
     runs-on: ubuntu-18.04
+    env:
+      DOCKER_REPO: atactr/automata
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -21,8 +23,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Generate tags
-        env:
-          DOCKER_REPO: atactr/automata
         run: |
           echo 'DOCKER_TAGS<<EOF' >> $GITHUB_ENV
           echo "${DOCKER_REPO}:${GITHUB_SHA::8}" >> $GITHUB_ENV
