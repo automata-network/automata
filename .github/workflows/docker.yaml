@@ -7,7 +7,8 @@ on:
     branches: [main] 
 
 jobs:
-  docker:
+  build_and_push:
+    name: Build and Push
     runs-on: ubuntu-18.04
     steps:
       - name: Set up QEMU
@@ -35,6 +36,8 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
+          cache-from: ${{ env.DOCKER_REPO }}:latest
+          cache-to: type=inline,mode=max
           tags: |
             ${{ env.DOCKER_TAGS }}
       - name: Image digest
