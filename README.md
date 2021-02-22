@@ -3,7 +3,7 @@
 
 ## Build
 
-On Ubuntu/Debian, install the following packages:
+On Ubuntu/Debian (or similar distributions on [WSL](https://docs.microsoft.com/en-us/windows/wsl/about)), install the following packages:
 
 ```bash
 sudo apt-get update
@@ -31,5 +31,4 @@ cargo build --release
 ## License
 
 [Apache 2.0](./LICENSE)
-
 
