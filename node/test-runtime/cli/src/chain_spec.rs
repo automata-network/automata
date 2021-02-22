@@ -50,6 +50,19 @@ pub struct Extensions {
 
 /// Specialized `ChainSpec`.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
+pub type TestnetChainSpec = sc_service::GenericChainSpec<automata_test_runtime::GenesisConfig, Extensions>;
+
+pub fn testnet_dev_config() -> TestnetChainSpec {
+    TestnetChainSpec::from_json_bytes(&include_bytes!("../res/DevSpecRaw.json")[..]).expect("failed to get spec")
+}
+
+pub fn testnet_local_config() -> TestnetChainSpec {
+    TestnetChainSpec::from_json_bytes(&include_bytes!("../res/LocalSpecRaw.json")[..]).expect("failed to get spec")
+}
+
+pub fn testnet_staging_config() -> TestnetChainSpec {
+    TestnetChainSpec::from_json_bytes(&include_bytes!("../res/StagingSpecRaw.json")[..]).expect("failed to get spec")
+}
 
 fn get_properties() -> Option<Properties> {
     let mut properties = Properties::new();
@@ -229,9 +242,6 @@ pub fn testnet_genesis(
                 ]),
                 H160::from(hex_literal::hex![
                     "b4b58365166402a78b4ac05e1b13b6d64fCcF60f"
-                ]),
-                H160::from(hex_literal::hex![
-                    "2CCDD9Fa13d97F6FAEC4B1D8085861AE57e1D9c9"
                 ]),
                 H160::from(hex_literal::hex![
                     "2CCDD9Fa13d97F6FAEC4B1D8085861AE57e1D9c9"
@@ -442,12 +452,6 @@ pub fn staging_testnet_config() -> ChainSpec {
         get_properties(),
         Default::default(),
     )
-}
-
-pub type TestnetChainSpec = sc_service::GenericChainSpec<automata_test_runtime::GenesisConfig, Extensions>;
-
-pub fn testnet_config() -> TestnetChainSpec {
-    TestnetChainSpec::from_json_bytes(&include_bytes!("../res/testnetSpecRaw.json")[..]).expect("failed to get spec")
 }
 
 #[cfg(test)]

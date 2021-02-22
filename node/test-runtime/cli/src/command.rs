@@ -7,7 +7,7 @@ use sc_service::PartialComponents;
 
 impl SubstrateCli for Cli {
     fn impl_name() -> String {
-        "Automata Node".into()
+        "Automata Test".into()
     }
 
     fn impl_version() -> String {
@@ -34,10 +34,9 @@ impl SubstrateCli for Cli {
         let id = if id == "" { "local" } else { id };
 
         Ok(match id {
-            "dev" => Box::new(chain_spec::development_config()),
-            "local" => Box::new(chain_spec::local_testnet_config()),
-            "staging" => Box::new(chain_spec::staging_testnet_config()),
-            "testnet" => Box::new(chain_spec::testnet_config()),
+            "dev" => Box::new(chain_spec::testnet_dev_config()),
+            "local" => Box::new(chain_spec::testnet_local_config()),
+            "staging" => Box::new(chain_spec::testnet_staging_config()),
             path => Box::new(chain_spec::ChainSpec::from_json_file(
                 std::path::PathBuf::from(path),
             )?),
