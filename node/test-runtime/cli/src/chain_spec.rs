@@ -3,7 +3,7 @@
 use automata_test_runtime::constants::currency::*;
 use automata_test_runtime::Block;
 use automata_test_runtime::{
-    wasm_binary_unwrap, AuthorityDiscoveryConfig, AuraConfig, BalancesConfig, CouncilConfig,
+    wasm_binary_unwrap, AuraConfig, AuthorityDiscoveryConfig, BalancesConfig, CouncilConfig,
     DemocracyConfig, EVMConfig, ElectionsConfig, EthereumConfig, GrandpaConfig, ImOnlineConfig,
     IndicesConfig, SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig,
     SystemConfig, TechnicalCommitteeConfig,
@@ -50,18 +50,22 @@ pub struct Extensions {
 
 /// Specialized `ChainSpec`.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
-pub type TestnetChainSpec = sc_service::GenericChainSpec<automata_test_runtime::GenesisConfig, Extensions>;
+pub type TestnetChainSpec =
+    sc_service::GenericChainSpec<automata_test_runtime::GenesisConfig, Extensions>;
 
 pub fn testnet_dev_config() -> TestnetChainSpec {
-    TestnetChainSpec::from_json_bytes(&include_bytes!("../res/DevSpecRaw.json")[..]).expect("failed to get spec")
+    TestnetChainSpec::from_json_bytes(&include_bytes!("../res/DevSpecRaw.json")[..])
+        .expect("failed to get spec")
 }
 
 pub fn testnet_local_config() -> TestnetChainSpec {
-    TestnetChainSpec::from_json_bytes(&include_bytes!("../res/LocalSpecRaw.json")[..]).expect("failed to get spec")
+    TestnetChainSpec::from_json_bytes(&include_bytes!("../res/LocalSpecRaw.json")[..])
+        .expect("failed to get spec")
 }
 
 pub fn testnet_staging_config() -> TestnetChainSpec {
-    TestnetChainSpec::from_json_bytes(&include_bytes!("../res/StagingSpecRaw.json")[..]).expect("failed to get spec")
+    TestnetChainSpec::from_json_bytes(&include_bytes!("../res/StagingSpecRaw.json")[..])
+        .expect("failed to get spec")
 }
 
 fn get_properties() -> Option<Properties> {

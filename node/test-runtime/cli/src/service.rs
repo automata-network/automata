@@ -10,9 +10,9 @@ use fc_rpc_core::types::PendingTransactions;
 use futures::prelude::*;
 use grandpa::{self};
 use sc_client_api::{ExecutorProvider, RemoteBackend};
-use sp_consensus_aura::sr25519::{AuthorityPair as AuraPair};
 use sc_network::{Event, NetworkService};
 use sc_service::{config::Configuration, error::Error as ServiceError, RpcHandlers, TaskManager};
+use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sp_inherents::InherentDataProviders;
 use sp_runtime::traits::Block as BlockT;
 use std::{
@@ -43,7 +43,7 @@ pub fn new_partial(
                     Block,
                     FullClient,
                     FrontierBlockImport<Block, FullGrandpaBlockImport, FullClient>,
-                    AuraPair
+                    AuraPair,
                 >,
                 grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
             ),
@@ -76,7 +76,8 @@ pub fn new_partial(
         FrontierBlockImport::new(grandpa_block_import.clone(), client.clone(), true);
 
     let aura_block_import = sc_consensus_aura::AuraBlockImport::<_, _, _, AuraPair>::new(
-        frontier_block_import.clone(), client.clone(),
+        frontier_block_import.clone(),
+        client.clone(),
     );
 
     let inherent_data_providers = sp_inherents::InherentDataProviders::new();
@@ -117,9 +118,7 @@ pub struct NewFullBase {
 }
 
 /// Creates a full service from the configuration.
-pub fn new_full_base(
-    mut config: Configuration
-) -> Result<NewFullBase, ServiceError> {
+pub fn new_full_base(mut config: Configuration) -> Result<NewFullBase, ServiceError> {
     let sc_service::PartialComponents {
         client,
         backend,
@@ -253,7 +252,7 @@ pub fn new_full_base(
         let can_author_with =
             sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
 
-        let aura = sc_consensus_aura::start_aura::<_, _, _, _, _, AuraPair, _, _, _,_>(
+        let aura = sc_consensus_aura::start_aura::<_, _, _, _, _, AuraPair, _, _, _, _>(
             sc_consensus_aura::slot_duration(&*client)?,
             client.clone(),
             select_chain,
@@ -269,7 +268,9 @@ pub fn new_full_base(
 
         // the AURA authoring task is considered essential, i.e. if it
         // fails we take down the service with it.
-        task_manager.spawn_essential_handle().spawn_blocking("aura", aura);
+        task_manager
+            .spawn_essential_handle()
+            .spawn_blocking("aura", aura);
     }
 
     // Spawn authority discovery module.
