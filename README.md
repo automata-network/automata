@@ -3,7 +3,7 @@
 
 ## Build
 
-On Ubuntu/Debian, install the following packages:
+On Ubuntu/Debian (support WSL), install the following packages:
 
 ```bash
 sudo apt-get update
