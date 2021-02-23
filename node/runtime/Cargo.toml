@@ -18,7 +18,7 @@ static_assertions = "1.1.0"
 # primitives
 automata-primitives = { default-features = false, path = "../primitives" }
 sp-authority-discovery = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
-sp-consensus-babe = { version = "0.8.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-consensus-aura = { version = "0.8.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 sp-block-builder = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 sp-inherents = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 sp-offchain = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
@@ -42,7 +42,7 @@ frame-system = { version = "2.0.0", default-features = false, git = "https://git
 frame-system-rpc-runtime-api = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 pallet-authority-discovery = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 pallet-authorship = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
-pallet-babe = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+pallet-aura = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 pallet-balances = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 pallet-collective = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 pallet-democracy = { version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
@@ -84,8 +84,8 @@ std = [
 	"sp-authority-discovery/std",
 	"pallet-authority-discovery/std",
 	"pallet-authorship/std",
-	"sp-consensus-babe/std",
-	"pallet-babe/std",
+	"sp-consensus-aura/std",
+	"pallet-aura/std",
 	"pallet-balances/std",
 	"sp-block-builder/std",
 	"codec/std",

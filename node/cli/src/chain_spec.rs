@@ -3,7 +3,7 @@
 use automata_runtime::constants::currency::*;
 use automata_runtime::Block;
 use automata_runtime::{
-    wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, CouncilConfig,
+    wasm_binary_unwrap, AuraConfig, AuthorityDiscoveryConfig, BalancesConfig, CouncilConfig,
     DemocracyConfig, EVMConfig, ElectionsConfig, EthereumConfig, GrandpaConfig, ImOnlineConfig,
     IndicesConfig, SessionConfig, SessionKeys, StakerStatus, StakingConfig, SudoConfig,
     SystemConfig, TechnicalCommitteeConfig,
@@ -16,7 +16,7 @@ use sc_service::{ChainType, Properties};
 use sc_telemetry::TelemetryEndpoints;
 use serde::{Deserialize, Serialize};
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use sp_consensus_babe::AuthorityId as BabeId;
+use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{
     crypto::{Ss58Codec, UncheckedInto},
     sr25519, Pair, Public,
@@ -60,13 +60,13 @@ fn get_properties() -> Option<Properties> {
 
 fn session_keys(
     grandpa: GrandpaId,
-    babe: BabeId,
+    aura: AuraId,
     im_online: ImOnlineId,
     authority_discovery: AuthorityDiscoveryId,
 ) -> SessionKeys {
     SessionKeys {
         grandpa,
-        babe,
+        aura,
         im_online,
         authority_discovery,
     }
@@ -94,7 +94,7 @@ pub fn authority_keys_from_seed(
     AccountId,
     AccountId,
     GrandpaId,
-    BabeId,
+    AuraId,
     ImOnlineId,
     AuthorityDiscoveryId,
 ) {
@@ -102,7 +102,7 @@ pub fn authority_keys_from_seed(
         get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
         get_account_id_from_seed::<sr25519::Public>(seed),
         get_from_seed::<GrandpaId>(seed),
-        get_from_seed::<BabeId>(seed),
+        get_from_seed::<AuraId>(seed),
         get_from_seed::<ImOnlineId>(seed),
         get_from_seed::<AuthorityDiscoveryId>(seed),
     )
@@ -114,7 +114,7 @@ pub fn testnet_genesis(
         AccountId,
         AccountId,
         GrandpaId,
-        BabeId,
+        AuraId,
         ImOnlineId,
         AuthorityDiscoveryId,
     )>,
@@ -213,7 +213,7 @@ pub fn testnet_genesis(
             phantom: Default::default(),
         }),
         pallet_sudo: Some(SudoConfig { key: root_key }),
-        pallet_babe: Some(BabeConfig {
+        pallet_aura: Some(AuraConfig {
             authorities: vec![],
         }),
         pallet_im_online: Some(ImOnlineConfig { keys: vec![] }),
@@ -234,7 +234,7 @@ pub fn testnet_genesis(
                     "2CCDD9Fa13d97F6FAEC4B1D8085861AE57e1D9c9"
                 ]),
                 H160::from(hex_literal::hex![
-                    "2CCDD9Fa13d97F6FAEC4B1D8085861AE57e1D9c9"
+                    "3e29eF30D9836928DDc3667af68da02bAd913316"
                 ]),
             ]
             .into_iter()
@@ -299,7 +299,7 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
         AccountId,
         AccountId,
         GrandpaId,
-        BabeId,
+        AuraId,
         ImOnlineId,
         AuthorityDiscoveryId,
     )> = vec![
@@ -503,7 +503,7 @@ pub(crate) mod tests {
                     network,
                     transaction_pool,
                     ..
-                } = new_full_base(config, |_, _| ())?;
+                } = new_full_base(config)?;
                 Ok(sc_service_test::TestNetComponents::new(
                     task_manager,
                     client,

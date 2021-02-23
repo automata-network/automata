@@ -40,7 +40,7 @@ rustc-hex = "2.0"
 
 # primitives
 sp-authority-discovery = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
-sp-consensus-babe = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-consensus-aura = { version = "0.8.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 grandpa-primitives = { version = "2.0.0", package = "sp-finality-grandpa", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 sp-core = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 sp-runtime = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
@@ -58,7 +58,7 @@ sc-transaction-pool = { version = "2.0.0", git = "https://github.com/paritytech/
 sp-transaction-pool = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 sc-network = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 sc-consensus-slots = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
-sc-consensus-babe = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sc-consensus-aura = { version = "0.8.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 grandpa = { version = "0.8.0", package = "sc-finality-grandpa", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 sc-client-db = { version = "0.8.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 sc-offchain = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
