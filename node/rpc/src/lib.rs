@@ -7,9 +7,6 @@ use sc_client_api::{
     backend::{AuxStore, Backend, StateBackend, StorageProvider},
     client::BlockchainEvents,
 };
-use sc_consensus_babe::{Config, Epoch};
-use sc_consensus_babe_rpc::BabeRpcHandler;
-use sc_consensus_epochs::SharedEpochChanges;
 use sc_consensus_manual_seal::rpc::{ManualSeal, ManualSealApi};
 use sc_finality_grandpa::{
     FinalityProofProvider, GrandpaJustificationStream, SharedAuthoritySet, SharedVoterState,
@@ -21,10 +18,7 @@ pub use sc_rpc_api::DenyUnsafe;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
-use sp_consensus::SelectChain;
-use sp_consensus_babe::BabeApi;
 use sp_core::H256;
-use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::traits::BlakeTwo256;
 use sp_transaction_pool::TransactionPool;
 use std::{fmt, sync::Arc};
@@ -39,16 +33,6 @@ pub struct LightDeps<C, F, P> {
     pub remote_blockchain: Arc<dyn sc_client_api::light::RemoteBlockchain<Block>>,
     /// Fetcher instance.
     pub fetcher: Arc<F>,
-}
-
-/// Extra dependencies for BABE.
-pub struct BabeDeps {
-    /// BABE protocol config.
-    pub babe_config: Config,
-    /// BABE pending epoch changes.
-    pub shared_epoch_changes: SharedEpochChanges<Block, Epoch>,
-    /// The keystore that manages the keys of the node.
-    pub keystore: SyncCryptoStorePtr,
 }
 
 /// Extra dependencies for GRANDPA
@@ -66,19 +50,13 @@ pub struct GrandpaDeps<B> {
 }
 
 /// Full client dependencies.
-pub struct FullDeps<C, P, SC, B> {
+pub struct FullDeps<C, P, B> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
     pub pool: Arc<P>,
-    /// The SelectChain Strategy
-    pub select_chain: SC,
-    /// A copy of the chain spec.
-    pub chain_spec: Box<dyn sc_chain_spec::ChainSpec>,
     /// Whether to deny unsafe calls
     pub deny_unsafe: DenyUnsafe,
-    /// BABE specific dependencies.
-    pub babe: BabeDeps,
     /// GRANDPA specific dependencies.
     pub grandpa: GrandpaDeps<B>,
     /// The Node authority flag
@@ -98,8 +76,8 @@ pub struct FullDeps<C, P, SC, B> {
 pub type IoHandler = jsonrpc_core::IoHandler<sc_rpc::Metadata>;
 
 /// Instantiate all Full RPC extensions.
-pub fn create_full<C, P, SC, B>(
-    deps: FullDeps<C, P, SC, B>,
+pub fn create_full<C, P, B>(
+    deps: FullDeps<C, P, B>,
     subscription_task_executor: SubscriptionTaskExecutor,
 ) -> jsonrpc_core::IoHandler<sc_rpc_api::Metadata>
 where
@@ -114,8 +92,6 @@ where
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
     C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
     <C::Api as sp_api::ApiErrorExt>::Error: fmt::Debug,
-    C::Api: BabeApi<Block>,
-    SC: SelectChain<Block> + 'static,
     P: TransactionPool<Block = Block> + 'static,
     H256: From<<P as TransactionPool>::Hash>,
 {
@@ -131,10 +107,7 @@ where
     let FullDeps {
         client,
         pool,
-        select_chain,
-        chain_spec,
         deny_unsafe,
-        babe,
         grandpa,
         is_authority,
         network,
@@ -143,11 +116,6 @@ where
         enable_dev_signer,
     } = deps;
 
-    let BabeDeps {
-        keystore,
-        babe_config,
-        shared_epoch_changes,
-    } = babe;
     let GrandpaDeps {
         shared_voter_state,
         shared_authority_set,
@@ -166,16 +134,6 @@ where
         client.clone(),
     )));
 
-    io.extend_with(sc_consensus_babe_rpc::BabeApi::to_delegate(
-        BabeRpcHandler::new(
-            client.clone(),
-            shared_epoch_changes.clone(),
-            keystore,
-            babe_config,
-            select_chain,
-            deny_unsafe,
-        ),
-    ));
     io.extend_with(sc_finality_grandpa_rpc::GrandpaApi::to_delegate(
         GrandpaRpcHandler::new(
             shared_authority_set.clone(),
@@ -183,16 +141,6 @@ where
             justification_stream,
             subscription_executor,
             finality_provider,
-        ),
-    ));
-
-    io.extend_with(sc_sync_state_rpc::SyncStateRpcApi::to_delegate(
-        sc_sync_state_rpc::SyncStateRpcHandler::new(
-            chain_spec,
-            client.clone(),
-            shared_authority_set,
-            shared_epoch_changes,
-            deny_unsafe,
         ),
     ));
 
