@@ -50,6 +50,9 @@ spec:
         - cat
       tty: true
   volumes:
+    - name: cache
+      persistentVolumeClaim:
+        claimName: cache
     - name: docker
       hostPath:
         path: /var/run/docker.sock
