@@ -1,8 +1,14 @@
 pipeline {
 
   environment {
-    GIT_COMMIT_ID = sh (script: 'git rev-parse --short HEAD ${GIT_COMMIT}', returnStdout: true).trim()
-    GIT_COMMIT_MSG = sh (script: 'git log -1 --pretty=%B ${GIT_COMMIT}', returnStdout: true).trim()
+    PROFILE = "release"
+    TOOLCHAIN = "nightly-2020-10-25"
+
+    GIT_COMMIT_ID = sh (script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+    GIT_COMMIT_MSG = sh (script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+
+    RUSTUP_DIST_SERVER = "https://mirrors.ustc.edu.cn/rust-static"
+    RUSTUP_UPDATE_ROOT = "https://mirrors.ustc.edu.cn/rust-static/rustup"
   }
 
   agent {
@@ -12,6 +18,24 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
+    - name: rust
+      image: rust
+      command:
+        - cat
+      tty: true
+      volumeMounts:
+        - mountPath: /cache/target
+          name: cache
+          subPath: ${env.JOB_NAME}
+        - mountPath: /usr/local/cargo/registry/index
+          name: cache
+          subPath: cargo/registry/index
+        - mountPath: /usr/local/cargo/registry/cache
+          name: cache
+          subPath: cargo/registry/cache
+        - mountPath: /usr/local/cargo/git/db
+          name: cache
+          subPath: cargo/git/db
     - name: image-builder
       image: docker:latest
       command:
@@ -35,6 +59,25 @@ spec:
 
   stages {
 
+    stage('compile') {
+      
+      steps {
+        container('rust') {
+          script {
+
+            sh 'apt-get update && apt-get install -y --no-install-recommends cmake clang'
+
+            sh "rustup toolchain install ${env.TOOLCHAIN}"
+            sh "rustup default ${env.TOOLCHAIN}"
+            sh "rustup target add wasm32-unknown-unknown --toolchain ${env.TOOLCHAIN}"
+
+            sh "ln -s /cache/target ./target"
+            sh "cargo build --${env.PROFILE} --bin automata"
+          }
+        }
+      }
+    }
+
     stage('build and push docker image') {
       
       environment {
@@ -43,18 +86,17 @@ spec:
         REGISTRY_BASE_REPO = credentials('automata-docker-registry-base-repo')
 
         DOCKER_HUB = credentials('automata-docker-hub')
-        DOCKER_HUB_BASE_REPO = "atactr"
       }
 
       steps {
         container('image-builder') {
           script {
 
-            def dockerHubTag = "${env.DOCKER_HUB_BASE_REPO}/automata:${env.GIT_COMMIT_ID}"
+            def dockerHubTag = "atactr/automata:${env.GIT_COMMIT_ID}"
             def registryTag = "${env.REGISTRY_URL}/${env.REGISTRY_BASE_REPO}/automata:${env.GIT_COMMIT_ID}"
 
             echo "build and tag image"
-            sh "docker build -t ${dockerHubTag} ."
+            sh "docker build -t ${dockerHubTag} -f JenkinsDockerfile ./target/${env.PROFILE}"
             sh "docker tag ${dockerHubTag} ${registryTag}"
 
             echo "push image"
