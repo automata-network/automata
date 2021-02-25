@@ -49,3 +49,5 @@ fp-consensus = { git = "https://github.com/automata-network/frontier.git", branc
 fc-rpc = { git = "https://github.com/automata-network/frontier.git", branch = "ljc-update" }
 fp-rpc = { git = "https://github.com/automata-network/frontier.git", branch = "ljc-update" }
 fc-rpc-core = { git = "https://github.com/automata-network/frontier.git", branch = "ljc-update" }
+
+pallet-fulfillment = { path = "../pallets/fulfillment" }

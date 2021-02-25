@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use codec::{Decode, Encode};
-use sp_runtime::RuntimeDebug;
-use sp_std::{prelude::*, str::FromStr};
-
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "std")]
 use serde_json::Value;
+use sp_runtime::RuntimeDebug;
+use sp_std::{prelude::*, str::FromStr};
 
 pub type PropName = Vec<u8>;
 pub type PropValue = Vec<u8>;
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
 pub struct GeodeProperty {
     name: PropName,
@@ -33,6 +35,7 @@ impl GeodeProperty {
     }
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Default, PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
 pub struct GeodeProperties {
     pub props: Vec<GeodeProperty>,
