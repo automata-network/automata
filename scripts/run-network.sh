@@ -43,7 +43,7 @@ do
             BUILD=1
             shift
         ;;
-		--rm)
+        --rm)
             RM=1
             shift;
         ;;
@@ -63,8 +63,9 @@ Options:
 
     --help
         print this help message
+		
 	--rm
-	    remove containers created by the docker-compose file
+        remove containers created by the docker-compose file
 EOF
         exit 1
         ;;
