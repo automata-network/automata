@@ -2,13 +2,9 @@ pipeline {
 
   environment {
     PROFILE = "release"
-    TOOLCHAIN = "nightly-2020-10-25"
 
     GIT_COMMIT_ID = sh (script: 'git rev-parse --short HEAD', returnStdout: true).trim()
     GIT_COMMIT_MSG = sh (script: 'git log -1 --pretty=%B', returnStdout: true).trim()
-
-    RUSTUP_DIST_SERVER = "https://mirrors.ustc.edu.cn/rust-static"
-    RUSTUP_UPDATE_ROOT = "https://mirrors.ustc.edu.cn/rust-static/rustup"
   }
 
   agent {
@@ -19,7 +15,7 @@ kind: Pod
 spec:
   containers:
     - name: rust
-      image: rust
+      image: atactr/automata-builder:nightly-2020-10-25
       command:
         - cat
       tty: true
@@ -42,6 +38,9 @@ spec:
         - cat
       tty: true
       volumeMounts:
+        - mountPath: /cache/target
+          name: cache
+          subPath: ${env.JOB_NAME}
         - mountPath: /var/run/docker.sock
           name: docker
     - name: sshpass
@@ -67,13 +66,6 @@ spec:
       steps {
         container('rust') {
           script {
-
-            sh 'apt-get update && apt-get install -y --no-install-recommends cmake clang'
-
-            sh "rustup toolchain install ${env.TOOLCHAIN}"
-            sh "rustup default ${env.TOOLCHAIN}"
-            sh "rustup target add wasm32-unknown-unknown --toolchain ${env.TOOLCHAIN}"
-
             sh "ln -s /cache/target ./target"
             sh "cargo build --${env.PROFILE} --bin automata"
           }
@@ -87,25 +79,17 @@ spec:
         REGISTRY = credentials('c5425e91-91d8-4084-8011-82c6497cd40a')
         REGISTRY_URL = credentials('automata-docker-registry-url')
         REGISTRY_BASE_REPO = credentials('automata-docker-registry-base-repo')
-
-        DOCKER_HUB = credentials('automata-docker-hub')
       }
 
       steps {
         container('image-builder') {
           script {
-
-            def dockerHubTag = "atactr/automata:${env.GIT_COMMIT_ID}"
             def registryTag = "${env.REGISTRY_URL}/${env.REGISTRY_BASE_REPO}/automata:${env.GIT_COMMIT_ID}"
 
             echo "build and tag image"
-            sh "docker build -t ${dockerHubTag} -f JenkinsDockerfile ./target/${env.PROFILE}"
-            sh "docker tag ${dockerHubTag} ${registryTag}"
+            sh "docker build -t ${registryTag} -f .jenkins/AppDockerfile /cache/target/${env.PROFILE}"
 
             echo "push image"
-            sh "docker login -u $DOCKER_HUB_USR -p $DOCKER_HUB_PSW"
-            sh "docker push ${dockerHubTag}"
-
             sh "docker login ${env.REGISTRY_URL} -u $REGISTRY_USR -p $REGISTRY_PSW"
             sh "docker push ${registryTag}"
           }

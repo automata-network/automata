@@ -1,7 +1,7 @@
 FROM debian:buster-slim as app
 LABEL maintainer "Automata Team"
 
-COPY ./automata /usr/local/bin/automata
+COPY --from=builder /usr/local/bin/automata /usr/local/bin/automata
 
 RUN	useradd -m -u 1000 -U -s /bin/sh -d /automata automata && \
 	mkdir -p /automata/.local/share/automata && \
