@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:experimental
 FROM rust as builder
 LABEL maintainer "Automata Team"
 

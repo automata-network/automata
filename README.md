@@ -28,6 +28,20 @@ Build Wasm and native code:
 cargo build --release
 ```
 
+## Run
+
+Start a local testnet using latest [docker image](https://hub.docker.com/r/atactr/automata):
+
+```bash
+./scripts/run-network.sh
+```
+
+Start a local testnet using locally built image to evaluate local changes:
+
+```bash
+./scripts/run-network.sh --build
+```
+
 ## License
 
 [Apache 2.0](./LICENSE)

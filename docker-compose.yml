@@ -1,0 +1,96 @@
+## Run a network with 2 validators and 1 light node
+##
+## You can directly use docker-compose with this file or use
+## `scripts/run-network.sh` for more advanced usage
+##
+## Environment Variables:
+## - IMAGE: the docker image
+## - CHAIN: chain spec argument, see option `--chain` in `docker run atactr/automata --help`
+##
+## Listening Ports:
+## - validator-a: localhost:9944
+## - validator-b: localhost:9945
+## - light-c: localhost:9946
+
+version: "3.7"
+
+services:
+  validator-a:
+    ports:
+      - "9944:9944"
+      - "9615:9615"
+    image: ${IMAGE:-atactr/automata}
+    networks:
+      - internet
+    command:
+      - "--node-key"
+      - "0000000000000000000000000000000000000000000000000000000000000001"
+      - "--base-path"
+      - "/tmp/alice"
+      - "--chain=${CHAIN:-local}"
+      - "--port"
+      - "30333"
+      - "--alice"
+      - "--validator"
+      - "--bootnodes"
+      - "/dns/validator-b/tcp/30333/p2p/12D3KooWHdiAxVd8uMQR1hGWXccidmfCwLqcMpGwR6QcTP6QRMuD"
+      # Not only bind to localhost.
+      - "--unsafe-ws-external"
+      - "--unsafe-rpc-external"
+      - "--no-telemetry"
+      - "--rpc-cors"
+      - "all"
+
+  validator-b:
+    ports:
+      - "9945:9944"
+    image: ${IMAGE:-atactr/automata}
+    networks:
+      - internet
+    command:
+      - "--node-key"
+      - "0000000000000000000000000000000000000000000000000000000000000002"
+      - "--base-path"
+      - "/tmp/bob"
+      - "--chain=${CHAIN:-local}"
+      - "--port"
+      - "30333"
+      - "--bob"
+      - "--validator"
+      - "--bootnodes"
+      - "/dns/validator-a/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp"
+      - "--no-telemetry"
+      - "--rpc-cors"
+      - "all"
+      # Not only bind to localhost.
+      - "--unsafe-ws-external"
+      - "--unsafe-rpc-external"
+
+  light-c:
+    ports:
+      - "9946:9944"
+    image: ${IMAGE:-atactr/automata}
+    networks:
+      - internet
+    command:
+      - "--node-key"
+      - "0000000000000000000000000000000000000000000000000000000000000003"
+      - "--base-path"
+      - "/tmp/light"
+      - "--chain=${CHAIN:-local}"
+      - "--port"
+      - "30333"
+      - "--light"
+      - "--bootnodes"
+      - "/dns/validator-a/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp"
+      - "--bootnodes"
+      - "/dns/validator-b/tcp/30333/p2p/12D3KooWHdiAxVd8uMQR1hGWXccidmfCwLqcMpGwR6QcTP6QRMuD"
+      - "--no-telemetry"
+      - "--rpc-cors"
+      - "all"
+      # Not only bind to localhost.
+      - "--unsafe-ws-external"
+      - "--unsafe-rpc-external"
+
+networks:
+  internet:
