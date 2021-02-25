@@ -29,16 +29,18 @@ cargo build --release
 ```
 ## Docker-compose
 
-Docker-compose files is providered for settting up an local/staging testnet with 2 validator nodes and 1 lightnode. 
+Docker-compose files is providered for settting up a local testnet with 2 validator nodes and 1 lightnode. 
 
-Names of docker-compose file that ends with `-build.yml` build automata node locally, others pull images from DockerHub.
+Start a local network from remote docker images:
+```
+./scripts/run-network.sh --chain local --image atactr/automata
+```
 
+Start a local network after building native code:
 ```
-docker-compose-local.yml
-docker-compose-staging.yml
-docker-compose-local-build.yml
-docker-compose-staging-build.yml
+./scripts/run-network.sh --chain local --build
 ```
+
 ## License
 
 [Apache 2.0](./LICENSE)
