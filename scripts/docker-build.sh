@@ -48,7 +48,7 @@ else
     ## No docker buildx plugin found, fallback to default docker build command without any cache
     ##
     ## If you need faster build next time, install docker buildx: https://github.com/docker/buildx#installing
-    docker build --tag "${TAG}" .
+    DOCKER_BUILDKIT=1 docker build --tag "${TAG}" .
 fi
 
 
