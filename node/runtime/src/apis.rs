@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
+use automata_primitives::{AccountId, Hash};
 use codec::{Decode, Encode};
+use pallet_fulfillment::Geode;
 use sp_core::{H160, U256};
 use sp_std::vec::Vec;
 
@@ -12,6 +14,7 @@ pub struct EthProposal {
 sp_api::decl_runtime_apis! {
     pub trait FulfillmentApi {
         fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>)>;
+        fn registered_geodes() -> Vec<Geode<AccountId, Hash>>;
     }
 
     pub trait ExpandApi {

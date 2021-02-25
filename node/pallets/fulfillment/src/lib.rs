@@ -13,6 +13,8 @@ use sp_std::prelude::*;
 
 pub use property::{GeodeProperties, GeodeProperty};
 mod slash;
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 pub use slash::{GeodeOffenceTrait, GeodeReport, GeodeReportOffenceHandler};
 
 #[cfg(test)]
@@ -26,6 +28,7 @@ pub const ATTESTOR_REQUIRE: usize = 1;
 pub const TIMELIMIT: u64 = 30;
 
 /// Geode state
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
 pub enum GeodeState {
     /// The init state when provider register the geode.
@@ -39,6 +42,7 @@ pub enum GeodeState {
 }
 
 /// The geode struct shows its status.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
 pub struct Geode<AccountId, Hash> {
     /// Geode id.
@@ -378,6 +382,16 @@ impl<T: Config> Module<T> {
         <Attestors<T>>::iter()
             .map(|(_, attestor)| {
                 res.push((attestor.url.clone(), attestor.pubkey.clone()));
+            })
+            .all(|_| true);
+        res
+    }
+
+    pub fn registered_geodes() -> Vec<GeodeOf<T>> {
+        let mut res = Vec::new();
+        <RegisterGeodes<T>>::iter()
+            .map(|(_, geode)| {
+                res.push(geode.geode_record);
             })
             .all(|_| true);
         res
