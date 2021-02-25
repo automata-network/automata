@@ -24,6 +24,8 @@ IMAGE=automata
 CHAIN=local 
 ## build a new image using current version before running the network
 BUILD=0
+## remove containers created by the docker-compose file
+RM=0
 
 while [[ $# -gt 0 ]]
 do
@@ -41,6 +43,10 @@ do
             BUILD=1
             shift
         ;;
+		--rm)
+            RM=1
+            shift;
+        ;;
         -h|--help)
             cat <<EOF
 Usage: $0 [--chain] [--image]
@@ -57,6 +63,8 @@ Options:
 
     --help
         print this help message
+	--rm
+	    remove containers created by the docker-compose file
 EOF
         exit 1
         ;;
@@ -85,4 +93,10 @@ echo "Chain: $CHAIN"
 export CHAIN
 export IMAGE
 
-docker-compose up
+if [ "$RM" -eq 1 ]
+then
+    echo "Remove containers created by the docker-compose file"
+    docker-compose rm
+else
+    docker-compose up
+fi
