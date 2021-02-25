@@ -25,7 +25,7 @@ mod property;
 mod tests;
 
 pub const ATTESTOR_REQUIRE: usize = 1;
-pub const TIMELIMIT: u64 = 30;
+pub const TIMELIMIT: u64 = u64::max_value();
 
 /// Geode state
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

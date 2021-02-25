@@ -494,6 +494,7 @@ dependencies = [
  "jsonrpc-derive 15.1.0",
  "jsonrpc-pubsub 15.1.0",
  "pallet-contracts-rpc",
+ "pallet-fulfillment",
  "pallet-transaction-payment-rpc",
  "sc-chain-spec",
  "sc-client-api",
