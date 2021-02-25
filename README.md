@@ -27,18 +27,19 @@ Build Wasm and native code:
 ```bash
 cargo build --release
 ```
-## Docker-compose
 
-Docker-compose files is providered for settting up a local testnet with 2 validator nodes and 1 lightnode. 
+## Run
 
-Start a local network from remote docker images:
-```
-./scripts/run-network.sh --chain local --image atactr/automata
+Start a local testnet using latest [docker image](https://hub.docker.com/r/atactr/automata):
+
+```bash
+./scripts/run-network.sh
 ```
 
-Start a local network after building native code:
-```
-./scripts/run-network.sh --chain local --build
+Start a local testnet using locally built image to evaluate local changes:
+
+```bash
+./scripts/run-network.sh --build
 ```
 
 ## License
