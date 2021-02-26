@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "std")]
 use serde_json::Value;
 use sp_runtime::RuntimeDebug;
-use sp_std::{prelude::*, str::FromStr};
+use sp_std::prelude::*;
+#[cfg(feature = "std")]
+use sp_std::str::FromStr;
 
 pub type PropName = Vec<u8>;
 pub type PropValue = Vec<u8>;

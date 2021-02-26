@@ -48,8 +48,8 @@ pub fn sr25519_sign_msg<T: Serialize>(
     let msg_bytes = serde_json::to_vec(&msg).unwrap();
     let signature = sr25519_sign_bytes(prvkey, &msg_bytes)?;
     Ok(Sr25519SignedMsg {
-        msg: msg,
-        signature: signature,
+        msg,
+        signature,
     })
 }
 
