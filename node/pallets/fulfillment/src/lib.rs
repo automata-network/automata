@@ -192,12 +192,12 @@ decl_module! {
             let who = ensure_signed(origin)?;
             if <Geodes<T>>::contains_key(&geode) {
                 let geode_use = <Geodes<T>>::get(&geode).ok_or(Error::<T>::InvalidGeode)?;
-                ensure!(geode_use.provider == Some(who.clone()), Error::<T>::NoRight);
+                ensure!(geode_use.provider == Some(who), Error::<T>::NoRight);
                 ensure!(geode_use.state == GeodeState::Attested, Error::<T>::InvalidGeodeState);
                 <Geodes<T>>::remove(&geode);
             } else if <RegisterGeodes<T>>::contains_key(&geode) {
                 let register_geode = <RegisterGeodes<T>>::get(&geode).ok_or(Error::<T>::InvalidGeode)?;
-                ensure!(register_geode.geode_record.provider == Some(who.clone()), Error::<T>::NoRight);
+                ensure!(register_geode.geode_record.provider == Some(who), Error::<T>::NoRight);
                 ensure!(register_geode.geode_record.state == GeodeState::Registered, Error::<T>::InvalidGeodeState);
                 <RegisterGeodes<T>>::remove(&geode);
             } else {
@@ -347,9 +347,9 @@ decl_module! {
             let mut timeout_list = Vec::new();
             <RegisterGeodes<T>>::iter().map(|(_key, register_geode)|{
                 if register_geode.geode_record.attestors.len() >= ATTESTOR_REQUIRE {
-                    attested_list.push(register_geode.geode_record.clone());
+                    attested_list.push(register_geode.geode_record);
                 } else if now - register_geode.start > TIMELIMIT {
-                    timeout_list.push(register_geode.geode_record.owner.clone());
+                    timeout_list.push(register_geode.geode_record.owner);
                 }
             }).all(|_| true);
             for mut geode_use in attested_list.clone() {
@@ -360,7 +360,7 @@ decl_module! {
             for geode in timeout_list.clone() {
                 <RegisterGeodes<T>>::remove(&geode);
             }
-            if timeout_list.len() > 0 {
+            if !timeout_list.is_empty() {
                 Self::deposit_event(RawEvent::AttestTimeOut(timeout_list));
             }
         }
@@ -381,7 +381,7 @@ impl<T: Config> Module<T> {
         let mut res = Vec::new();
         <Attestors<T>>::iter()
             .map(|(_, attestor)| {
-                res.push((attestor.url.clone(), attestor.pubkey.clone()));
+                res.push((attestor.url.clone(), attestor.pubkey));
             })
             .all(|_| true);
         res
@@ -461,7 +461,7 @@ impl<T: Config> Commodity<T::AccountId> for Module<T> {
             return false;
         }
         let mut geode_use = <Geodes<T>>::get(id).unwrap();
-        match state.clone() {
+        match state {
             GeodeState::Attested => {
                 if geode_use.state != GeodeState::InOrder {
                     return false;
