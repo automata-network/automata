@@ -40,7 +40,7 @@ impl<Offender: Clone> AutomataOffence<Offender> for GeodeOffence<Offender> {
     type SpecialId = GeodeInfo;
 
     fn kind(&self) -> Kind {
-        return Self::ID;
+        Self::ID
     }
 
     fn offender(&self) -> Offender {
