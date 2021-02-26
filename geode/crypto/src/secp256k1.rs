@@ -63,10 +63,7 @@ pub fn secp256k1_sign_msg<T: Serialize>(
 ) -> Result<Secp256k1SignedMsg<T>, CryptoError> {
     let msg_bytes = serde_json::to_vec(&msg).unwrap();
     let signature = secp256k1_sign_bytes(prvkey, &msg_bytes)?;
-    Ok(Secp256k1SignedMsg {
-        msg,
-        signature,
-    })
+    Ok(Secp256k1SignedMsg { msg, signature })
 }
 
 pub fn secp256k1_sign_bytes(
