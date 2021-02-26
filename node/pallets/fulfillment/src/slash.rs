@@ -22,8 +22,8 @@ impl<Offender: Clone> GeodeOffenceTrait<Offender> for GeodeOffence<Offender> {
             geoid: GeodeIdd::<Offender> {
                 offline_time: blocknum,
                 start_time: 0,
-                provider: provider,
-                user: user,
+                provider,
+                user,
             },
         }
     }
