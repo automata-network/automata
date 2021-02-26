@@ -18,6 +18,7 @@ services:
   validator-a:
     ports:
       - "9944:9944"
+      - "9933:9933"
       - "9615:9615"
     image: ${IMAGE:-atactr/automata}
     networks:
@@ -44,6 +45,7 @@ services:
   validator-b:
     ports:
       - "9945:9944"
+      - "9934:9933"
     image: ${IMAGE:-atactr/automata}
     networks:
       - internet
@@ -69,6 +71,7 @@ services:
   light-c:
     ports:
       - "9946:9944"
+      - "9935:9933"
     image: ${IMAGE:-atactr/automata}
     networks:
       - internet
