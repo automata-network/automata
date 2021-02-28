@@ -33,7 +33,7 @@ jobs:
         run: |
           echo 'DOCKER_TAGS<<EOF' >> $GITHUB_ENV
           echo "${DOCKER_REPO}:${GITHUB_SHA::8}" >> $GITHUB_ENV
-          if [ "${GITHUB_REF}" = "ref/heads/main" ]
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]
           then
             echo "${DOCKER_REPO}:latest" >> $GITHUB_ENV
           fi
