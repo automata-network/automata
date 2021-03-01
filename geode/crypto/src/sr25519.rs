@@ -47,10 +47,7 @@ pub fn sr25519_sign_msg<T: Serialize>(
 ) -> Result<Sr25519SignedMsg<T>, CryptoError> {
     let msg_bytes = serde_json::to_vec(&msg).unwrap();
     let signature = sr25519_sign_bytes(prvkey, &msg_bytes)?;
-    Ok(Sr25519SignedMsg {
-        msg: msg,
-        signature: signature,
-    })
+    Ok(Sr25519SignedMsg { msg, signature })
 }
 
 pub fn sr25519_sign_bytes(

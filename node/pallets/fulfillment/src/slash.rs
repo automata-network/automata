@@ -22,8 +22,8 @@ impl<Offender: Clone> GeodeOffenceTrait<Offender> for GeodeOffence<Offender> {
             geoid: GeodeIdd::<Offender> {
                 offline_time: blocknum,
                 start_time: 0,
-                provider: provider,
-                user: user,
+                provider,
+                user,
             },
         }
     }
@@ -40,7 +40,7 @@ impl<Offender: Clone> AutomataOffence<Offender> for GeodeOffence<Offender> {
     type SpecialId = GeodeInfo;
 
     fn kind(&self) -> Kind {
-        return Self::ID;
+        Self::ID
     }
 
     fn offender(&self) -> Offender {

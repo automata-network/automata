@@ -15,5 +15,5 @@ pub fn enclave_get_sk_key(ra_context: sgx_ra_context_t) -> Result<Aes128Key, Cry
             &mut key
         ))?;
     };
-    Ok(Aes128Key { key: key })
+    Ok(Aes128Key { key })
 }

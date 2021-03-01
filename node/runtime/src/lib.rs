@@ -28,6 +28,7 @@ use frame_system::{
 use pallet_evm::{
     Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner,
 };
+use pallet_fulfillment::Geode;
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -1011,6 +1012,10 @@ impl_runtime_apis! {
     impl apis::FulfillmentApi<Block> for Runtime {
         fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>)> {
             Fulfillment::attestor_list()
+        }
+
+        fn registered_geodes() -> Vec<Geode<AccountId, Hash>> {
+            Fulfillment::registered_geodes()
         }
     }
 

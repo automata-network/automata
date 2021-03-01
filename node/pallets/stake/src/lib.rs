@@ -459,9 +459,8 @@ impl<T: Config, O: AutomataOffence<T::AccountId>>
 
         let extra_slash = offence.slash(current_offence, total_offence, <SlashRule>::get());
 
-        if let Ok(_) = Self::on_offence(offender_detail, extra_slash) {
-        } else {
-        } //TODO:: Save the failed slash
+        // TODO: handle result
+        Self::on_offence(offender_detail, extra_slash).expect("failed");
 
         Ok(())
     }

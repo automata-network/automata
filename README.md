@@ -1,4 +1,4 @@
-[![Rust](../../workflows/Rust/badge.svg)](../../actions?query=workflow%3ARust)
+[![Rust](../../workflows/Rust/badge.svg)](../../actions?query=workflow%3ARust+branch%3Amain) [![Docker](../../workflows/Docker/badge.svg)](../../actions?query=workflow%3ADocker+branch%3Amain)
 # Automata
 
 ## Build
@@ -26,6 +26,20 @@ Build Wasm and native code:
 
 ```bash
 cargo build --release
+```
+
+## Run
+
+Start a local testnet using latest [docker image](https://hub.docker.com/r/atactr/automata):
+
+```bash
+./scripts/run-network.sh
+```
+
+Start a local testnet using locally built image to evaluate local changes:
+
+```bash
+./scripts/run-network.sh --build
 ```
 
 ## License

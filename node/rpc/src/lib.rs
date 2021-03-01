@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use automata_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
+use automata_runtime::apis::FulfillmentApi as FulfillmentRuntimeApi;
 use fc_rpc_core::types::PendingTransactions;
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use sc_client_api::{
@@ -22,6 +23,8 @@ use sp_core::H256;
 use sp_runtime::traits::BlakeTwo256;
 use sp_transaction_pool::TransactionPool;
 use std::{fmt, sync::Arc};
+
+pub mod fulfillment;
 
 /// Light client extra dependencies.
 pub struct LightDeps<C, F, P> {
@@ -91,6 +94,7 @@ where
     C::Api: BlockBuilder<Block>,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
     C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
+    C::Api: FulfillmentRuntimeApi<Block>,
     <C::Api as sp_api::ApiErrorExt>::Error: fmt::Debug,
     P: TransactionPool<Block = Block> + 'static,
     H256: From<<P as TransactionPool>::Hash>,
@@ -100,6 +104,7 @@ where
         HexEncodedIdProvider, NetApi, NetApiServer, Web3Api, Web3ApiServer,
     };
 
+    use fulfillment::FulfillmentApi;
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
     use substrate_frame_rpc_system::{FullSystem, SystemApi};
 
@@ -173,6 +178,10 @@ where
             HexEncodedIdProvider::default(),
             Arc::new(subscription_task_executor),
         ),
+    )));
+
+    io.extend_with(FulfillmentApi::to_delegate(fulfillment::Fulfillment::new(
+        client.clone(),
     )));
 
     match command_sink {
