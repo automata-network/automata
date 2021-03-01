@@ -1,4 +1,4 @@
-[![Rust](../../workflows/Rust/badge.svg)](../../actions?query=workflow%3ARust)
+[![Rust](../../workflows/Rust/badge.svg)](../../actions?query=workflow%3ARust+branch%3Amain) [![Docker](../../workflows/Docker/badge.svg)](../../actions?query=workflow%3ADocker+branch%3Amain)
 # Automata
 
 ## Build

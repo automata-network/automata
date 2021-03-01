@@ -20,7 +20,7 @@ use std::vec::Vec;
 
 pub fn aes128cmac_mac(p_key: &Aes128Key, p_data: &[u8]) -> Result<Aes128Mac, CryptoError> {
     match rsgx_rijndael128_cmac_slice(&p_key.key, p_data) {
-        Ok(mac) => Ok(Aes128Mac { mac: mac }),
+        Ok(mac) => Ok(Aes128Mac { mac }),
         Err(s) => Err(CryptoError::SgxError(s.from_key(), format!("{}", s))),
     }
 }
@@ -52,9 +52,9 @@ pub fn aes128gcm_encrypt(
     };
 
     Ok(Aes128EncryptedMsg {
-        iv: iv,
-        mac: Aes128Mac { mac: mac },
-        cipher: cipher,
+        iv,
+        mac: Aes128Mac { mac },
+        cipher,
     })
 }
 

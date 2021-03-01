@@ -38,16 +38,18 @@ else
     CACHE_FROM="type=registry,ref=atactr/automata:latest"
 fi
 
+BUILDER=automata-docker-builder
+
 if docker buildx >/dev/null 2>&1
 then
-    ## Create automata-docker-builder instance for buildx
-    docker buildx inspect automata-docker-builder >/dev/null 2>&1 || docker buildx create --driver docker-container --name automata-docker-builder --use
+    ## Create builder instance for buildx
+    docker buildx inspect "${BUILDER}" >/dev/null 2>&1 || docker buildx create --driver docker-container --name "${BUILDER}" --use
     ## Build with buildx to allow cross-build cache
-    docker buildx build --cache-from="${CACHE_FROM}" --cache-to="type=local,mode=max,dest=${CACHE_DIR}" --tag "${TAG}" --load .
+    docker buildx build --builder "${BUILDER}" --cache-from="${CACHE_FROM}" --cache-to="type=local,mode=max,dest=${CACHE_DIR}" --tag "${TAG}" --load .
 else
-    ## No docker buildx plugin found, fallback to default docker build command without any cache
+    ## No docker buildx plugin found, fallback to default docker build command
     ##
-    ## If you need faster build next time, install docker buildx: https://github.com/docker/buildx#installing
+    ## Use DOCKER_BUILDKIT environment variable for backward compatiblity.
     DOCKER_BUILDKIT=1 docker build --tag "${TAG}" .
 fi
 

@@ -1,6 +1,5 @@
 [workspace]
 
-
 ## The default members are packages with dependencies that are trivial to install
 ##
 ## These members will be selected when running `cargo check` or `cargo build` directly
@@ -31,7 +30,6 @@ members = [
     "geode/macros",
     "geode/sgx-ra",
 ]
-
 
 [profile.release]
 panic = 'unwind'
