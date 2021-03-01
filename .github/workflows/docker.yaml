@@ -82,7 +82,7 @@ jobs:
         env:
           KEEP_STORAGE: "1073741824" # this is 1GB
         run: |
-          docker buildx --builder ${BUILDX_BUILDER} du --verbose
+          docker buildx --builder ${BUILDX_BUILDER} du
           docker buildx --builder ${BUILDX_BUILDER} prune --force --keep-storage ${KEEP_STORAGE}
           docker run --rm --volumes-from "${BUILDX_BUILDER_CONTAINER}" \
             -v /tmp/buildkit-cache:/backup \
