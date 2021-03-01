@@ -34,9 +34,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Prepare Environment Variables
-        env:
-          BUILDX_BUILDER: ${{ steps.docker-builder.outputs.name }}
-          BUILDX_BUILDER_CONTAINER: buildx_buildkit_${{ steps.docker-builder.outputs.name }}0
         run: |
           echo 'DOCKER_TAGS<<EOF' >> $GITHUB_ENV
           echo "${DOCKER_REPO}:${GITHUB_SHA::8}" >> $GITHUB_ENV
@@ -45,6 +42,8 @@ jobs:
             echo "${DOCKER_REPO}:latest" >> $GITHUB_ENV
           fi
           echo 'EOF' >> $GITHUB_ENV
+          echo "BUILDX_BUILDER=${{ steps.docker-builder.outputs.name }}" >> $GITHUB_ENV
+          echo "BUILDX_BUILDER_CONTAINER=buildx_buildkit_${{ steps.docker-builder.outputs.name }}0" >> $GITHUB_ENV
       - name: Restore buildx cache
         # Handle cache mount in buildx
         # See https://github.com/docker/buildx/issues/156#issuecomment-537492942
@@ -52,8 +51,10 @@ jobs:
         run: |
           docker buildx stop --builder "${BUILDX_BUILDER}"
           docker run --rm --volumes-from "${BUILDX_BUILDER_CONTAINER}" \
-            -v /tmp/buildkit-cache:/backup \
-            alpine /bin/sh -c "cd / && tar xf /backup/backup.tar.gz"
+            -v /tmp/buildx-cache:/backup \
+            alpine:3.10 /bin/sh -c "cd / && tar xf /backup/backup.tar.gz"
+          docker buildx inspect --builder "${BUILDX_BUILDER}" --bootstrap
+          docker buildx --builder "${BUILDX_BUILDER}" du --verbose
       - name: Build with cache and push images
         uses: docker/build-push-action@v2
         id: docker_build
@@ -63,7 +64,7 @@ jobs:
           cache-from: |
             type=registry,ref=${{ env.DOCKER_REPO }}:builder
           cache-to: |
-            type=registry,dest=/tmp/buildx-cache-cross-step,mode=max
+            type=local,dest=/tmp/buildx-cache-cross-step,mode=max
           tags: |
             ${{ env.DOCKER_TAGS }}
       - name: Update registry cache
@@ -82,11 +83,19 @@ jobs:
         env:
           KEEP_STORAGE: "1073741824" # this is 1GB
         run: |
-          docker buildx --builder ${BUILDX_BUILDER} du
-          docker buildx --builder ${BUILDX_BUILDER} prune --force --keep-storage ${KEEP_STORAGE}
+          echo "Before pruning"
+          docker buildx --builder "${BUILDX_BUILDER}" du --verbose
+          echo "Start pruning"
+          docker buildx --builder "${BUILDX_BUILDER}" prune --force --filter type=frontend
+          docker buildx --builder "${BUILDX_BUILDER}" prune --force --filter type=regular
+          docker buildx --builder "${BUILDX_BUILDER}" prune --force --filter type=source.local 
+          docker buildx --builder "${BUILDX_BUILDER}" prune --force --keep-storage ${KEEP_STORAGE}
+          echo "After pruning"
+          docker buildx --builder "${BUILDX_BUILDER}" du --verbose
+          echo "Backup buildx cache"
           docker run --rm --volumes-from "${BUILDX_BUILDER_CONTAINER}" \
-            -v /tmp/buildkit-cache:/backup \
-            alpine /bin/sh -c "cd / && tar cf /backup/backup.tar.gz /var/lib/buildkit"
+            -v /tmp/buildx-cache:/backup \
+            alpine:3.10 /bin/sh -c "cd / && tar cf /backup/backup.tar.gz /var/lib/buildkit"
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
