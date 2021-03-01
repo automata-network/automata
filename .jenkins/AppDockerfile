@@ -1,7 +1,11 @@
 FROM debian:buster-slim as app
 LABEL maintainer "Automata Team"
 
-RUN apt-get install -y --no-install-recommends curl
+RUN echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian/ buster main contrib non-free" > sources.list  && \
+	echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian/ buster-updates main contrib non-free" >> sources.list  && \
+	echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian/ buster-backports main contrib non-free" >> sources.list  && \
+	echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian-security buster/updates main contrib non-free" >> sources.list  && \
+	apt-get update && apt-get install -y --no-install-recommends curl
 
 COPY ./automata /usr/local/bin/automata
 
