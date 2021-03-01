@@ -1,6 +1,8 @@
 FROM debian:buster-slim as app
 LABEL maintainer "Automata Team"
 
+RUN apt-get install -y --no-install-recommends curl
+
 COPY ./automata /usr/local/bin/automata
 
 RUN	useradd -m -u 1000 -U -s /bin/sh -d /automata automata && \

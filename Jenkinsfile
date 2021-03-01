@@ -15,7 +15,7 @@ kind: Pod
 spec:
   containers:
     - name: rust
-      image: atactr/automata-builder:nightly-2020-10-25
+      image: chansonchan/automata-builder:nightly-2020-10-25
       command:
         - cat
       tty: true
@@ -38,9 +38,6 @@ spec:
         - cat
       tty: true
       volumeMounts:
-        - mountPath: /cache/target
-          name: cache
-          subPath: ${env.JOB_NAME}
         - mountPath: /var/run/docker.sock
           name: docker
     - name: sshpass
@@ -68,6 +65,7 @@ spec:
           script {
             sh "ln -s /cache/target ./target"
             sh "cargo build --${env.PROFILE} --bin automata"
+            sh "cp ./target/${PROFILE}/automata ."
           }
         }
       }
@@ -87,7 +85,7 @@ spec:
             def registryTag = "${env.REGISTRY_URL}/${env.REGISTRY_BASE_REPO}/automata:${env.GIT_COMMIT_ID}"
 
             echo "build and tag image"
-            sh "docker build -t ${registryTag} -f .jenkins/AppDockerfile /cache/target/${env.PROFILE}"
+            sh "docker build -t ${registryTag} -f .jenkins/AppDockerfile ."
 
             echo "push image"
             sh "docker login ${env.REGISTRY_URL} -u $REGISTRY_USR -p $REGISTRY_PSW"
