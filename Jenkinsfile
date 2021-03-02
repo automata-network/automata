@@ -26,7 +26,7 @@ pipeline {
     )
     booleanParam(
       description: "Keep chain's data after delete (Only effective when deploying)",
-      name: 'keepDataAfterDelete'
+      name: 'keepDataAfterDelete',
       defaultValue: true
     )
   }
