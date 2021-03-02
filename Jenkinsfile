@@ -160,7 +160,7 @@ spec:
               }
 
               def syncNodes = "\"{", first = true
-              for (item in moduleNames.tokenize('\n')) {
+              for (item in params.syncNodes.tokenize('\n')) {
                 if (first) {
                   syncNodes += item
                   first = false
