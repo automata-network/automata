@@ -18,7 +18,7 @@ pipeline {
     choice(
       description: 'Choose the number of light nodes to run',
       name: 'lightCount',
-      choices: [null, 0, 1, 2, 3, 4]
+      choices: ['', '0', '1', '2', '3', '4']
     )
     booleanParam(
       description: "Keep chain's data after delete (Only effective when deploying)",
@@ -138,19 +138,19 @@ spec:
               sh "sshpass -p $K8S_MASTER_PSW ssh -T -o StrictHostKeyChecking=no $K8S_MASTER_USR@$K8S_MASTER_IP" +
                       " \"helm uninstall -n ${env.NAMESPACE} ${env.BRANCH_NAME} .jenkins/automata-chart/\""
             } else {
-              
+
               def operate, additionalSet = ""
               if (params.operation == "deploy") {
                 operate = "install"
 
                 if (params.keepDataAfterDelete != null) {
-                  additionalSet += "--set chain.lightCount=${params.keepDataAfterDelete} "
+                  additionalSet += "--set chain.keepData=${params.keepDataAfterDelete} "
                 }
               } else {
                 operate = "upgrade"
               }
 
-              if (params.lightCount != null) {
+              if (params.lightCount != '') {
                 additionalSet += "--set chain.lightCount=${params.lightCount} "
               }
 
