@@ -1,0 +1,11 @@
+# storageClassName: 
+
+# image: 
+# imagePullSecrets: 
+
+hostBase: cloud.ata.network
+
+chain:
+  # keySecret: 
+  keepData: false
+  lightCount: 0

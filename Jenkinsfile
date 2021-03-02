@@ -5,8 +5,26 @@ pipeline {
 
     GIT_COMMIT_ID = sh (script: 'git rev-parse --short HEAD', returnStdout: true).trim()
     GIT_COMMIT_MSG = sh (script: 'git log -1 --pretty=%B', returnStdout: true).trim()
-  }
 
+    REGISTRY_URL = credentials('automata-docker-registry-url')
+    REGISTRY_BASE_REPO = credentials('automata-docker-registry-base-repo')
+  }
+  parameters {
+    choice(
+      description: 'Choose your operation',
+      name: 'operation',
+      choices: ['deploy', 'upgrade', 'delete']
+    )
+    choice(
+      description: 'Choose the number of light nodes to run',
+      name: 'lightCount',
+      choices: [0, 1, 2, 3, 4]
+    )
+    booleanParam(
+      description: "Keep chain's data after delete (Only effective when deploying)",
+      name: 'keepDataAfterDelete'
+    )
+  }
   agent {
     kubernetes {
       yaml """
@@ -59,10 +77,15 @@ spec:
   stages {
 
     stage('compile') {
-      
+      when {
+        beforeAgent true
+        expression { return params.operation != "delete" }
+      }
+
       steps {
         container('rust') {
           script {
+            echo "${GIT_COMMIT_MSG}"
             sh "ln -s /cache/target ./target"
             sh "cargo build --${env.PROFILE} --bin automata"
             sh "cp ./target/${PROFILE}/automata ."
@@ -72,11 +95,13 @@ spec:
     }
 
     stage('build and push docker image') {
-      
+      when {
+        beforeAgent true
+        expression { return params.operation != "delete" }
+      }
+
       environment {
         REGISTRY = credentials('c5425e91-91d8-4084-8011-82c6497cd40a')
-        REGISTRY_URL = credentials('automata-docker-registry-url')
-        REGISTRY_BASE_REPO = credentials('automata-docker-registry-base-repo')
       }
 
       steps {
@@ -95,14 +120,48 @@ spec:
       }
     }
 
-    stage('deploy') {
+    stage('operate') {
       environment {
         K8S_MASTER_IP = credentials('jiaxing-k8s-master-ip')
         K8S_MASTER = credentials('381816aa-abe9-4a66-8842-5f141dff42b4')
+
+        STORAGE_CLASS_NAME = credentials('automata-storageClassName')
+        IMAGE_PULL_SECRETS = credentials('automata-imagePullSecrets')
+        CHAIN_KEY_SECRET = credentials('automata-chainKeySecret')
+        NAMESPACE = credentials('automata-namespace')
       }
       steps {
         container('sshpass') {
-            // todo
+          script {
+
+            if (params.operation == "delete") {
+              sh "sshpass -p $K8S_MASTER_PSW ssh -T -o StrictHostKeyChecking=no $K8S_MASTER_USR@$K8S_MASTER_IP" +
+                      " \"helm uninstall -n ${env.NAMESPACE} ${env.BRANCH_NAME} .jenkins/automata-chart/\""
+            } else {
+              def operate
+              if (params.operation == "deploy") {
+                operate = "install"
+              } else {
+                operate = "upgrade"
+              }
+
+              def additionalSet = ""
+              if (params.lightCount != null) {
+                additionalSet += "--set chain.lightCount=${params.lightCount} "
+              }
+              if (params.keepDataAfterDelete != null) {
+                additionalSet += "--set chain.lightCount=${params.keepDataAfterDelete} "
+              }
+
+              sh "sshpass -p $K8S_MASTER_PSW ssh -T -o StrictHostKeyChecking=no $K8S_MASTER_USR@$K8S_MASTER_IP" +
+                      " \"helm install --atomic -n ${env.NAMESPACE} ${additionalSet}" +
+                      "--set storageClassName=${env.STORAGE_CLASS_NAME} " +
+                      "--set image=${env.REGISTRY_URL}/${env.REGISTRY_BASE_REPO}/automata:${env.GIT_COMMIT_ID} " +
+                      "--set imagePullSecrets=${env.IMAGE_PULL_SECRETS} " +
+                      "--set chain.keySecret=${env.CHAIN_KEY_SECRET} " +
+                      "${env.BRANCH_NAME} .jenkins/automata-chart/\""
+            }
+          }
         }
       }
     }

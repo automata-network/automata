@@ -1,12 +1,6 @@
 FROM debian:buster-slim as app
 LABEL maintainer "Automata Team"
 
-RUN echo "deb http://mirrors.aliyun.com/debian/ buster main non-free contrib" > /etc/apt/sources.list  && \
-	echo "deb http://mirrors.aliyun.com/debian-security buster/updates main" >> /etc/apt/sources.list  && \
-	echo "deb http://mirrors.aliyun.com/debian/ buster-updates main non-free contrib" >> /etc/apt/sources.list  && \
-	echo "deb http://mirrors.aliyun.com/debian/ buster-backports main non-free contrib" >> /etc/apt/sources.list  && \
-	apt-get update && apt-get install -y --no-install-recommends curl
-
 COPY ./automata /usr/local/bin/automata
 
 RUN	useradd -m -u 1000 -U -s /bin/sh -d /automata automata && \
