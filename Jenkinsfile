@@ -13,7 +13,11 @@ pipeline {
     choice(
       description: 'Choose your operation',
       name: 'operation',
-      choices: ['deploy', 'upgrade', 'delete']
+      choices: ['deploy', 'upgrade', 'upgrade-skip-compile', 'delete']
+    )
+    text(
+      description: 'Empty means insertKey, not empty will sync extern chain data',
+      name: 'syncNodes'
     )
     choice(
       description: 'Choose the number of light nodes to run',
@@ -23,6 +27,7 @@ pipeline {
     booleanParam(
       description: "Keep chain's data after delete (Only effective when deploying)",
       name: 'keepDataAfterDelete'
+      defaultValue: true
     )
   }
   agent {
@@ -79,7 +84,7 @@ spec:
     stage('compile') {
       when {
         beforeAgent true
-        expression { return params.operation != "delete" }
+        expression { params.operation ==~ /(deploy|upgrade)/ }
       }
 
       steps {
@@ -97,7 +102,7 @@ spec:
     stage('build and push docker image') {
       when {
         beforeAgent true
-        expression { return params.operation != "delete" }
+        expression { params.operation ==~ /(deploy|upgrade)/ }
       }
 
       environment {
@@ -136,7 +141,7 @@ spec:
 
             if (params.operation == "delete") {
               sh "sshpass -p $K8S_MASTER_PSW ssh -T -o StrictHostKeyChecking=no $K8S_MASTER_USR@$K8S_MASTER_IP" +
-                      " \"helm uninstall -n ${env.NAMESPACE} ${env.BRANCH_NAME}\""
+                      " \"helm uninstall -n ${env.NAMESPACE} ata\""
             } else {
 
               def operate, additionalSet = ""
@@ -154,7 +159,18 @@ spec:
                 additionalSet += "--set chain.lightCount=${params.lightCount} "
               }
 
-              sh "sshpass -p $K8S_MASTER_PSW scp -o StrictHostKeyChecking=no -r .jenkins/automata-chart $K8S_MASTER_USR@$K8S_MASTER_IP:/tmp/automata-chart-${env.BRANCH_NAME}"
+              def syncNodes = "\"{", first = true
+              for (item in moduleNames.tokenize('\n')) {
+                if (first) {
+                  syncNodes += item
+                  first = false
+                } else {
+                  syncNodes += ", ${item}"
+                }
+              }
+              syncNodes += "}\""
+
+              sh "sshpass -p $K8S_MASTER_PSW scp -o StrictHostKeyChecking=no -r .jenkins/automata-chart $K8S_MASTER_USR@$K8S_MASTER_IP:/tmp/automata-chart"
 
               sh "sshpass -p $K8S_MASTER_PSW ssh -T -o StrictHostKeyChecking=no $K8S_MASTER_USR@$K8S_MASTER_IP" +
                       " \"helm ${operate} --atomic -n ${env.NAMESPACE} ${additionalSet}" +
@@ -162,7 +178,8 @@ spec:
                       "--set image=${env.REGISTRY_URL}/${env.REGISTRY_BASE_REPO}/automata:${env.GIT_COMMIT_ID} " +
                       "--set imagePullSecrets=${env.IMAGE_PULL_SECRETS} " +
                       "--set chain.keySecret=${env.CHAIN_KEY_SECRET} " +
-                      "${env.BRANCH_NAME} /tmp/automata-chart-${env.BRANCH_NAME} && rm -rf /tmp/automata-chart-${env.BRANCH_NAME}\""
+                      "--set chain.syncNodes=${syncNodes} " +
+                      "ata /tmp/automata-chart && rm -rf /tmp/automata-chart\""
             }
           }
         }

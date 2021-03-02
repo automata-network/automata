@@ -6,6 +6,7 @@
 hostBase: cloud.ata.network
 
 chain:
+  syncNodes: []
   # keySecret: 
-  keepData: false
+  keepData: true
   lightCount: 0

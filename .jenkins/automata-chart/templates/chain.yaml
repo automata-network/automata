@@ -41,13 +41,14 @@ spec:
       targetPort: ws
     - name: p2p
       port: 30333
+      nodePort: {{ add 30330 $index }}
       targetPort: p2p
   selector:
     ata.network/profile: release
     ata.network/chain: staging
     ata.network/name: {{ $.Release.Name }}
     ata.network/index: {{ quote $index }}
-  type: ClusterIP
+  type: NodePort
 
 ---
 apiVersion: apps/v1
@@ -69,7 +70,7 @@ spec:
       labels:
         <<: *nodeLabels
     spec:
-      {{- if le $index 4 }}
+      {{- if and (le $index 4) (empty $.Values.chain.syncNodes) }}
       initContainers:
         -
           env:
@@ -112,14 +113,20 @@ spec:
               /usr/local/bin/automata
               --chain=staging
               --node-key 000000000000000000000000000000000000000000000000000000000000000{{ $index }} 
+            {{- if $.Values.chain.syncNodes }}
+              {{- range $.Values.chain.syncNodes }}
+              --bootnodes {{ . }}
+              {{- end }}
+            {{- else }}
               --bootnodes /dns/{{ $.Release.Name }}-node-1/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp
               --bootnodes /dns/{{ $.Release.Name }}-node-2/tcp/30333/p2p/12D3KooWHdiAxVd8uMQR1hGWXccidmfCwLqcMpGwR6QcTP6QRMuD
               --bootnodes /dns/{{ $.Release.Name }}-node-3/tcp/30333/p2p/12D3KooWSCufgHzV4fCwRijfH2k3abrpAJxTKxEvN1FDuRXA2U9x
               --bootnodes /dns/{{ $.Release.Name }}-node-4/tcp/30333/p2p/12D3KooWSsChzF81YDUKpe9Uk5AHV5oqAaXAcWNSPYgoLauUk4st
+            {{- end }}
               --base-path /chain-base
               --keystore-path /chain-base/keystore
               --port=30333
-            {{- if le $index 4 }}
+            {{- if and (le $index 4) (empty $.Values.chain.syncNodes) }}
               --validator
             {{- else }}
               --light
