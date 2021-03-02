@@ -157,7 +157,7 @@ spec:
               sh "sshpass -p $K8S_MASTER_PSW scp -o StrictHostKeyChecking=no -r .jenkins/automata-chart $K8S_MASTER_USR@$K8S_MASTER_IP:/tmp/automata-chart-${env.BRANCH_NAME}"
 
               sh "sshpass -p $K8S_MASTER_PSW ssh -T -o StrictHostKeyChecking=no $K8S_MASTER_USR@$K8S_MASTER_IP" +
-                      " \"helm install --atomic -n ${env.NAMESPACE} ${additionalSet}" +
+                      " \"helm ${operate} --atomic -n ${env.NAMESPACE} ${additionalSet}" +
                       "--set storageClassName=${env.STORAGE_CLASS_NAME} " +
                       "--set image=${env.REGISTRY_URL}/${env.REGISTRY_BASE_REPO}/automata:${env.GIT_COMMIT_ID} " +
                       "--set imagePullSecrets=${env.IMAGE_PULL_SECRETS} " +
