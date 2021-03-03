@@ -169,6 +169,10 @@ spec:
                 }
               }
               syncNodes += "}\""
+              
+              if (!first) {
+                additionalSet += "--set chain.syncNodes=${syncNodes} "
+              }
 
               sh "sshpass -p $K8S_MASTER_PSW scp -o StrictHostKeyChecking=no -r .jenkins/automata-chart $K8S_MASTER_USR@$K8S_MASTER_IP:/tmp/automata-chart"
 
@@ -178,7 +182,6 @@ spec:
                       "--set image=${env.REGISTRY_URL}/${env.REGISTRY_BASE_REPO}/automata:${env.GIT_COMMIT_ID} " +
                       "--set imagePullSecrets=${env.IMAGE_PULL_SECRETS} " +
                       "--set chain.keySecret=${env.CHAIN_KEY_SECRET} " +
-                      "--set chain.syncNodes=${syncNodes} " +
                       "ata /tmp/automata-chart && rm -rf /tmp/automata-chart\""
             }
           }
