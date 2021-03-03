@@ -93,9 +93,9 @@ spec:
     stage('compile') {
       when {
         beforeAgent true
-        anyOf {
+        allOf {
           expression { params.operation ==~ /(deploy|upgrade)/ }
-          expression { params.image }
+          expression { return params.image ? false : true }
         }
       }
 
@@ -114,9 +114,9 @@ spec:
     stage('build and push docker image') {
       when {
         beforeAgent true
-        anyOf {
+        allOf {
           expression { params.operation ==~ /(deploy|upgrade)/ }
-          expression { params.image }
+          expression { return params.image ? false : true }
         }
       }
 
