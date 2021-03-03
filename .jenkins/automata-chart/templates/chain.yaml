@@ -69,7 +69,7 @@ spec:
       labels:
         <<: *nodeLabels
     spec:
-      {{- if and (le $index 4) (empty $.Values.chain.syncNodes) }}
+      {{- if and (le $index 4) $.Values.chain.insertKey }}
       initContainers:
         -
           env:
@@ -127,7 +127,7 @@ spec:
             {{- if and (le $index 4) (empty $.Values.chain.syncNodes) }}
               --validator
             {{- else }}
-              --light
+              --pruning=archive
             {{- end }}
               --unsafe-ws-external 
               --unsafe-rpc-external 

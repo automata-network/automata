@@ -15,8 +15,12 @@ pipeline {
       name: 'operation',
       choices: ['deploy', 'upgrade', 'upgrade-skip-compile', 'delete']
     )
+    string(
+      description: 'Skip compile, specify image to deploy',
+      name: 'image'
+    )
     text(
-      description: 'Empty means insertKey, not empty will sync extern chain data',
+      description: 'Extern nodes',
       name: 'syncNodes'
     )
     choice(
@@ -27,6 +31,11 @@ pipeline {
     booleanParam(
       description: "Keep chain's data after delete (Only effective when deploying)",
       name: 'keepDataAfterDelete',
+      defaultValue: true
+    )
+    booleanParam(
+      description: "Insert key to validator",
+      name: 'insertKey',
       defaultValue: true
     )
   }
@@ -84,7 +93,10 @@ spec:
     stage('compile') {
       when {
         beforeAgent true
-        expression { params.operation ==~ /(deploy|upgrade)/ }
+        anyOf {
+          expression { params.operation ==~ /(deploy|upgrade)/ }
+          expression { params.image }
+        }
       }
 
       steps {
@@ -102,7 +114,10 @@ spec:
     stage('build and push docker image') {
       when {
         beforeAgent true
-        expression { params.operation ==~ /(deploy|upgrade)/ }
+        anyOf {
+          expression { params.operation ==~ /(deploy|upgrade)/ }
+          expression { params.image }
+        }
       }
 
       environment {
@@ -174,14 +189,22 @@ spec:
                 additionalSet += "--set chain.syncNodes=${syncNodes} "
               }
 
+              def image = "${env.REGISTRY_URL}/${env.REGISTRY_BASE_REPO}/automata:${env.GIT_COMMIT_ID}"
+              if (params.image) {
+                image = params.image
+
+              } else {
+                additionalSet += "--set imagePullSecrets=${env.IMAGE_PULL_SECRETS} "
+              }
+
               sh "sshpass -p $K8S_MASTER_PSW scp -o StrictHostKeyChecking=no -r .jenkins/automata-chart $K8S_MASTER_USR@$K8S_MASTER_IP:/tmp/automata-chart"
 
               sh "sshpass -p $K8S_MASTER_PSW ssh -T -o StrictHostKeyChecking=no $K8S_MASTER_USR@$K8S_MASTER_IP" +
                       " \"helm ${operate} --atomic -n ${env.NAMESPACE} ${additionalSet}" +
                       "--set storageClassName=${env.STORAGE_CLASS_NAME} " +
-                      "--set image=${env.REGISTRY_URL}/${env.REGISTRY_BASE_REPO}/automata:${env.GIT_COMMIT_ID} " +
-                      "--set imagePullSecrets=${env.IMAGE_PULL_SECRETS} " +
+                      "--set image=${image} " +
                       "--set chain.keySecret=${env.CHAIN_KEY_SECRET} " +
+                      "--set chain.insertKey=${params.insertKey} " +
                       "ata /tmp/automata-chart && rm -rf /tmp/automata-chart\""
             }
           }
