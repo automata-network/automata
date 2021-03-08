@@ -1,0 +1,209 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-node-config
+  namespace: {{ .Release.Namespace }}
+data:
+  startup.sh: |-
+    #!/bin/bash
+
+    count=`ls /chain-base/keystore | wc -w`
+    if [ "$count" == "0" ];
+    then
+      
+      secret=//{{ .Values.chain.keySecret }}
+
+      /usr/local/bin/automata key insert --scheme=ed25519 --chain=staging --suri=$secret//automata//session//$NODE_INDEX --key-type=gran \
+          --base-path=/chain-base --keystore-path=/chain-base/keystore
+      
+      for key in aura imon audi; do
+        /usr/local/bin/automata key insert --chain=staging --suri=$secret//automata//session//$NODE_INDEX --key-type=$key \
+          --base-path=/chain-base --keystore-path=/chain-base/keystore
+      done
+
+    fi
+
+{{- range $i, $index := untilStep 1 (int (add 5 .Values.chain.lightCount)) 1 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Release.Name }}-node-{{ $index }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  ports:
+    - name: http
+      port: 9933
+      targetPort: http
+    - name: ws
+      port: 9944
+      targetPort: ws
+    - name: p2p
+      port: 30333
+      targetPort: p2p
+  selector:
+    ata.network/profile: release
+    ata.network/chain: staging
+    ata.network/name: {{ $.Release.Name }}
+    ata.network/index: {{ quote $index }}
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $.Release.Name }}-node-{{ $index }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: &nodeLabels
+      ata.network/profile: release
+      ata.network/chain: staging
+      ata.network/name: {{ $.Release.Name }}
+      ata.network/index: {{ quote $index }}
+  serviceName: {{ $.Release.Name }}-node-{{ $index }}
+  template:
+    metadata:
+      labels:
+        <<: *nodeLabels
+    spec:
+      {{- if and (le $index 4) $.Values.chain.insertKey }}
+      initContainers:
+        -
+          env:
+          - name: NODE_INDEX
+            value: {{ quote $index }}
+          image: {{ $.Values.image }}
+          imagePullPolicy: Always
+          name: automata-node-init
+          command:
+            - /bin/sh
+            - '-c'
+          args: 
+            - /init/startup.sh
+          volumeMounts:
+            - mountPath: /chain-base
+              name: chain-base
+            - mountPath: /init
+              name: init
+      {{- end }}
+      containers:
+        -
+          image: {{ $.Values.image }}
+          imagePullPolicy: Always
+          name: automata-node
+          ports:
+            - containerPort: 9933
+              name: http
+              protocol: TCP
+            - containerPort: 9944
+              name: ws
+              protocol: TCP
+            - containerPort: 30333
+              name: p2p
+              protocol: TCP
+          command:
+            - /bin/sh
+            - '-c'
+          args: 
+            - >-
+              /usr/local/bin/automata
+              --chain=staging
+              --node-key 000000000000000000000000000000000000000000000000000000000000000{{ $index }} 
+            {{- if $.Values.chain.syncNodes }}
+              {{- range $.Values.chain.syncNodes }}
+              --bootnodes {{ . }}
+              {{- end }}
+            {{- end }}
+              --bootnodes /dns/{{ $.Release.Name }}-node-1/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp
+              --bootnodes /dns/{{ $.Release.Name }}-node-2/tcp/30333/p2p/12D3KooWHdiAxVd8uMQR1hGWXccidmfCwLqcMpGwR6QcTP6QRMuD
+              --bootnodes /dns/{{ $.Release.Name }}-node-3/tcp/30333/p2p/12D3KooWSCufgHzV4fCwRijfH2k3abrpAJxTKxEvN1FDuRXA2U9x
+              --bootnodes /dns/{{ $.Release.Name }}-node-4/tcp/30333/p2p/12D3KooWSsChzF81YDUKpe9Uk5AHV5oqAaXAcWNSPYgoLauUk4st
+              --base-path /chain-base
+              --keystore-path /chain-base/keystore
+              --port=30333
+            {{- if and (le $index 4) $.Values.chain.insertKey }}
+              --validator
+            {{- else }}
+              --pruning=archive
+            {{- end }}
+              --unsafe-ws-external 
+              --unsafe-rpc-external 
+              --log sub-libp2p=info
+              --no-telemetry
+              --rpc-cors=all
+          resources:
+            limits:
+              cpu: '2'
+              memory: 8Gi
+            requests:
+              cpu: '2'
+              memory: 8Gi
+          volumeMounts:
+            - mountPath: /chain-base
+              name: chain-base
+      {{- if $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        - name: {{ $.Values.imagePullSecrets }}
+      {{- end }}
+      volumes:
+        - configMap:
+            defaultMode: 0777
+            name: {{ $.Release.Name }}-node-config
+          name: init
+{{- if $.Values.chain.keepData }}
+  volumeClaimTemplates:
+    - metadata:
+        name: chain-base
+      spec:
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 100Gi
+        storageClassName: {{ $.Values.storageClassName }}
+{{- else }}        
+        - persistentVolumeClaim:
+            claimName: {{ $.Release.Name }}-node-{{ $index }}
+          name: chain-base
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $.Release.Name }}-node-{{ $index }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: {{ $.Values.storageClassName }}
+{{- end }} 
+
+{{- end }}
+
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-node-ingress
+  namespace: {{ .Release.Namespace }}
+spec:
+  rules:
+    - host: {{ $.Values.hostBase }}
+      http:
+        paths:
+          {{- range $i, $index := untilStep 1 (int (add 5 .Values.chain.lightCount)) 1 }}
+          - backend:
+              serviceName: {{ $.Release.Name }}-node-{{ $index }}
+              servicePort: http
+            path: /http-{{ $.Release.Name }}-{{ $index }}
+          - backend:
+              serviceName: {{ $.Release.Name }}-node-{{ $index }}
+              servicePort: ws
+            path: /ws-{{ $.Release.Name }}-{{ $index }}
+          {{- end }}    
