@@ -21,6 +21,6 @@ jobs:
             run: docker ps
             - name: Run ci test suite
             ## todo: just for example,need actual test script.
-            run: docker exec -it validator-a bash -c "scripts/local-test.sh"
-            run: docker exec -it validator-b bash -c "scripts/local-test.sh"
-            run: docker exec -it light-c bash -c "scripts/local-test.sh"
+            run: docker exec -it validator-a bash -c "scripts/run_ci.sh"
+            run: docker exec -it validator-b bash -c "scripts/run_ci.sh"
+            run: docker exec -it light-c bash -c "scripts/run_ci.sh"
