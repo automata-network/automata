@@ -3,6 +3,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
+
 mod offline;
 
 #[cfg(test)]
@@ -29,13 +30,10 @@ pub mod pallet {
         traits::{Hash, Zero},
         Perbill, RuntimeDebug,
     };
-
     pub use crate::offline::{
         GeodeOffence, AutomataOffence, AutomataOffenceDetails, AutomataOffenceError, AutomataReportOffence, GeodeIdd,
         Kind, OffenceReason, OffenceTempRecord, OnAutomataOffenceHandler, SlashParams,
     };
-
-
 
     pub type Weight = u64;
     const MARKETPLACE_ID: LockIdentifier = *b"market  ";
