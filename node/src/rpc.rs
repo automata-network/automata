@@ -7,13 +7,14 @@
 
 use std::sync::Arc;
 
-use node_template_runtime::{opaque::Block, AccountId, Balance, Index};
+use automata_primitives::{Block, AccountId, Balance, Index};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::{Error as BlockChainError, HeaderMetadata, HeaderBackend};
 use sp_block_builder::BlockBuilder;
 pub use sc_rpc_api::DenyUnsafe;
 use sp_transaction_pool::TransactionPool;
-
+use sc_network::NetworkService;
+use fc_rpc_core::types::PendingTransactions;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -23,6 +24,12 @@ pub struct FullDeps<C, P> {
 	pub pool: Arc<P>,
 	/// Whether to deny unsafe calls
 	pub deny_unsafe: DenyUnsafe,
+	/// Whether to enable dev signer
+	pub enable_dev_signer: bool,
+	/// Network service
+	pub network: Arc<NetworkService<Block, Hash>>,
+	/// Ethereum pending transactions.
+    pub pending_transactions: PendingTransactions,
 }
 
 /// Instantiate all full RPC extensions.
@@ -38,6 +45,11 @@ pub fn create_full<C, P>(
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + 'static,
 {
+    use fc_rpc::{
+        EthApi, EthApiServer, EthDevSigner, EthPubSubApi, EthPubSubApiServer, EthSigner,
+        HexEncodedIdProvider, NetApi, NetApiServer, Web3Api, Web3ApiServer,
+    };
+
 	use substrate_frame_rpc_system::{FullSystem, SystemApi};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
 
@@ -46,6 +58,9 @@ pub fn create_full<C, P>(
 		client,
 		pool,
 		deny_unsafe,
+		enable_dev_signer,
+		network,
+		pending_transactions,
 	} = deps;
 
 	io.extend_with(
@@ -60,6 +75,38 @@ pub fn create_full<C, P>(
 	// `YourRpcStruct` should have a reference to a client, which is needed
 	// to call into the runtime.
 	// `io.extend_with(YourRpcTrait::to_delegate(YourRpcStruct::new(ReferenceToClient, ...)));`
+
+    let mut signers = Vec::new();
+    if enable_dev_signer {
+        signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
+    }
+
+	io.extend_with(EthApiServer::to_delegate(EthApi::new(
+        client.clone(),
+        pool.clone(),
+        automata_runtime::TransactionConverter,
+        network.clone(),
+        pending_transactions.clone(),
+        signers,
+        is_authority,
+    )));
+
+	io.extend_with(NetApiServer::to_delegate(NetApi::new(
+        client.clone(),
+        network.clone(),
+    )));
+
+	io.extend_with(Web3ApiServer::to_delegate(Web3Api::new(client.clone())));
+
+	io.extend_with(EthPubSubApiServer::to_delegate(EthPubSubApi::new(
+        pool.clone(),
+        client.clone(),
+        network.clone(),
+        SubscriptionManager::<HexEncodedIdProvider>::with_id_provider(
+            HexEncodedIdProvider::default(),
+            Arc::new(subscription_task_executor),
+        ),
+    )));
 
 	io
 }

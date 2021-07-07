@@ -3,9 +3,9 @@ authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
 edition = '2018'
 homepage = 'https://substrate.dev'
 license = 'Unlicense'
-name = 'node-template-runtime'
+name = 'automata-runtime'
 repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
-version = '3.0.0'
+version = '0.1.0'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
