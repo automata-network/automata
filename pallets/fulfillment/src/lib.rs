@@ -6,12 +6,11 @@ pub use pallet::*;
 mod slash;
 mod property;
 
-// #[cfg(test)]
-// mod mock;
-// mod property;
+#[cfg(test)]
+mod mock;
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -110,7 +109,6 @@ pub mod pallet {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         
         type GeodeOffReport: GeodeReport<Self>;
-    
     }
 
     #[pallet::hooks]
