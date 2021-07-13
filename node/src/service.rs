@@ -1,22 +1,32 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use std::sync::Arc;
 use std::time::Duration;
-use sc_client_api::{ExecutorProvider, RemoteBackend};
-use node_template_runtime::{self, opaque::Block, RuntimeApi};
-use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
+use sc_client_api::{ExecutorProvider, RemoteBackend, BlockchainEvents};
+use automata_runtime::{self, opaque::Block, RuntimeApi};
+use sc_service::{BasePath, error::Error as ServiceError, Configuration, TaskManager};
 use sp_inherents::InherentDataProviders;
 use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sc_finality_grandpa::SharedVoterState;
 use sc_keystore::LocalKeystore;
+use fc_rpc_core::types::PendingTransactions;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
+use fc_consensus::FrontierBlockImport;
+use fc_mapping_sync::MappingSyncWorker;
+use sc_cli::SubstrateCli;
+use futures::StreamExt;
+
+use crate::cli::Cli;
 
 // Our native executor instance.
 native_executor_instance!(
 	pub Executor,
-	node_template_runtime::api::dispatch,
-	node_template_runtime::native_version,
+	automata_runtime::api::dispatch,
+	automata_runtime::native_version,
 	frame_benchmarking::benchmarking::HostFunctions,
 );
 
@@ -24,19 +34,42 @@ type FullClient = sc_service::TFullClient<Block, RuntimeApi, Executor>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
+pub type ConsensusResult = (
+	sc_consensus_aura::AuraBlockImport<
+		Block,
+		FullClient,
+		FrontierBlockImport<
+			Block,
+			sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
+			FullClient
+		>,
+		AuraPair
+	>,
+	sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>
+);
+
+pub fn open_frontier_backend(config: &Configuration) -> Result<Arc<fc_db::Backend<Block>>, String> {
+	let config_dir = config.base_path.as_ref()
+	  .map(|base_path| base_path.config_dir(config.chain_spec.id()))
+	  .unwrap_or_else(|| {
+		BasePath::from_project("", "", &crate::cli::Cli::executable_name())
+		  .config_dir(config.chain_spec.id())
+	  });
+	let database_dir = config_dir.join("frontier").join("db");
+  
+	Ok(Arc::new(fc_db::Backend::<Block>::new(&fc_db::DatabaseSettings {
+	  source: fc_db::DatabaseSettingsSrc::RocksDb {
+		path: database_dir,
+		cache_size: 0,
+	  }
+	})?))
+  }
+
 pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponents<
 	FullClient, FullBackend, FullSelectChain,
 	sp_consensus::DefaultImportQueue<Block, FullClient>,
 	sc_transaction_pool::FullPool<Block, FullClient>,
-	(
-		sc_consensus_aura::AuraBlockImport<
-			Block,
-			FullClient,
-			sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
-			AuraPair
-		>,
-		sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
-	)
+	(ConsensusResult, PendingTransactions, Arc<fc_db::Backend<Block>>)
 >, ServiceError> {
 	if config.keystore_remote.is_some() {
 		return Err(ServiceError::Other(
@@ -58,14 +91,27 @@ pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponen
 		client.clone(),
 	);
 
+	let pending_transactions: PendingTransactions
+		= Some(Arc::new(Mutex::new(HashMap::new())));
+
+	let frontier_backend = open_frontier_backend(config)?;
+
+	println!("test01");
+
 	let (grandpa_block_import, grandpa_link) = sc_finality_grandpa::block_import(
 		client.clone(),
 		&(client.clone() as Arc<_>),
 		select_chain.clone(),
 	)?;
 
+	let frontier_block_import = FrontierBlockImport::new(
+		grandpa_block_import.clone(),
+		client.clone(),
+		frontier_backend.clone(),
+	  );
+
 	let aura_block_import = sc_consensus_aura::AuraBlockImport::<_, _, _, AuraPair>::new(
-		grandpa_block_import.clone(), client.clone(),
+		frontier_block_import.clone(), client.clone(),
 	);
 
 	let import_queue = sc_consensus_aura::import_queue::<_, _, _, AuraPair, _, _>(
@@ -88,7 +134,7 @@ pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponen
 		select_chain,
 		transaction_pool,
 		inherent_data_providers,
-		other: (aura_block_import, grandpa_link),
+		other: ((aura_block_import, grandpa_link), pending_transactions, frontier_backend.clone()),
 	})
 }
 
@@ -110,7 +156,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		select_chain,
 		transaction_pool,
 		inherent_data_providers,
-		other: (block_import, grandpa_link),
+		other: ((aura_block_import, grandpa_link), pending_transactions, frontier_backend),
 	} = new_partial(&config)?;
 
 	if let Some(url) = &config.keystore_remote {
@@ -148,21 +194,45 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 	let name = config.network.node_name.clone();
 	let enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
+	let rpc_network = network.clone();
+	let pending_transactions: PendingTransactions = Some(Arc::new(Mutex::new(HashMap::new())));
+	let is_authority = role.is_authority();
+	let subscription_task_executor =
+            sc_rpc::SubscriptionTaskExecutor::new(task_manager.spawn_handle());
 
 	let rpc_extensions_builder = {
 		let client = client.clone();
 		let pool = transaction_pool.clone();
+		let pending = pending_transactions.clone();
+		let frontier_backend = frontier_backend.clone();
 
 		Box::new(move |deny_unsafe, _| {
+			let pending = pending_transactions.clone();
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
 				pool: pool.clone(),
 				deny_unsafe,
+				enable_dev_signer: false, //TODO
+				network: rpc_network.clone(),
+				pending_transactions: pending.clone(),
+				backend: frontier_backend.clone(),
+				is_authority
 			};
 
-			crate::rpc::create_full(deps)
+			crate::rpc::create_full(deps, subscription_task_executor.clone())
 		})
 	};
+
+	task_manager.spawn_essential_handle().spawn(
+		"frontier-mapping-sync-worker",
+		MappingSyncWorker::new(
+			client.import_notification_stream(),
+			Duration::new(6, 0),
+			client.clone(),
+			backend.clone(),
+			frontier_backend.clone(),
+		).for_each(|()| futures::future::ready(()))
+	);
 
 	let (_rpc_handlers, telemetry_connection_notifier) = sc_service::spawn_tasks(
 		sc_service::SpawnTasksParams {
@@ -196,7 +266,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			sc_consensus_aura::slot_duration(&*client)?,
 			client.clone(),
 			select_chain,
-			block_import,
+			aura_block_import,
 			proposer_factory,
 			network.clone(),
 			inherent_data_providers.clone(),

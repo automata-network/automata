@@ -1,19 +1,19 @@
-use sp_core::{Pair, Public, sr25519};
 use automata_runtime::{
-	wasm_binary_unwrap, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
+	WASM_BINARY, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
 	SudoConfig, SystemConfig, EVMConfig, EthereumConfig
 };
+use automata_runtime::Block;
 use automata_runtime::constants::currency::*;
 use serde::{Deserialize, Serialize};
+use sc_service::{ChainType, Properties};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{Verify, IdentifyAccount};
 use sc_chain_spec::ChainSpecExtension;
-use sc_service::ChainType;
 use sc_telemetry::TelemetryEndpoints;
 use std::collections::BTreeMap;
 use hex_literal::hex;
-use sp_core::{H160, U256};
+use sp_core::{crypto::{Ss58Codec, UncheckedInto}, sr25519, Pair, Public, H160, U256};
 pub use automata_primitives::{AccountId, Balance, Signature};
 
 // The URL for the telemetry server.
@@ -59,23 +59,39 @@ pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId where
 }
 
 /// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AccountId, AccountId, AuraId, GrandpaId) {
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, AccountId, GrandpaId, AuraId) {
 	(
-		get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
-        get_account_id_from_seed::<sr25519::Public>(seed),
-		get_from_seed::<AuraId>(s),
-		get_from_seed::<GrandpaId>(s),
+		get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", s)),
+        get_account_id_from_seed::<sr25519::Public>(s),
+        get_from_seed::<GrandpaId>(s),
+        get_from_seed::<AuraId>(s),
 	)
 }
 
 pub fn development_config() -> Result<ChainSpec, String> {
+	let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+
 	Ok(ChainSpec::from_genesis(
 		// Name
 		"Development",
 		// ID
 		"dev",
 		ChainType::Development,
-		development_config_genesis,
+		move || testnet_genesis(
+			wasm_binary,
+			// Initial PoA authorities
+			vec![
+				authority_keys_from_seed("Alice"),
+			],
+			// Sudo account
+			get_account_id_from_seed::<sr25519::Public>("Alice"),
+			// Pre-funded accounts
+			None,
+			Some(vec![
+				AccountId::from_ss58check("5ENPmNpr6TmsiCBY1MjFXn4pFzApNh3BVm1hF38ok9DVgQ6s").unwrap(),
+			]),
+			true,
+		),
 		// Bootnodes
 		vec![],
 		// Telemetry
@@ -90,13 +106,28 @@ pub fn development_config() -> Result<ChainSpec, String> {
 }
 
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
+	let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+
 	Ok(ChainSpec::from_genesis(
 		// Name
 		"Local Testnet",
 		// ID
 		"local_testnet",
 		ChainType::Local,
-		local_testnet_config,
+		move || testnet_genesis(
+			wasm_binary,
+			// Initial PoA authorities
+			vec![
+				authority_keys_from_seed("Alice"),
+				authority_keys_from_seed("Bob"),
+			],
+			// Sudo account
+			get_account_id_from_seed::<sr25519::Public>("Alice"),
+			// Pre-funded accounts
+			None,
+			None,
+			true,
+		),
 		// Bootnodes
 		vec![],
 		// Telemetry
@@ -111,161 +142,12 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 }
 
 /// Staging testnet config.
-pub fn staging_testnet_config() -> ChainSpec {
+pub fn staging_testnet_config() -> Result<ChainSpec, String> {
+	let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+
     let boot_nodes = vec![];
-    ChainSpec::from_genesis(
-        "Staging Testnet",
-        "staging_testnet",
-        ChainType::Live,
-        staging_testnet_config_genesis,
-        boot_nodes,
-        Some(
-            TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
-                .expect("Staging telemetry url is valid; qed"),
-        ),
-        None,
-        get_properties(),
-        Default::default(),
-    )
-}
 
-/// Configure initial storage state for FRAME modules.
-fn testnet_genesis(
-	initial_authorities: Vec<(AccountId, AccountId, AuraId, GrandpaId)>,
-	root_key: AccountId,
-	endowed_accounts: Vec<AccountId>,
-	ethereum_accounts: Option<Vec<AccountId>>,
-	_enable_println: bool,
-) -> GenesisConfig {
-	let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(|| {
-        vec![
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            get_account_id_from_seed::<sr25519::Public>("Bob"),
-            get_account_id_from_seed::<sr25519::Public>("Charlie"),
-            get_account_id_from_seed::<sr25519::Public>("Dave"),
-            get_account_id_from_seed::<sr25519::Public>("Eve"),
-            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-            get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-            get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-            get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-            get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-            get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-            get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-        ]
-    });
-
-	initial_authorities.iter().for_each(|x| {
-        if !endowed_accounts.contains(&x.0) {
-            endowed_accounts.push(x.0.clone())
-        }
-    });
-
-	if let Some(ethereum_accounts) = ethereum_accounts {
-        ethereum_accounts.iter().for_each(|x| {
-            if !endowed_accounts.contains(&x) {
-                endowed_accounts.push(x.clone())
-            }
-        });
-    }
-
-	let num_endowed_accounts = endowed_accounts.len();
-    const ENDOWMENT: Balance = 100_000_000 * DOLLARS;
-    const STASH: Balance = 100 * DOLLARS;
-
-	GenesisConfig {
-		frame_system: Some(SystemConfig {
-			// Add Wasm runtime to storage.
-			code: wasm_binary_unwrap().to_vec(),
-			changes_trie_config: Default::default(),
-		}),
-		pallet_balances: Some(BalancesConfig {
-			// Configure endowed accounts with initial balance of 1 << 60.
-			balances: endowed_accounts.iter().cloned().map(|k|(k, ENDOWMENT)).collect(),
-		}),
-		pallet_aura: Some(AuraConfig {
-			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
-		}),
-		pallet_grandpa: Some(GrandpaConfig {
-			authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
-		}),
-		pallet_sudo: Some(SudoConfig {
-			// Assign network admin rights.
-			key: root_key,
-		}),
-		pallet_evm: Some(EVMConfig {
-            accounts: vec![
-                H160::from(hex_literal::hex![
-                    "18bD778c044F47d41CFabF336F2b1e06648e0771"
-                ]),
-                H160::from(hex_literal::hex![
-                    "b4b58365166402a78b4ac05e1b13b6d64fCcF60f"
-                ]),
-                H160::from(hex_literal::hex![
-                    "2CCDD9Fa13d97F6FAEC4B1D8085861AE57e1D9c9"
-                ]),
-                H160::from(hex_literal::hex![
-                    "3e29eF30D9836928DDc3667af68da02bAd913316"
-                ]),
-            ]
-            .into_iter()
-            .map(|x| {
-                (
-                    x,
-                    pallet_evm::GenesisAccount {
-                        balance: U256::from(ENDOWMENT),
-                        nonce: Default::default(),
-                        code: Default::default(),
-                        storage: Default::default(),
-                    },
-                )
-            })
-            .collect(),
-        }),
-		pallet_ethereum: Some(EthereumConfig {}),
-	}
-}
-
-fn development_config_genesis() -> GenesisConfig {
-    let accounts =
-        vec![
-            AccountId::from_ss58check("5ENPmNpr6TmsiCBY1MjFXn4pFzApNh3BVm1hF38ok9DVgQ6s").unwrap(),
-        ];
-
-    testnet_genesis(
-        vec![authority_keys_from_seed("Alice")],
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        None,
-        Some(accounts),
-        true,
-    )
-}
-
-fn local_testnet_genesis() -> GenesisConfig {
-    testnet_genesis(
-        vec![
-            authority_keys_from_seed("Alice"),
-            authority_keys_from_seed("Bob"),
-        ],
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        None,
-        None,
-        false,
-    )
-}
-
-fn staging_testnet_config_genesis() -> GenesisConfig {
-    let ethereum_accounts =
-        vec![
-            AccountId::from_ss58check("5ENPmNpr6TmsiCBY1MjFXn4pFzApNh3BVm1hF38ok9DVgQ6s").unwrap(),
-        ];
-
-    // stash, controller, session-key
-    // generated with secret:
-    // for i in 1 2 3 4 ; do for j in stash controller; do subkey inspect "$secret"/automata/$j/$i; done; done
-    // and
-    // for i in 1 2 3 4 ; do for j in session; do subkey --ed25519 inspect "$secret"//automata//$j//$i; done; done
-
-    let initial_authorities: Vec<(
+	let initial_authorities: Vec<(
         AccountId,
         AccountId,
         GrandpaId,
@@ -321,20 +203,138 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
         ),
     ];
 
-    // generated with secret: subkey inspect "$secret"/automata
-    let root_key: AccountId = hex![
-        // 5HGWsrBrgNxVTisu5DYjfGGbCf69VxtybSW8t36arFUabVtn
-        "e62f26bc433a9fa7679a284b1f85898739c32ab4b23246515be0ee339643003f"
-    ]
-    .into();
+	// generated with secret: subkey inspect "$secret"/automata
+	let root_key: AccountId = hex![
+		// 5HGWsrBrgNxVTisu5DYjfGGbCf69VxtybSW8t36arFUabVtn
+		"e62f26bc433a9fa7679a284b1f85898739c32ab4b23246515be0ee339643003f"
+	]
+	.into();
 
-    let endowed_accounts: Vec<AccountId> = vec![root_key.clone()];
+	let endowed_accounts: Vec<AccountId> = vec![root_key.clone()];
 
-    testnet_genesis(
-        initial_authorities,
-        root_key,
-        Some(endowed_accounts),
-        Some(ethereum_accounts),
-        false,
-    )
+	let ethereum_accounts =
+	vec![
+		AccountId::from_ss58check("5ENPmNpr6TmsiCBY1MjFXn4pFzApNh3BVm1hF38ok9DVgQ6s").unwrap(),
+	];
+
+    Ok(ChainSpec::from_genesis(
+        "Staging Testnet",
+        "staging_testnet",
+        ChainType::Live,
+        move || testnet_genesis(
+			wasm_binary,
+			// Initial PoA authorities
+			initial_authorities.clone(),
+			// Sudo account
+			root_key.clone(),
+			// Pre-funded accounts
+			Some(endowed_accounts.clone()),
+			Some(ethereum_accounts.clone()),
+			true,
+		),
+        boot_nodes,
+        Some(
+            TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
+                .expect("Staging telemetry url is valid; qed"),
+        ),
+        None,
+        get_properties(),
+        Default::default(),
+    ))
+}
+
+/// Configure initial storage state for FRAME modules.
+fn testnet_genesis(
+    wasm_binary: &[u8],
+	initial_authorities: Vec<(AccountId, AccountId, GrandpaId, AuraId)>,
+	root_key: AccountId,
+	endowed_accounts: Option<Vec<AccountId>>,
+	ethereum_accounts: Option<Vec<AccountId>>,
+	_enable_println: bool,
+) -> GenesisConfig {
+
+	let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(|| {
+        vec![
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            get_account_id_from_seed::<sr25519::Public>("Bob"),
+            get_account_id_from_seed::<sr25519::Public>("Charlie"),
+            get_account_id_from_seed::<sr25519::Public>("Dave"),
+            get_account_id_from_seed::<sr25519::Public>("Eve"),
+            get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+            get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+            get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+            get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+            get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
+            get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
+            get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+        ]
+    });
+
+	initial_authorities.iter().for_each(|x| {
+        if !endowed_accounts.contains(&x.0) {
+            endowed_accounts.push(x.0.clone())
+        }
+    });
+
+	if let Some(ethereum_accounts) = ethereum_accounts {
+        ethereum_accounts.iter().for_each(|x| {
+            if !endowed_accounts.contains(&x) {
+                endowed_accounts.push(x.clone())
+            }
+        });
+    }
+
+	const ENDOWMENT: Balance = 100_000_000 * DOLLARS;
+
+	GenesisConfig {
+		frame_system: Some(SystemConfig {
+			// Add Wasm runtime to storage.
+			code: wasm_binary.to_vec(),
+			changes_trie_config: Default::default(),
+		}),
+		pallet_balances: Some(BalancesConfig {
+			// Configure endowed accounts with initial balance of 1 << 60.
+			balances: endowed_accounts.iter().cloned().map(|k|(k, ENDOWMENT)).collect(),
+		}),
+		pallet_aura: Some(AuraConfig {
+			authorities: initial_authorities.iter().map(|x| (x.3.clone())).collect(),
+		}),
+		pallet_grandpa: Some(GrandpaConfig {
+			authorities: initial_authorities.iter().map(|x| (x.2.clone(), 1)).collect(),
+		}),
+		pallet_sudo: Some(SudoConfig {
+			// Assign network admin rights.
+			key: root_key,
+		}),
+		pallet_evm: Some(EVMConfig {
+            accounts: vec![
+                H160::from(hex_literal::hex![
+                    "18bD778c044F47d41CFabF336F2b1e06648e0771"
+                ]),
+                H160::from(hex_literal::hex![
+                    "b4b58365166402a78b4ac05e1b13b6d64fCcF60f"
+                ]),
+                H160::from(hex_literal::hex![
+                    "2CCDD9Fa13d97F6FAEC4B1D8085861AE57e1D9c9"
+                ]),
+                H160::from(hex_literal::hex![
+                    "3e29eF30D9836928DDc3667af68da02bAd913316"
+                ]),
+            ]
+            .into_iter()
+            .map(|x| {
+                (
+                    x,
+                    pallet_evm::GenesisAccount {
+                        balance: U256::from(ENDOWMENT),
+                        nonce: Default::default(),
+                        code: Default::default(),
+                        storage: Default::default(),
+                    },
+                )
+            })
+            .collect(),
+        }),
+		pallet_ethereum: Some(EthereumConfig {}),
+	}
 }
