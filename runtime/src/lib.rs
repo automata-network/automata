@@ -274,6 +274,7 @@ impl FeeCalculator for FixedGasPrice {
 // EVM parameters
 parameter_types! {
 	pub const ChainId: u64 = 86;
+	pub BlockGasLimit: U256 = U256::from(u32::max_value());
 }
 
 /// Configure the EVM pallet
@@ -292,7 +293,7 @@ impl pallet_evm::Config for Runtime {
         pallet_evm_precompile_simple::Identity,);
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
 	type OnChargeTransaction = ();
-	type BlockGasLimit = ();
+	type BlockGasLimit = BlockGasLimit;
 }
 
 impl pallet_ethereum::Config for Runtime {
@@ -314,15 +315,15 @@ impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
 	}
   }
   
-  impl fp_rpc::ConvertTransaction<OpaqueExtrinsic> for TransactionConverter {
-	fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> OpaqueExtrinsic {
-	  let extrinsic = UncheckedExtrinsic::new_unsigned(
-		pallet_ethereum::Call::<Runtime>::transact(transaction).into(),
-	  );
-	  let encoded = extrinsic.encode();
-	  OpaqueExtrinsic::decode(&mut &encoded[..]).expect("Encoded extrinsic is always valid")
-	}
-  }
+impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConverter {
+fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> opaque::UncheckedExtrinsic {
+	let extrinsic = UncheckedExtrinsic::new_unsigned(
+	pallet_ethereum::Call::<Runtime>::transact(transaction).into(),
+	);
+	let encoded = extrinsic.encode();
+	opaque::UncheckedExtrinsic::decode(&mut &encoded[..]).expect("Encoded extrinsic is always valid")
+}
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
