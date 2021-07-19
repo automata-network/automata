@@ -1,13 +1,16 @@
 # storageClassName: 
 
-# image: 
+image: ataacr.azurecr.io/automata:3ec9066
 # imagePullSecrets: 
 
-hostBase: cloud.ata.network
+hostBase: testnet.ata.network
 
 chain:
-  syncNodes: []
+#  syncNodes:
+#  - /ip4/8.210.23.214/tcp/30333/p2p/12D3KooWPJMiEvJ35ads69T4zVAVvihYwqvsA3HwPG47xhFPpUXQ
   insertKey: true
-  # keySecret: 
+  keySecret: boolnetwork
   keepData: true
-  lightCount: 0
+  normalCount: 4
+  archiveCount: 0
+  fullCount: 0

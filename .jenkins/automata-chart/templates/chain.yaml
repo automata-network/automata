@@ -24,7 +24,7 @@ data:
 
     fi
 
-{{- range $i, $index := untilStep 1 (int (add 5 .Values.chain.lightCount)) 1 }}
+{{- range $i, $index := untilStep 1 (int (add 1 .Values.chain.normalCount .Values.chain.archiveCount .Values.chain.fullCount)) 1 }}
 ---
 apiVersion: v1
 kind: Service
@@ -63,13 +63,20 @@ spec:
       ata.network/chain: staging
       ata.network/name: {{ $.Release.Name }}
       ata.network/index: {{ quote $index }}
+    {{- if and (le $index (int $.Values.chain.normalCount)) $.Values.chain.insertKey }}
+      ata.network/type: validator-node
+    {{- else if le $index (int (add $.Values.chain.normalCount $.Values.chain.archiveCount))}}
+      ata.network/type: archive-node
+    {{- else }}
+      ata.network/type: full-node
+    {{- end }}
   serviceName: {{ $.Release.Name }}-node-{{ $index }}
   template:
     metadata:
       labels:
         <<: *nodeLabels
     spec:
-      {{- if and (le $index 4) $.Values.chain.insertKey }}
+      {{- if and (le $index (int $.Values.chain.normalCount)) $.Values.chain.insertKey }}
       initContainers:
         -
           env:
@@ -124,23 +131,26 @@ spec:
               --base-path /chain-base
               --keystore-path /chain-base/keystore
               --port=30333
-            {{- if and (le $index 4) $.Values.chain.insertKey }}
+            {{- if and (le $index (int $.Values.chain.normalCount)) $.Values.chain.insertKey }}
               --validator
-            {{- else }}
+            {{- else if le $index (int (add $.Values.chain.normalCount $.Values.chain.archiveCount)) }}
               --pruning=archive
             {{- end }}
-              --unsafe-ws-external 
-              --unsafe-rpc-external 
               --log sub-libp2p=info
               --no-telemetry
               --rpc-cors=all
+            {{- if gt $index (int $.Values.chain.normalCount) }}
+              --ws-external
+              --rpc-external
+            {{- end }}
+              --db-cache 3072
           resources:
             limits:
               cpu: '2'
               memory: 8Gi
             requests:
-              cpu: '2'
-              memory: 8Gi
+              cpu: '1'
+              memory: 5Gi
           volumeMounts:
             - mountPath: /chain-base
               name: chain-base
@@ -148,18 +158,29 @@ spec:
       imagePullSecrets:
         - name: {{ $.Values.imagePullSecrets }}
       {{- end }}
+      {{- if and (gt $index (int $.Values.chain.normalCount)) (le $index (int (add $.Values.chain.normalCount $.Values.chain.archiveCount))) }}
+      nodeSelector:
+        applicationtype: archive
+      tolerations:
+      - key: 'nodetype'
+        operator: 'Equal'
+        value: 'archive'
+        effect: 'NoSchedule'
+      {{- end }}
       volumes:
         - configMap:
             defaultMode: 0777
             name: {{ $.Release.Name }}-node-config
           name: init
+      securityContext:
+        fsGroup: 1000
 {{- if $.Values.chain.keepData }}
   volumeClaimTemplates:
     - metadata:
         name: chain-base
       spec:
         accessModes:
-          - ReadWriteMany
+          - ReadWriteOnce
         resources:
           requests:
             storage: 100Gi
@@ -168,6 +189,7 @@ spec:
         - persistentVolumeClaim:
             claimName: {{ $.Release.Name }}-node-{{ $index }}
           name: chain-base
+      allowVolumeExpansion: true
 
 ---
 apiVersion: v1
@@ -192,12 +214,17 @@ kind: Ingress
 metadata:
   name: {{ .Release.Name }}-node-ingress
   namespace: {{ .Release.Namespace }}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   rules:
     - host: {{ $.Values.hostBase }}
       http:
         paths:
-          {{- range $i, $index := untilStep 1 (int (add 5 .Values.chain.lightCount)) 1 }}
+          {{- range $i, $index := untilStep 1 (int (add 1 .Values.chain.normalCount .Values.chain.archiveCount .Values.chain.fullCount)) 1 }}
           - backend:
               serviceName: {{ $.Release.Name }}-node-{{ $index }}
               servicePort: http
@@ -206,4 +233,19 @@ spec:
               serviceName: {{ $.Release.Name }}-node-{{ $index }}
               servicePort: ws
             path: /ws-{{ $.Release.Name }}-{{ $index }}
-          {{- end }}    
+          {{- end }}
+    - host: rpc.ata.network
+      http:
+        paths:
+          - backend:
+              serviceName: chain-node-6
+              servicePort: http
+            path: /
+    - host: api.ata.network
+      http:
+        paths:
+          - backend:
+              serviceName: chain-node-6
+              servicePort: ws
+            path: /
+---
