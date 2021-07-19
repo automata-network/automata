@@ -15,7 +15,7 @@ mod benchmarking;
 pub mod pallet {
 	use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
-	use frame_support::traits::Currency;
+	use frame_support::traits::{Currency, ReservableCurrency};
 
 	pub const ATTESTOR_REQUIRE: usize = 1;
 
@@ -38,7 +38,7 @@ pub mod pallet {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		/// The currency in which fees are paid and contract balances are held.
-		type Currency: Currency<Self::AccountId>;
+		type Currency: ReservableCurrency<Self::AccountId>;
 	}
 
 	#[pallet::pallet]
@@ -91,14 +91,14 @@ pub mod pallet {
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
 	impl<T:Config> Pallet<T> {
-
 		/// Register as an attestor.
 		#[pallet::weight(0)]
-
         pub fn attestor_register(origin: OriginFor<T>, url: Vec<u8>, pubkey: Vec<u8>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let limit = <AttStakeMin<T>>::get().ok_or(Error::<T>::InvalidAttestor)?;
-            // <pallet_stake::Module<T>>::enough_stake(&who, limit)?;
+			// <pallet_stake::Module<T>>::enough_stake(&who, limit)?;
+			T::Currency::reserve(&who, limit)?;
+
             let attestor = Attestor {
                 url,
                 pubkey
@@ -115,7 +115,6 @@ pub mod pallet {
         /// Currently, we use reliable attestor which would not do misconducts.
         /// This function should be called when the attestor is not serving for any geode.
 		#[pallet::weight(0)]
-
         pub fn attestor_remove(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             ensure!(<Attestors<T>>::contains_key(&who), Error::<T>::InvalidAttestor);
@@ -126,7 +125,6 @@ pub mod pallet {
 		
 		/// Called by attestor to update its url.
         #[pallet::weight(0)]
-
         pub fn attestor_update(origin: OriginFor<T>, data: Vec<u8>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let mut attestor = <Attestors<T>>::get(&who);
@@ -135,7 +133,6 @@ pub mod pallet {
             Self::deposit_event(Event::AttestorUpdate(who));
             Ok(().into())
         }
-
 	}
 
 	impl<T: Config> Pallet<T> {
