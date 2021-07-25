@@ -132,6 +132,14 @@ pub mod pallet {
             <Attestors<T>>::insert(who.clone(), attestor);
             Self::deposit_event(Event::AttestorUpdate(who));
             Ok(().into())
+		}
+		
+		/// Called by root to set the min stake
+		#[pallet::weight(0)]
+        pub fn set_att_stake_min(origin: OriginFor<T>, stake: BalanceOf<T>) -> DispatchResultWithPostInfo {
+            let _who = ensure_root(origin)?;
+            <AttStakeMin<T>>::put(stake);
+            Ok(().into())
         }
 	}
 
