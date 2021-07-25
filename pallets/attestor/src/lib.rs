@@ -96,7 +96,6 @@ pub mod pallet {
         pub fn attestor_register(origin: OriginFor<T>, url: Vec<u8>, pubkey: Vec<u8>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let limit = <AttStakeMin<T>>::get().ok_or(Error::<T>::InvalidAttestor)?;
-			// <pallet_stake::Module<T>>::enough_stake(&who, limit)?;
 			T::Currency::reserve(&who, limit)?;
 
             let attestor = Attestor {
