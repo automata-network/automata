@@ -69,6 +69,7 @@ fp-consensus = { default-features = false, version = '1.0.0'}
 fc-rpc-core = { default-features = false, version = '1.0.0'}
 fc-db = { default-features = false, version = '1.0.0'}
 fc-mapping-sync = { default-features = false, version = '1.0.0'}
+pallet-indices = { default-features = false, version = '3.0.0' }
 
 [features]
 default = []

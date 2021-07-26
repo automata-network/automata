@@ -48,6 +48,7 @@ sp-version = { default-features = false, version = '3.0.0' }
 pallet-ethereum = { default-features = false, version = '1.0.0' }
 pallet-evm-precompile-simple = { default-features = false, version = '1.0.0' }
 fp-rpc = { default-features = false, version = '1.0.0'}
+pallet-indices = { default-features = false, version = '3.0.0' }
 
 # local dependencies
 pallet-template = { default-features = false, path = '../pallets/template', version = '3.0.0' }
@@ -96,4 +97,5 @@ std = [
     'sp-version/std',
 	'pallet-ethereum/std',
 	'fp-rpc/std',
+    'pallet-indices/std',
 ]

@@ -1,6 +1,6 @@
 use automata_runtime::{
 	WASM_BINARY, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
-	SudoConfig, SystemConfig, EVMConfig, EthereumConfig
+	SudoConfig, SystemConfig, EVMConfig, EthereumConfig, IndicesConfig
 };
 use automata_runtime::Block;
 use automata_runtime::constants::currency::*;
@@ -38,7 +38,7 @@ pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 fn get_properties() -> Option<Properties> {
     let mut properties = Properties::new();
     properties.insert("tokenSymbol".into(), "ATA".into());
-    properties.insert("tokenDecimals".into(), 9.into());
+    properties.insert("tokenDecimals".into(), 18.into());
     Some(properties)
 }
 
@@ -296,6 +296,7 @@ fn testnet_genesis(
 			// Configure endowed accounts with initial balance of 1 << 60.
 			balances: endowed_accounts.iter().cloned().map(|k|(k, ENDOWMENT)).collect(),
 		}),
+        pallet_indices: Some(IndicesConfig { indices: vec![] }),
 		pallet_aura: Some(AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.3.clone())).collect(),
 		}),
