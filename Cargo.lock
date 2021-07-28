@@ -4165,6 +4165,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-attestor"
+version = "3.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
 name = "pallet-aura"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
