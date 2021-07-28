@@ -6,7 +6,7 @@
 #![warn(missing_docs)]
 
 use std::sync::Arc;
-
+use automata_runtime::apis::AttestorApi as AttestorRuntimeApi;
 use automata_primitives::{Block, AccountId, Balance, Index, Hash};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::{Error as BlockChainError, HeaderMetadata, HeaderBackend};
@@ -25,6 +25,8 @@ use sc_client_api::{
 	client::BlockchainEvents
 };
 use sp_runtime::traits::BlakeTwo256;
+
+pub mod attestor;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -61,6 +63,7 @@ pub fn create_full<C, P, BE>(
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
 	C::Api: BlockBuilder<Block>,
+	C::Api: AttestorRuntimeApi<Block>,
 	P: TransactionPool<Block=Block> + 'static,
 {
     use fc_rpc::{
@@ -70,6 +73,7 @@ pub fn create_full<C, P, BE>(
 
 	use substrate_frame_rpc_system::{FullSystem, SystemApi};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
+	use attestor::AttestorApi;
 
 	let mut io = jsonrpc_core::IoHandler::default();
 	let FullDeps {
@@ -134,6 +138,10 @@ pub fn create_full<C, P, BE>(
             HexEncodedIdProvider::default(),
             Arc::new(subscription_task_executor),
         ),
+    )));
+
+	io.extend_with(AttestorApi::to_delegate(attestor::Attestor::new(
+        client.clone(),
     )));
 
 	io

@@ -16,6 +16,7 @@ pub mod pallet {
 	use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
 	use frame_support::traits::{Currency, ReservableCurrency};
+	use sp_std::prelude::*;
 
 	pub const ATTESTOR_REQUIRE: usize = 1;
 

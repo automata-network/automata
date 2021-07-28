@@ -208,7 +208,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 		Box::new(move |deny_unsafe, _| {
 			let pending = pending_transactions.clone();
-			let deps = crate::rpc::FullDeps {
+			let deps = automata_rpc::FullDeps {
 				client: client.clone(),
 				pool: pool.clone(),
 				deny_unsafe,
@@ -219,7 +219,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 				is_authority
 			};
 
-			crate::rpc::create_full(deps, subscription_task_executor.clone())
+			automata_rpc::create_full(deps, subscription_task_executor.clone())
 		})
 	};
 
