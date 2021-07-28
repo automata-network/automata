@@ -10,6 +10,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use frame_support::pallet_prelude::*;
     use frame_support::{ensure};
+    use primitives::{BlockNumber};
 
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
@@ -22,12 +23,18 @@ pub mod pallet {
         Registered,
         /// When geode get enough attestors' attestation, it turns to Attested.
         Attested,
-        /// When geode has been assigned with an order.
-        InOrder,
-        /// When the geode has started serving the order
-        InWork,
-        /// When the geode is dropping out from an order gracefully
-        DroppingOrder,
+        /// When a geode is having a pending dispatching request to answer
+        Dispatching,
+        /// When geode accepted a order dispatching.
+        Dispatched,
+        /// When geode finished service installation.
+        Installed,
+        /// When geode is serving an order.
+        Serving,
+        /// When the geode is gracefully terminating from an order
+        Terminating,
+        /// Unknown state
+        Unknown,
     }
 
     impl Default for GeodeState {
@@ -41,19 +48,23 @@ pub mod pallet {
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default)]
     pub struct Geode<AccountId, Hash> {
         /// Geode id.
-        pub owner: AccountId,
+        pub id: AccountId,
         /// Provider id
         pub provider: AccountId,
         /// Assigned order hash
         pub order: Option<Hash>,
         /// Geode's public ip.
         pub ip: Vec<u8>,
+        /// Geode's dns.
+        pub dns: Vec<u8>,
         /// Geodes' properties
         pub props: BTreeMap<Vec<u8>, Vec<u8>>,
         /// The attestors for this geode.
         pub attestors: Vec<AccountId>,
         /// Current state of the geode and the block number of since last state change
-        pub state: (GeodeState, u64),
+        pub state: GeodeState,
+        /// promise to be online until which block
+        pub promise: BlockNumber,
     }
 
     pub type GeodeOf<T> =
@@ -80,7 +91,7 @@ pub mod pallet {
         /// Geode's props updated. \[geode_id\]
         PropsUpdate(T::AccountId),
         /// Geode's props updated. \[geode_id\]
-        IpUpdate(T::AccountId),
+        DnsUpdate(T::AccountId),
         /// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		SomethingStored(u32, T::AccountId),
@@ -110,6 +121,14 @@ pub mod pallet {
     #[pallet::getter(fn geodes)]
 	pub(super) type Geodes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, GeodeOf<T>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn registered_geode_ids)]
+	pub(super) type RegisteredGeodes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn attested_geodes_ids)]
+	pub(super) type AttestedGeodes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
+
     #[pallet::call]
     impl<T:Config> Pallet<T> {
         /// Called by provider to register a geode. The user/attestors/state/provider will be
@@ -118,15 +137,16 @@ pub mod pallet {
         pub fn geode_register(origin: OriginFor<T>, geode_record: GeodeOf<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let mut geode_record = geode_record;
-            let geode = geode_record.owner.clone();
+            let geode = geode_record.id.clone();
             ensure!(!<Geodes<T>>::contains_key(&geode), Error::<T>::AlreadyGeode);
 
             let block_number = <frame_system::Module<T>>::block_number();
-            geode_record.state = (GeodeState::Registered, block_number.saturated_into::<u64>(),);
+            geode_record.state = GeodeState::Registered;
             geode_record.attestors = Vec::new();
             geode_record.provider = who.clone();
 
             <Geodes<T>>::insert(geode.clone(), geode_record);
+            <RegisteredGeodes<T>>::insert(geode.clone(), block_number.saturated_into::<BlockNumber>());
             Self::deposit_event(Event::GeodeRegister(who, geode));
             Ok(().into())
         }
@@ -139,8 +159,19 @@ pub mod pallet {
             if <Geodes<T>>::contains_key(&geode) {
                 let geode_use = <Geodes<T>>::get(&geode);
                 ensure!(geode_use.provider == who, Error::<T>::NoRight);
-                ensure!(geode_use.state.0 == GeodeState::Attested, Error::<T>::InvalidGeodeState);
+                ensure!(geode_use.state == GeodeState::Registered || geode_use.state == GeodeState::Attested, Error::<T>::InvalidGeodeState);
                 <Geodes<T>>::remove(&geode);
+                match geode_use.state {
+                    GeodeState::Registered => {
+                        <RegisteredGeodes<T>>::remove(&geode);
+                    }
+                    GeodeState::Attested => {
+                        <AttestedGeodes<T>>::remove(&geode);
+                    }
+                    _ => {
+                        // shouldn't happen
+                    }
+                }
             } else {
                 return Err(Error::<T>::InvalidGeode.into());
             }
@@ -161,19 +192,29 @@ pub mod pallet {
             Ok(().into())
         }
 
-        /// Called by provider to bound dns with geode's ip.
+        /// Called by provider to bound dns to geode's ip.
         #[pallet::weight(0)]
-
-        pub fn update_geode_ip(origin: OriginFor<T>, geode: T::AccountId, ip: Vec<u8>) -> DispatchResultWithPostInfo {
+        pub fn update_geode_dns(origin: OriginFor<T>, geode: T::AccountId, dns: Vec<u8>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let mut geode_use = <Geodes<T>>::get(&geode);
             ensure!(geode_use.provider == who, Error::<T>::NoRight);
-            geode_use.ip = ip;
+            geode_use.dns = dns;
             <Geodes<T>>::insert(geode.clone(), geode_use);
-            Self::deposit_event(Event::IpUpdate(geode));
+            Self::deposit_event(Event::DnsUpdate(geode));
             Ok(().into())
         }
     }
 
-    impl<T: Config> Pallet<T> {}
+    impl<T: Config> Pallet<T> {
+        /// Return geodes in registered state
+        pub fn registered_geodes() -> Vec<GeodeOf<T>> {
+            let mut res = Vec::new();
+            <RegisteredGeodes<T>>::iter()
+                .map(|(id, _)| {
+                    res.push(<Geodes<T>>::get(id));
+                })
+                .all(|_| true);
+            res
+        }
+    }
 }

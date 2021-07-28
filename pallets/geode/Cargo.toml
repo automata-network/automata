@@ -20,6 +20,9 @@ frame-support = { default-features = false, version = '3.0.0' }
 sp-runtime = { default-features = false, version = '3.0.0' }
 sp-std = {version  = "3.0.0", default-features = false }
 
+# local dependencies
+primitives = { package = "automata-primitives", path = "../../primitives", default-features = false }
+
 [dev-dependencies]
 sp-core = { default-features = false, version = '3.0.0' }
 sp-io = { default-features = false, version = '3.0.0' }

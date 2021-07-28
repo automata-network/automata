@@ -31,6 +31,7 @@ use sp_version::RuntimeVersion;
 use sp_version::NativeVersion;
 use fp_rpc::TransactionStatus;
 use codec::{ Encode, Decode};
+use pallet_geode::Geode;
 
 pub mod apis;
 pub mod constants;
@@ -61,6 +62,7 @@ use pallet_evm::{
 /// Import the template pallet.
 pub use pallet_template;
 pub use pallet_attestor;
+pub use pallet_geode;
 
 pub use automata_primitives::*;
 
@@ -383,6 +385,10 @@ impl pallet_attestor::Config for Runtime {
 	type Currency = Balances;
 }
 
+impl pallet_geode::Config for Runtime {
+	type Event = Event;
+}
+
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
@@ -422,7 +428,8 @@ construct_runtime!(
 		TemplateModule: pallet_template::{Module, Call, Storage, Event<T>},
 		Ethereum: pallet_ethereum::{Module, Call, Storage, Event, Config, ValidateUnsigned},
 		Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
-		Attestor: pallet_attestor::{Module, Call, Storage, Event<T>},
+		AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
+		GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
 	}
 );
 
@@ -593,9 +600,15 @@ impl_runtime_apis! {
 
 	impl apis::AttestorApi<Block> for Runtime {
         fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>)> {
-            Attestor::attestor_list()
+            AttestorModule::attestor_list()
         }
     }
+
+	impl apis::GeodeApi<Block> for Runtime {
+		fn registered_geodes() -> Vec<Geode<AccountId, Hash>> {
+			GeodeModule::registered_geodes()
+		}
+	}
 
 	impl fp_rpc::EthereumRuntimeRPCApi<Block> for Runtime {
 		fn chain_id() -> u64 {

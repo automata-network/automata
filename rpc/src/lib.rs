@@ -7,6 +7,7 @@
 
 use std::sync::Arc;
 use automata_runtime::apis::AttestorApi as AttestorRuntimeApi;
+use automata_runtime::apis::GeodeApi as GeodeRuntimeApi;
 use automata_primitives::{Block, AccountId, Balance, Index, Hash};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::{Error as BlockChainError, HeaderMetadata, HeaderBackend};
@@ -27,6 +28,7 @@ use sc_client_api::{
 use sp_runtime::traits::BlakeTwo256;
 
 pub mod attestor;
+pub mod geode;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -64,6 +66,7 @@ pub fn create_full<C, P, BE>(
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
 	C::Api: BlockBuilder<Block>,
 	C::Api: AttestorRuntimeApi<Block>,
+	C::Api: GeodeRuntimeApi<Block>,
 	P: TransactionPool<Block=Block> + 'static,
 {
     use fc_rpc::{
@@ -73,7 +76,8 @@ pub fn create_full<C, P, BE>(
 
 	use substrate_frame_rpc_system::{FullSystem, SystemApi};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
-	use attestor::AttestorApi;
+	use attestor::AttestorServer;
+	use geode::GeodeServer;
 
 	let mut io = jsonrpc_core::IoHandler::default();
 	let FullDeps {
@@ -140,9 +144,13 @@ pub fn create_full<C, P, BE>(
         ),
     )));
 
-	io.extend_with(AttestorApi::to_delegate(attestor::Attestor::new(
+	io.extend_with(AttestorServer::to_delegate(attestor::AttestorApi::new(
         client.clone(),
     )));
+
+	io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
+		client.clone(),
+	)));
 
 	io
 }

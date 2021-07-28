@@ -29,6 +29,7 @@ sc-light = '3.0.0'
 # local dependencies
 automata-primitives = { path = "../primitives" }
 automata-runtime = { path = '../runtime' }
+pallet-geode = { path = "../pallets/geode" }
 
 fc-rpc = { default-features = false, version = '1.0.0'}
 fc-rpc-core = { default-features = false, version = '1.0.0'}
