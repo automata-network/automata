@@ -1,5 +1,6 @@
 [package]
 authors = ["Automata Team"]
+description = 'FRAME pallet for defining geode related logic.'
 edition = '2018'
 homepage = 'https://www.ata.network/'
 license = 'Apache-2.0'

@@ -1,13 +1,12 @@
 [package]
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
-description = 'FRAME pallet template for defining custom runtime logic.'
+authors = ["Automata Team"]
+description = 'FRAME pallet for defining attestor related logic.'
 edition = '2018'
-homepage = 'https://substrate.dev'
-license = 'Unlicense'
+homepage = 'https://www.ata.network/'
+license = 'Apache-2.0'
 name = 'pallet-attestor'
-readme = 'README.md'
 repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
-version = '3.0.0'
+version = '0.1.0'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
