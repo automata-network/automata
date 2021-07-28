@@ -59,6 +59,7 @@ sc-chain-spec = '3.0.0'
 # local dependencies
 automata-runtime = { path = '../runtime' }
 automata-primitives = { path = "../primitives" }
+automata-rpc = { path = "../rpc" }
 
 pallet-evm = { default-features = false, version = '3.0.0'}
 pallet-ethereum = { default-features = false, version = '1.0.0'}
