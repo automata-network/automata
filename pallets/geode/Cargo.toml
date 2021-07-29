@@ -22,6 +22,7 @@ sp-std = {version  = "3.0.0", default-features = false }
 
 # local dependencies
 primitives = { package = "automata-primitives", path = "../../primitives", default-features = false }
+pallet-attestor = { version = "0.1.0", default-features = false, path = '../attestor' }
 
 [dev-dependencies]
 sp-core = { default-features = false, version = '3.0.0' }

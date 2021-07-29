@@ -17,21 +17,23 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use frame_support::traits::{Currency, ReservableCurrency};
 	use sp_std::prelude::*;
-
-	pub const ATTESTOR_REQUIRE: usize = 1;
+	use sp_std::collections::btree_set::BTreeSet;
 
 	/// Attestor struct
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default)]
-    pub struct Attestor {
+    pub struct Attestor<AccountId: Ord> {
         /// Attestor's url, geode will get it and communicate with attestor.
         pub url: Vec<u8>,
         /// Attestor's Secp256r1PublicKey
 		pub pubkey: Vec<u8>,
-		
+		/// Geode being attested by this attestor
+		pub geodes: BTreeSet<AccountId>,
 	}
 	
 	type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+	pub type AttestorOf<T> =
+	Attestor<<T as frame_system::Config>::AccountId>;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -49,7 +51,11 @@ pub mod pallet {
 	// The pallet's runtime storage items.
 	#[pallet::storage]
     #[pallet::getter(fn attestors)]
-	pub(super) type Attestors<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, Attestor, ValueQuery>;
+	pub type Attestors<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, AttestorOf<T>, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn geode_attestors)]
+	pub type GeodeAttestors<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BTreeSet<T::AccountId>, ValueQuery>;
 	
 	#[pallet::storage]
 	#[pallet::getter(fn att_stake_min)]
@@ -67,9 +73,6 @@ pub mod pallet {
 		AttestorRemove(T::AccountId),
 		/// Attestor's url updated. \[attestor_id\]
         AttestorUpdate(T::AccountId),
-        /// Geodes which didn't get enough attestors at limited time after registered.
-        /// \[Vec<geode_id>\]
-        AttestTimeOut(Vec<T::AccountId>),
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		SomethingStored(u32, T::AccountId),
@@ -78,8 +81,6 @@ pub mod pallet {
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		 /// Duplicate attestor for geode.
-		 AlreadyAttestFor,
 		 /// Use an invalid attestor id.
 		 InvalidAttestor,
 	}
@@ -99,9 +100,10 @@ pub mod pallet {
             let limit = <AttStakeMin<T>>::get().ok_or(Error::<T>::InvalidAttestor)?;
 			T::Currency::reserve(&who, limit)?;
 
-            let attestor = Attestor {
+            let attestor = AttestorOf::<T> {
                 url,
-                pubkey
+                pubkey,
+				geodes: BTreeSet::new()
             };
              <Attestors<T>>::insert(who.clone(), attestor);
              Self::deposit_event(Event::AttestorRegister(who));
@@ -118,6 +120,12 @@ pub mod pallet {
         pub fn attestor_remove(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             ensure!(<Attestors<T>>::contains_key(&who), Error::<T>::InvalidAttestor);
+			let attestor = <Attestors<T>>::get(&who);
+			for geode in attestor.geodes.into_iter() {
+				let mut attestors = <GeodeAttestors<T>>::get(&geode);
+				attestors.remove(&who);
+				<GeodeAttestors<T>>::insert(&geode, attestors);
+			}
             <Attestors<T>>::remove(&who);
             Self::deposit_event(Event::AttestorRemove(who));
             Ok(().into())
@@ -125,11 +133,11 @@ pub mod pallet {
 		
 		/// Called by attestor to update its url.
         #[pallet::weight(0)]
-        pub fn attestor_update(origin: OriginFor<T>, data: Vec<u8>) -> DispatchResultWithPostInfo {
+        pub fn attestor_update(origin: OriginFor<T>, url: Vec<u8>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let mut attestor = <Attestors<T>>::get(&who);
-            attestor.url = data;
-            <Attestors<T>>::insert(who.clone(), attestor);
+            attestor.url = url;
+            <Attestors<T>>::insert(&who, attestor);
             Self::deposit_event(Event::AttestorUpdate(who));
             Ok(().into())
 		}
@@ -153,6 +161,17 @@ pub mod pallet {
                 })
                 .all(|_| true);
             res
+		}
+
+		/// Return list of attestors of a geode
+		pub fn attestors_of_geode(geode: T::AccountId) -> Vec<(Vec<u8>, Vec<u8>)> {
+			let mut res = Vec::new();
+			let ids = <GeodeAttestors<T>>::get(&geode);
+			ids.iter().map(|id| {
+				let att = <Attestors<T>>::get(&id);
+				res.push((att.url, att.pubkey))
+			}).all(|_| true);
+			res
 		}
 	}
 }

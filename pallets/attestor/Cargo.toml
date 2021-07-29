@@ -5,7 +5,7 @@ edition = '2018'
 homepage = 'https://www.ata.network/'
 license = 'Apache-2.0'
 name = 'pallet-attestor'
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
+repository = "https://github.com/automata-network/automata"
 version = '0.1.0'
 
 [package.metadata.docs.rs]

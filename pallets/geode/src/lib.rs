@@ -23,18 +23,13 @@ pub mod pallet {
         Registered,
         /// When geode get enough attestors' attestation, it turns to Attested.
         Attested,
-        /// When a geode is having a pending dispatching request to answer
-        Dispatching,
-        /// When geode accepted a order dispatching.
-        Dispatched,
-        /// When geode finished service installation.
-        Installed,
-        /// When geode is serving an order.
-        Serving,
-        /// When the geode is gracefully terminating from an order
-        Terminating,
+        /// When a geode is instantiated with an order
+        Instantiated,
         /// Unknown state
         Unknown,
+        /// When the geode is offline
+        Offline,
+     
     }
 
     impl Default for GeodeState {
@@ -59,8 +54,6 @@ pub mod pallet {
         pub dns: Vec<u8>,
         /// Geodes' properties
         pub props: BTreeMap<Vec<u8>, Vec<u8>>,
-        /// The attestors for this geode.
-        pub attestors: Vec<AccountId>,
         /// Current state of the geode and the block number of since last state change
         pub state: GeodeState,
         /// promise to be online until which block
@@ -71,7 +64,7 @@ pub mod pallet {
         Geode<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash>;
     
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: frame_system::Config + pallet_attestor::Config {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
     }
 
@@ -119,15 +112,15 @@ pub mod pallet {
     
     #[pallet::storage]
     #[pallet::getter(fn geodes)]
-	pub(super) type Geodes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, GeodeOf<T>, ValueQuery>;
+	pub type Geodes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, GeodeOf<T>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn registered_geode_ids)]
-	pub(super) type RegisteredGeodes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
+	pub type RegisteredGeodes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn attested_geodes_ids)]
-	pub(super) type AttestedGeodes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
+	pub type AttestedGeodes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
 
     #[pallet::call]
     impl<T:Config> Pallet<T> {
@@ -142,7 +135,6 @@ pub mod pallet {
 
             let block_number = <frame_system::Module<T>>::block_number();
             geode_record.state = GeodeState::Registered;
-            geode_record.attestors = Vec::new();
             geode_record.provider = who.clone();
 
             <Geodes<T>>::insert(geode.clone(), geode_record);
@@ -167,6 +159,13 @@ pub mod pallet {
                     }
                     GeodeState::Attested => {
                         <AttestedGeodes<T>>::remove(&geode);
+                        // clean record on attestors
+                        for id in pallet_attestor::GeodeAttestors::<T>::get(&geode) {
+                            let mut attestor = pallet_attestor::Attestors::<T>::get(&id);
+                            attestor.geodes.remove(&geode);
+                            pallet_attestor::Attestors::<T>::insert(&id, attestor);
+                        }
+                        pallet_attestor::GeodeAttestors::<T>::remove(&geode);
                     }
                     _ => {
                         // shouldn't happen
@@ -210,6 +209,17 @@ pub mod pallet {
         pub fn registered_geodes() -> Vec<GeodeOf<T>> {
             let mut res = Vec::new();
             <RegisteredGeodes<T>>::iter()
+                .map(|(id, _)| {
+                    res.push(<Geodes<T>>::get(id));
+                })
+                .all(|_| true);
+            res
+        }
+
+        /// Return geodes in attested state
+        pub fn attested_geodes() -> Vec<GeodeOf<T>> {
+            let mut res = Vec::new();
+            <AttestedGeodes<T>>::iter()
                 .map(|(id, _)| {
                     res.push(<Geodes<T>>::get(id));
                 })
