@@ -66,7 +66,7 @@ pub mod pallet {
 	// The pallet's runtime storage items.
 	#[pallet::storage]
     #[pallet::getter(fn attestors)]
-	pub(super) type Reports<T: Config> = StorageMap<_, Blake2_128Concat, ReportKey<T>, ReportOf<T>, ValueQuery>;
+	pub(super) type Reports<T: Config> = StorageMap<_, Blake2_128Concat, (T::AccountId, ReportType), ReportOf<T>, ValueQuery>;
 
 	// Pallets use events to inform users when important changes are made.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/events
@@ -104,7 +104,7 @@ pub mod pallet {
         fn on_finalize(block_number: T::BlockNumber) {
             match TryInto::<BlockNumber>::try_into(block_number) {
                 Ok(now) => {
-                    let mut expired = Vec::<ReportKey<T>>::new();
+                    let mut expired = Vec::<(T::AccountId, ReportType)>::new();
                     <Reports<T>>::iter().map(|(key, report)|{
                         if report.start + REPORT_EXPIRY_BLOCK_NUMBER < now {
                             expired.push(key);
@@ -208,7 +208,7 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         /// Return attestors' url and pubkey list for rpc.
-        fn slash_geode(key: &ReportKey<T>, report: ReportOf<T>) {
+        fn slash_geode(key: &(T::AccountId, ReportType), report: ReportOf<T>) {
             // update pallet_attestor::Attestors
             for id in report.attestors {
                 let mut att = pallet_attestor::Attestors::<T>::get(&id);
