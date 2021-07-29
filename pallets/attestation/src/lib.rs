@@ -11,7 +11,7 @@ pub mod pallet {
     use sp_runtime::{Percent, RuntimeDebug, SaturatedConversion};
     use frame_support::{ensure};
     use sp_std::collections::btree_set::BTreeSet;
-    use core::{convert::TryInto,};
+    use core::convert::{TryInto, TryFrom};
 
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
@@ -25,11 +25,24 @@ pub mod pallet {
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
     pub enum ReportType {
         /// Geode failed challange check
-        Challenge,
+        Challenge = 0x00,
         /// Geode failed service check
         Service,
         /// Default type
         Default,
+    }
+
+    impl TryFrom<u8> for ReportType {
+        type Error = ();
+    
+        fn try_from(v: u8) -> Result<Self, Self::Error> {
+            match v {
+                x if x == ReportType::Challenge as u8 => Ok(ReportType::Challenge),
+                x if x == ReportType::Service as u8 => Ok(ReportType::Service),
+                x if x == ReportType::Default as u8 => Ok(ReportType::Default),
+                _ => Err(()),
+            }
+        }
     }
 
     impl Default for ReportType {
@@ -45,9 +58,6 @@ pub mod pallet {
         pub start: BlockNumber,
         pub attestors: BTreeSet<AccountId>,
     }
-	
-    pub type ReportKey<T> =
-        (<T as frame_system::Config>::AccountId, ReportType);
 
 	pub type ReportOf<T> =
         Report<<T as frame_system::Config>::AccountId>;
@@ -66,7 +76,7 @@ pub mod pallet {
 	// The pallet's runtime storage items.
 	#[pallet::storage]
     #[pallet::getter(fn attestors)]
-	pub(super) type Reports<T: Config> = StorageMap<_, Blake2_128Concat, (T::AccountId, ReportType), ReportOf<T>, ValueQuery>;
+	pub(super) type Reports<T: Config> = StorageMap<_, Blake2_128Concat, (T::AccountId, u8), ReportOf<T>, ValueQuery>;
 
 	// Pallets use events to inform users when important changes are made.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/events
@@ -95,6 +105,8 @@ pub mod pallet {
 		 AlreadyAttestFor,
          /// Attestor not attesting this geode.
          NotAttestingFor,
+         /// Invalid Report Type
+         InvalidReportType,
 	}
 
 	#[pallet::hooks]
@@ -104,7 +116,7 @@ pub mod pallet {
         fn on_finalize(block_number: T::BlockNumber) {
             match TryInto::<BlockNumber>::try_into(block_number) {
                 Ok(now) => {
-                    let mut expired = Vec::<(T::AccountId, ReportType)>::new();
+                    let mut expired = Vec::<(T::AccountId, u8)>::new();
                     <Reports<T>>::iter().map(|(key, report)|{
                         if report.start + REPORT_EXPIRY_BLOCK_NUMBER < now {
                             expired.push(key);
@@ -128,13 +140,19 @@ pub mod pallet {
 	impl<T:Config> Pallet<T> {
         /// Report that somebody did a misconduct. The actual usage is being considered.
         #[pallet::weight(0)]
-        pub fn report_misconduct(origin: OriginFor<T>, geode_id: T::AccountId, report_type: ReportType) -> DispatchResultWithPostInfo {
+        pub fn report_misconduct(origin: OriginFor<T>, geode_id: T::AccountId, report_type: u8) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             // check attestor existance and whether attested
             ensure!(pallet_attestor::Attestors::<T>::contains_key(&who), pallet_attestor::Error::<T>::InvalidAttestor);
             ensure!(pallet_attestor::Attestors::<T>::get(&who).geodes.contains(&geode_id), Error::<T>::NotAttestingFor);
             // check have report
-            let key = (geode_id.clone(), report_type.clone());
+            match ReportType::try_from(report_type.clone()) {
+                Ok(_) => {},
+                Err(_) => {
+                    return Err(Error::<T>::InvalidReportType.into());
+                }
+            };
+            let key = (geode_id.clone(), report_type);
             let mut report = ReportOf::<T>::default();
             if <Reports<T>>::contains_key(&key) {
                 report = <Reports<T>>::get(&key);
@@ -208,7 +226,7 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         /// Return attestors' url and pubkey list for rpc.
-        fn slash_geode(key: &(T::AccountId, ReportType), report: ReportOf<T>) {
+        fn slash_geode(key: &(T::AccountId, u8), report: ReportOf<T>) {
             // update pallet_attestor::Attestors
             for id in report.attestors {
                 let mut att = pallet_attestor::Attestors::<T>::get(&id);
