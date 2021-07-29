@@ -159,17 +159,20 @@ pub mod pallet {
                     }
                     GeodeState::Attested => {
                         <AttestedGeodes<T>>::remove(&geode);
-                        // clean record on attestors
-                        for id in pallet_attestor::GeodeAttestors::<T>::get(&geode) {
-                            let mut attestor = pallet_attestor::Attestors::<T>::get(&id);
-                            attestor.geodes.remove(&geode);
-                            pallet_attestor::Attestors::<T>::insert(&id, attestor);
-                        }
-                        pallet_attestor::GeodeAttestors::<T>::remove(&geode);
+
                     }
                     _ => {
                         // shouldn't happen
                     }
+                }
+                // clean record on attestors
+                if pallet_attestor::GeodeAttestors::<T>::contains_key(&geode) {
+                    for id in pallet_attestor::GeodeAttestors::<T>::get(&geode) {
+                        let mut attestor = pallet_attestor::Attestors::<T>::get(&id);
+                        attestor.geodes.remove(&geode);
+                        pallet_attestor::Attestors::<T>::insert(&id, attestor);
+                    }
+                    pallet_attestor::GeodeAttestors::<T>::remove(&geode);
                 }
             } else {
                 return Err(Error::<T>::InvalidGeode.into());
