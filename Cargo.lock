@@ -4200,6 +4200,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-attestation"
+version = "0.1.0"
+dependencies = [
+ "automata-primitives",
+ "frame-support",
+ "frame-system",
+ "pallet-attestor",
+ "pallet-geode",
+ "parity-scale-codec",
+ "serde",
+ "serde_json",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-attestor"
 version = "0.1.0"
 dependencies = [
@@ -4357,6 +4375,7 @@ dependencies = [
  "automata-primitives",
  "frame-support",
  "frame-system",
+ "pallet-attestor",
  "parity-scale-codec",
  "serde",
  "serde_json",
