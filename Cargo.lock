@@ -502,6 +502,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal",
+ "pallet-attestation",
  "pallet-attestor",
  "pallet-aura",
  "pallet-balances",

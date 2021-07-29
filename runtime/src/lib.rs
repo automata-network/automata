@@ -63,6 +63,7 @@ use pallet_evm::{
 pub use pallet_template;
 pub use pallet_attestor;
 pub use pallet_geode;
+pub use pallet_attestation;
 
 pub use automata_primitives::*;
 
@@ -389,6 +390,10 @@ impl pallet_geode::Config for Runtime {
 	type Event = Event;
 }
 
+impl pallet_attestation::Config for Runtime {
+	type Event = Event;
+}
+
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
@@ -430,6 +435,7 @@ construct_runtime!(
 		Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
 		AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
 		GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
+		AttestationModule: pallet_attestation::{Module, Call, Storage, Event<T>},
 	}
 );
 
