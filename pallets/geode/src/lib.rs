@@ -29,7 +29,6 @@ pub mod pallet {
         Unknown,
         /// When the geode is offline
         Offline,
-     
     }
 
     impl Default for GeodeState {
@@ -127,7 +126,7 @@ pub mod pallet {
         /// Called by provider to register a geode. The user/attestors/state/provider will be
         /// set automatically regardless of what you set.
         #[pallet::weight(0)]
-        pub fn geode_register(origin: OriginFor<T>, geode_record: GeodeOf<T>) -> DispatchResultWithPostInfo {
+        pub fn provider_register_geode(origin: OriginFor<T>, geode_record: GeodeOf<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let mut geode_record = geode_record;
             let geode = geode_record.id.clone();

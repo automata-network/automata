@@ -140,7 +140,7 @@ pub mod pallet {
 	impl<T:Config> Pallet<T> {
         /// Report that somebody did a misconduct. The actual usage is being considered.
         #[pallet::weight(0)]
-        pub fn report_misconduct(origin: OriginFor<T>, geode_id: T::AccountId, report_type: u8) -> DispatchResultWithPostInfo {
+        pub fn report_misconduct(origin: OriginFor<T>, geode_id: T::AccountId, report_type: u8, _proof: Vec<u8>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             // check attestor existance and whether attested
             ensure!(pallet_attestor::Attestors::<T>::contains_key(&who), pallet_attestor::Error::<T>::InvalidAttestor);

@@ -102,7 +102,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 102,
+	spec_version: 103,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -613,6 +613,10 @@ impl_runtime_apis! {
 	impl apis::GeodeApi<Block> for Runtime {
 		fn registered_geodes() -> Vec<Geode<AccountId, Hash>> {
 			GeodeModule::registered_geodes()
+		}
+
+		fn attested_geodes() -> Vec<Geode<AccountId, Hash>> {
+			GeodeModule::attested_geodes()
 		}
 	}
 

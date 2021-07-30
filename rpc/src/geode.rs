@@ -13,9 +13,12 @@ const RUNTIME_ERROR: i64 = 1;
 #[rpc]
 /// Geode RPC methods
 pub trait GeodeServer<BlockHash> {
-    /// return the attestor list
+    /// return the registered geode list
     #[rpc(name = "registered_geodes")]
     fn registered_geodes(&self) -> Result<Vec<Geode<AccountId, Hash>>>;
+    /// return the attested geode list
+    #[rpc(name = "attested_geodes")]
+    fn attested_geodes(&self) -> Result<Vec<Geode<AccountId, Hash>>>;
 }
 
 /// An implementation of geode specific RPC methods.
@@ -48,5 +51,19 @@ where
             data: Some(format!("{:?}", e).into()),
         })?;
         Ok(registered_geodes_list)
+    }
+
+    /// get registered geode list
+    fn attested_geodes(&self) -> Result<Vec<Geode<AccountId, Hash>>> {
+        let api = self.client.runtime_api();
+        let best = self.client.info().best_hash;
+        let at = BlockId::hash(best);
+
+        let attested_geodes_list = api.attested_geodes(&at).map_err(|e| Error {
+            code: ErrorCode::ServerError(RUNTIME_ERROR),
+            message: "Runtime unable to get attested geodes list.".into(),
+            data: Some(format!("{:?}", e).into()),
+        })?;
+        Ok(attested_geodes_list)
     }
 }
