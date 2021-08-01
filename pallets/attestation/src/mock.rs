@@ -122,3 +122,20 @@ pub fn register_attestor(attestor_account: <Test as system::Config>::AccountId) 
     // successfully call register 
     AttestorModule::attestor_register(Origin::signed(attestor_account), url.clone(), pubkey.clone());
 }
+
+pub fn provider_register_geode(
+    provider: <Test as system::Config>::AccountId, 
+    geode_id: <Test as system::Config>::AccountId) {
+    let geode: pallet_geode::Geode::< <Test as system::Config>::AccountId, <Test as system::Config>::Hash > = pallet_geode::Geode {
+        id: geode_id,
+        provider: provider,
+        order: None,
+        ip: vec![],
+        dns: vec![],
+        props: Default::default(),
+        state: Default::default(),
+        promise: Default::default(),
+    };
+
+    GeodeModule::provider_register_geode(Origin::signed(provider), geode);
+}
