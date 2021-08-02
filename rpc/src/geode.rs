@@ -7,6 +7,7 @@ use pallet_geode::Geode;
 use automata_primitives::{AccountId, Block, BlockId, Hash};
 use sp_api::ProvideRuntimeApi;
 use sp_runtime::traits::Block as BlockT;
+use std::convert::TryInto;
 
 const RUNTIME_ERROR: i64 = 1;
 
@@ -21,7 +22,7 @@ pub trait GeodeServer<BlockHash> {
     fn attested_geodes(&self) -> Result<Vec<Geode<AccountId, Hash>>>;
     /// Return list geode an attestor is attesting
     #[rpc(name = "attestor_attested_geodes")]
-    fn attestor_attested_geodes(&self, attestor: AccountId) -> Result<Vec<Geode<AccountId, Hash>>>;
+    fn attestor_attested_geodes(&self, attestor: String) -> Result<Vec<Geode<AccountId, Hash>>>;
 }
 
 /// An implementation of geode specific RPC methods.
@@ -71,12 +72,20 @@ where
     }
 
     /// Return list geode an attestor is attesting
-    fn attestor_attested_geodes(&self, attestor: AccountId) -> Result<Vec<Geode<AccountId, Hash>>> {
+    fn attestor_attested_geodes(&self, attestor: String) -> Result<Vec<Geode<AccountId, Hash>>> {
         let api = self.client.runtime_api();
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
-
-        let attestor_attested_geodes_list = api.attestor_attested_geodes(&at, attestor).map_err(|e| Error {
+        let att: [u8; 32] = hex::decode(attestor.as_str()).map_err(|e| Error {
+            code: ErrorCode::InvalidParams,
+            message: "Invalid attestor.".into(),
+            data: Some(format!("{:?}", e).into()),
+        })?.try_into().map_err(|e| Error {
+            code: ErrorCode::InvalidParams,
+            message: "Invalid attestor.".into(),
+            data: Some(format!("{:?}", e).into()),
+        })?;
+        let attestor_attested_geodes_list = api.attestor_attested_geodes(&at, att.into()).map_err(|e| Error {
             code: ErrorCode::ServerError(RUNTIME_ERROR),
             message: "Runtime unable to get attestor attested geodes list.".into(),
             data: Some(format!("{:?}", e).into()),

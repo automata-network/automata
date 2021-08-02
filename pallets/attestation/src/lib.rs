@@ -84,7 +84,7 @@ pub mod pallet {
 	#[pallet::metadata(T::AccountId = "AccountId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-        /// Attestor attestor a geode. \[attestor_id, geode_id\]
+        /// Attestor attested a geode. \[attestor_id, geode_id\]
         AttestFor(T::AccountId, T::AccountId),
         /// Geodes which didn't get enough attestors at limited time after registered.
         /// \[Vec<geode_id>\]
