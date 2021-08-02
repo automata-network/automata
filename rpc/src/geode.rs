@@ -19,6 +19,9 @@ pub trait GeodeServer<BlockHash> {
     /// return the attested geode list
     #[rpc(name = "attested_geodes")]
     fn attested_geodes(&self) -> Result<Vec<Geode<AccountId, Hash>>>;
+    /// Return list geode an attestor is attesting
+    #[rpc(name = "attested_geodes")]
+    fn attestor_attested_geodes(&self, attestor: AccountId) -> Result<Vec<Geode<AccountId, Hash>>>;
 }
 
 /// An implementation of geode specific RPC methods.
@@ -65,5 +68,19 @@ where
             data: Some(format!("{:?}", e).into()),
         })?;
         Ok(attested_geodes_list)
+    }
+
+    /// Return list geode an attestor is attesting
+    fn attestor_attested_geodes(&self, attestor: AccountId) -> Result<Vec<Geode<AccountId, Hash>>> {
+        let api = self.client.runtime_api();
+        let best = self.client.info().best_hash;
+        let at = BlockId::hash(best);
+
+        let attestor_attested_geodes_list = api.attestor_attested_geodes(&at, attestor).map_err(|e| Error {
+            code: ErrorCode::ServerError(RUNTIME_ERROR),
+            message: "Runtime unable to get attestor attested geodes list.".into(),
+            data: Some(format!("{:?}", e).into()),
+        })?;
+        Ok(attestor_attested_geodes_list)
     }
 }

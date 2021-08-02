@@ -4222,6 +4222,7 @@ dependencies = [
 name = "pallet-attestor"
 version = "0.1.0"
 dependencies = [
+ "automata-primitives",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
