@@ -60,11 +60,11 @@ pub mod pallet {
 	pub type GeodeAttestors<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BTreeSet<T::AccountId>, ValueQuery>;
 	
 	#[pallet::type_value]
-	pub(super) fn DefaultAttStakeMin<T: Config>() -> BalanceOf<T> { 100.into() }
+	pub(super) fn DefaultAttStakeMin<T: Config>() -> BalanceOf<T> { T::Currency::minimum_balance() }
 
 	#[pallet::storage]
 	#[pallet::getter(fn att_stake_min)]
-	pub(super) type AttStakeMin<T: Config> = StorageValue<_, BalanceOf<T>>;
+	pub(super) type AttStakeMin<T: Config> = StorageValue<_, BalanceOf<T>, ValueQuery, DefaultAttStakeMin<T>>;
 
 	// Pallets use events to inform users when important changes are made.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/events
