@@ -20,7 +20,7 @@ pub trait GeodeServer<BlockHash> {
     #[rpc(name = "attested_geodes")]
     fn attested_geodes(&self) -> Result<Vec<Geode<AccountId, Hash>>>;
     /// Return list geode an attestor is attesting
-    #[rpc(name = "attested_geodes")]
+    #[rpc(name = "attestor_attested_geodes")]
     fn attestor_attested_geodes(&self, attestor: AccountId) -> Result<Vec<Geode<AccountId, Hash>>>;
 }
 
