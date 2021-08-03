@@ -46,7 +46,7 @@ pub mod pallet {
         /// Provider id
         pub provider: AccountId,
         /// Assigned order hash
-        pub order: Hash,
+        pub order: Option<Hash>,
         /// Geode's public ip.
         pub ip: Vec<u8>,
         /// Geode's dns.
