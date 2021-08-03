@@ -3,11 +3,15 @@ use jsonrpc_derive::rpc;
 use std::sync::Arc;
 use automata_runtime::apis::GeodeApi as GeodeRuntimeApi;
 use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
-use pallet_geode::Geode;
-use automata_primitives::{AccountId, Block, BlockId, Hash};
+use pallet_geode::{Geode, GeodeState};
+use automata_primitives::{AccountId, Block, BlockId, Hash, BlockNumber};
 use sp_api::ProvideRuntimeApi;
-use sp_runtime::traits::Block as BlockT;
+use sp_runtime::{traits::Block as BlockT, RuntimeDebug};
 use std::convert::TryInto;
+use sp_std::{prelude::*,collections::btree_map::BTreeMap};
+
+// #[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 const RUNTIME_ERROR: i64 = 1;
 
@@ -16,13 +20,50 @@ const RUNTIME_ERROR: i64 = 1;
 pub trait GeodeServer<BlockHash> {
     /// return the registered geode list
     #[rpc(name = "registered_geodes")]
-    fn registered_geodes(&self) -> Result<Vec<Geode<AccountId, Hash>>>;
+    fn registered_geodes(&self) -> Result<Vec<WrappedGeode<Hash>>>;
     /// return the attested geode list
     #[rpc(name = "attested_geodes")]
-    fn attested_geodes(&self) -> Result<Vec<Geode<AccountId, Hash>>>;
+    fn attested_geodes(&self) -> Result<Vec<WrappedGeode<Hash>>>;
     /// Return list geode an attestor is attesting
     #[rpc(name = "attestor_attested_geodes")]
-    fn attestor_attested_geodes(&self, attestor: String) -> Result<Vec<Geode<AccountId, Hash>>>;
+    fn attestor_attested_geodes(&self, attestor: [u8; 32]) -> Result<Vec<WrappedGeode<Hash>>>;
+}
+
+/// The geode struct shows its status
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(PartialEq, Eq, Clone, RuntimeDebug, Default, Serialize, Deserialize)]
+pub struct WrappedGeode<Hash> {
+    /// Geode id.
+    pub id: [u8; 32],
+    /// Provider id
+    pub provider: [u8; 32],
+    /// Assigned order hash
+    pub order: Option<Hash>,
+    /// Geode's public ip.
+    pub ip: Vec<u8>,
+    /// Geode's dns.
+    pub dns: Vec<u8>,
+    /// Geodes' properties
+    pub props: BTreeMap<Vec<u8>, Vec<u8>>,
+    /// Current state of the geode and the block number of since last state change
+    pub state: GeodeState,
+    /// promise to be online until which block
+    pub promise: BlockNumber,
+}
+
+impl From<Geode<AccountId, Hash>> for WrappedGeode<Hash> {
+    fn from(geode: Geode<AccountId, Hash>) -> Self {
+        WrappedGeode{
+            id: geode.id.into(),
+            provider: geode.provider.into(),
+            order: geode.order,
+            ip: geode.ip,
+            dns: geode.dns,
+            props: geode.props,
+            state: geode.state,
+            promise: geode.promise
+        }
+    }
 }
 
 /// An implementation of geode specific RPC methods.
@@ -44,7 +85,7 @@ where
     C::Api: GeodeRuntimeApi<Block>,
 {
     /// get registered geode list
-    fn registered_geodes(&self) -> Result<Vec<Geode<AccountId, Hash>>> {
+    fn registered_geodes(&self) -> Result<Vec<WrappedGeode<Hash>>> {
         let api = self.client.runtime_api();
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
@@ -54,11 +95,15 @@ where
             message: "Runtime unable to get registered geodes list.".into(),
             data: Some(format!("{:?}", e).into()),
         })?;
-        Ok(registered_geodes_list)
+        let mut res = Vec::<WrappedGeode<Hash>>::new();
+        for geode in registered_geodes_list {
+            res.push(geode.into())
+        }
+        Ok(res)
     }
 
     /// get registered geode list
-    fn attested_geodes(&self) -> Result<Vec<Geode<AccountId, Hash>>> {
+    fn attested_geodes(&self) -> Result<Vec<WrappedGeode<Hash>>> {
         let api = self.client.runtime_api();
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
@@ -68,28 +113,27 @@ where
             message: "Runtime unable to get attested geodes list.".into(),
             data: Some(format!("{:?}", e).into()),
         })?;
-        Ok(attested_geodes_list)
+        let mut res = Vec::<WrappedGeode<Hash>>::new();
+        for geode in attested_geodes_list {
+            res.push(geode.into())
+        }
+        Ok(res)
     }
 
     /// Return list geode an attestor is attesting
-    fn attestor_attested_geodes(&self, attestor: String) -> Result<Vec<Geode<AccountId, Hash>>> {
+    fn attestor_attested_geodes(&self, attestor: [u8; 32]) -> Result<Vec<WrappedGeode<Hash>>> {
         let api = self.client.runtime_api();
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
-        let att: [u8; 32] = hex::decode(attestor.as_str()).map_err(|e| Error {
-            code: ErrorCode::InvalidParams,
-            message: "Invalid attestor.".into(),
-            data: Some(format!("{:?}", e).into()),
-        })?.try_into().map_err(|e| Error {
-            code: ErrorCode::InvalidParams,
-            message: "Invalid attestor.".into(),
-            data: Some(format!("{:?}", e).into()),
-        })?;
-        let attestor_attested_geodes_list = api.attestor_attested_geodes(&at, att.into()).map_err(|e| Error {
+        let attestor_attested_geodes_list = api.attestor_attested_geodes(&at, attestor.into()).map_err(|e| Error {
             code: ErrorCode::ServerError(RUNTIME_ERROR),
             message: "Runtime unable to get attestor attested geodes list.".into(),
             data: Some(format!("{:?}", e).into()),
         })?;
-        Ok(attestor_attested_geodes_list)
+        let mut res = Vec::<WrappedGeode<Hash>>::new();
+        for geode in attestor_attested_geodes_list {
+            res.push(geode.into())
+        }
+        Ok(res)
     }
 }

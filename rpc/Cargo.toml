@@ -10,6 +10,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 serde_json = { version = "1" }
+serde = { version = "1.0.119", features = ["derive"] }
 jsonrpc-core = '15.1.0'
 jsonrpc-derive = '15.0.0'
 jsonrpc-core-client = "15.0.0"
@@ -27,6 +28,7 @@ substrate-frame-rpc-system = '3.0.0'
 pallet-transaction-payment-rpc = '3.0.0'
 sc-light = '3.0.0'
 hex = '0.4.3'
+sp-std = '3.0.0'
 
 # local dependencies
 automata-primitives = { path = "../primitives" }

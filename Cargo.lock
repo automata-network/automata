@@ -482,11 +482,13 @@ dependencies = [
  "sc-network",
  "sc-rpc",
  "sc-rpc-api",
+ "serde",
  "serde_json",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
  "sp-runtime",
+ "sp-std",
  "sp-transaction-pool",
  "substrate-frame-rpc-system",
 ]
