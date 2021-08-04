@@ -228,5 +228,16 @@ pub mod pallet {
                 .all(|_| true);
             res
         }
+
+        /// Return list geode an attestor is attesting
+		pub fn attestor_attested_geodes(attestor: T::AccountId) -> Vec<GeodeOf<T>> {
+			let mut res = Vec::new();
+            if pallet_attestor::Attestors::<T>::contains_key(&attestor) {
+                for geode in pallet_attestor::Attestors::<T>::get(&attestor).geodes {
+                    res.push(Geodes::<T>::get(&geode));
+                }
+            }
+            res
+		}
     }
 }

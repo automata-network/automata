@@ -12,5 +12,6 @@ sp_api::decl_runtime_apis! {
     pub trait GeodeApi {
         fn registered_geodes() -> Vec<Geode<AccountId, Hash>>;
         fn attested_geodes() -> Vec<Geode<AccountId, Hash>>;
+        fn attestor_attested_geodes(attestor: AccountId) -> Vec<Geode<AccountId, Hash>>;
     }
 }

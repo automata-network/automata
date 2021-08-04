@@ -63,7 +63,7 @@ use pallet_evm::{
 pub use pallet_template;
 pub use pallet_attestor;
 pub use pallet_geode;
-pub use pallet_attestation;
+pub use pallet_liveness;
 
 pub use automata_primitives::*;
 
@@ -102,7 +102,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 103,
+	spec_version: 106,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -390,7 +390,7 @@ impl pallet_geode::Config for Runtime {
 	type Event = Event;
 }
 
-impl pallet_attestation::Config for Runtime {
+impl pallet_liveness::Config for Runtime {
 	type Event = Event;
 }
 
@@ -435,7 +435,7 @@ construct_runtime!(
 		Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
 		AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
 		GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
-		AttestationModule: pallet_attestation::{Module, Call, Storage, Event<T>},
+		LivenessModule: pallet_liveness::{Module, Call, Storage, Event<T>},
 	}
 );
 
@@ -617,6 +617,10 @@ impl_runtime_apis! {
 
 		fn attested_geodes() -> Vec<Geode<AccountId, Hash>> {
 			GeodeModule::attested_geodes()
+		}
+
+		fn attestor_attested_geodes(attestor: AccountId) -> Vec<Geode<AccountId, Hash>> {
+			GeodeModule::attestor_attested_geodes(attestor)
 		}
 	}
 

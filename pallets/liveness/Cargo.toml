@@ -4,7 +4,7 @@ description = 'FRAME pallet for defining attestor related logic.'
 edition = '2018'
 homepage = 'https://www.ata.network/'
 license = 'Apache-2.0'
-name = 'pallet-attestation'
+name = 'pallet-liveness'
 repository = "https://github.com/automata-network/automata"
 version = '0.1.0'
 

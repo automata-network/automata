@@ -1,4 +1,4 @@
-use crate as attestation;
+use crate as liveness;
 use sp_core::H256;
 use frame_support::parameter_types;
 use sp_runtime::{
@@ -22,7 +22,7 @@ frame_support::construct_runtime!(
 		Balances: pallet_balances::{Module, Call, Storage, Event<T>},
         AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
         GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
-        AttestationModule: attestation::{Module, Call, Storage, Event<T>},
+        LivenessModule: liveness::{Module, Call, Storage, Event<T>},
 	}
 );
 
@@ -81,7 +81,7 @@ impl pallet_geode::Config for Test {
 	type Event = Event;
 }
 
-impl attestation::Config for Test {
+impl liveness::Config for Test {
 	type Event = Event;
 }
 

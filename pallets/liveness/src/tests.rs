@@ -10,7 +10,7 @@ fn it_works_attestor_attest_geode(){
         register_attestor(attestor_account);
         provider_register_geode(attestor_account, geode_account);
 
-        assert_ok!(AttestationModule::attestor_attest_geode(
+        assert_ok!(LivenessModule::attestor_attest_geode(
                 Origin::signed(attestor_account), 
             geode_account));
     });
@@ -24,7 +24,7 @@ fn it_attestor_attest_geode_invalid_attestor(){
 
         // attestor not registered
         assert_noop!(
-            AttestationModule::attestor_attest_geode(
+            LivenessModule::attestor_attest_geode(
                 Origin::signed(attestor_account), 
                 geode_account), 
             pallet_attestor::Error::<Test>::InvalidAttestor);
@@ -40,13 +40,13 @@ fn it_attestor_attest_geode_already_attestor(){
         register_attestor(attestor_account);
         provider_register_geode(attestor_account, geode_account);
 
-        assert_ok!(AttestationModule::attestor_attest_geode(
+        assert_ok!(LivenessModule::attestor_attest_geode(
                 Origin::signed(attestor_account), 
             geode_account));
 
         // readly registered before    
         assert_noop!(
-            AttestationModule::attestor_attest_geode(
+            LivenessModule::attestor_attest_geode(
                 Origin::signed(attestor_account), 
                 geode_account), 
             Error::<Test>::AlreadyAttestFor);
@@ -63,7 +63,7 @@ fn it_attestor_attest_geode_invalid_geode(){
 
         // geode not registered before    
         assert_noop!(
-            AttestationModule::attestor_attest_geode(
+            LivenessModule::attestor_attest_geode(
                 Origin::signed(attestor_account), 
                 geode_account), 
             pallet_geode::Error::<Test>::InvalidGeode);
@@ -81,12 +81,12 @@ fn it_works_report_misconduct() {
         register_attestor(attestor_account);
         provider_register_geode(attestor_account, geode_account);
 
-        assert_ok!(AttestationModule::attestor_attest_geode(
+        assert_ok!(LivenessModule::attestor_attest_geode(
                 Origin::signed(attestor_account), 
             geode_account));
         
         // report misconduct successfully
-        assert_ok!(AttestationModule::report_misconduct(
+        assert_ok!(LivenessModule::report_misconduct(
             Origin::signed(attestor_account), 
             geode_account, 
             report_type as u8, 
@@ -103,7 +103,7 @@ fn it_report_misconduct_invalid_attestor() {
         let proof: Vec<u8> = vec![];
 
         // attestor not registered
-        assert_noop!(AttestationModule::report_misconduct(
+        assert_noop!(LivenessModule::report_misconduct(
                 Origin::signed(attestor_account), 
                 geode_account, 
                 report_type as u8, 
@@ -122,7 +122,7 @@ fn it_report_misconduct_not_attesting_for() {
         register_attestor(attestor_account);
 
         // attestor not for the geode
-        assert_noop!(AttestationModule::report_misconduct(
+        assert_noop!(LivenessModule::report_misconduct(
                 Origin::signed(attestor_account), 
                 geode_account, 
                 report_type as u8, 
@@ -143,12 +143,12 @@ fn it_report_misconduct_invalid_report_type() {
         register_attestor(attestor_account);
         provider_register_geode(attestor_account, geode_account);
         
-        assert_ok!(AttestationModule::attestor_attest_geode(
+        assert_ok!(LivenessModule::attestor_attest_geode(
             Origin::signed(attestor_account), 
         geode_account));
 
         // report type is wrong
-        assert_noop!(AttestationModule::report_misconduct(
+        assert_noop!(LivenessModule::report_misconduct(
                 Origin::signed(attestor_account), 
                 geode_account, 
                 report_type, 

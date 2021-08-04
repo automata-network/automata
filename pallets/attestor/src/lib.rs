@@ -35,6 +35,8 @@ pub mod pallet {
 	pub type AttestorOf<T> =
 	Attestor<<T as frame_system::Config>::AccountId>;
 
+	pub const DEFAULT_ATT_STAKE_MIN: primitives::Balance = 1000; 
+
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -57,9 +59,12 @@ pub mod pallet {
 	#[pallet::getter(fn geode_attestors)]
 	pub type GeodeAttestors<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BTreeSet<T::AccountId>, ValueQuery>;
 	
+	#[pallet::type_value]
+	pub(super) fn DefaultAttStakeMin<T: Config>() -> BalanceOf<T> { T::Currency::minimum_balance() }
+
 	#[pallet::storage]
 	#[pallet::getter(fn att_stake_min)]
-	pub(super) type AttStakeMin<T: Config> = StorageValue<_, BalanceOf<T>>;
+	pub(super) type AttStakeMin<T: Config> = StorageValue<_, BalanceOf<T>, ValueQuery, DefaultAttStakeMin<T>>;
 
 	// Pallets use events to inform users when important changes are made.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/events
@@ -97,8 +102,8 @@ pub mod pallet {
 		#[pallet::weight(0)]
         pub fn attestor_register(origin: OriginFor<T>, url: Vec<u8>, pubkey: Vec<u8>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            let limit = <AttStakeMin<T>>::get().ok_or(Error::<T>::InvalidAttestor)?;
-			T::Currency::reserve(&who, limit)?;
+            // let limit = <AttStakeMin<T>>::get().ok_or(Error::<T>::InvalidAttestor)?;
+			// T::Currency::reserve(&who, limit)?;
 
             let attestor = AttestorOf::<T> {
                 url,
