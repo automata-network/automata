@@ -7,7 +7,6 @@ use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
 use sp_api::ProvideRuntimeApi;
 use sp_runtime::{traits::Block as BlockT, RuntimeDebug};
 use sp_std::{collections::btree_map::BTreeMap, prelude::*};
-use std::convert::TryInto;
 use std::sync::Arc;
 
 // #[cfg(feature = "std")]

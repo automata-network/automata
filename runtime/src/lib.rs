@@ -25,13 +25,12 @@ use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
 use sp_runtime::traits::{
-    AccountIdLookup, BlakeTwo256, Block as BlockT, Extrinsic, IdentifyAccount, NumberFor,
-    SaturatedConversion, StaticLookup, Verify,
+    BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion, StaticLookup, Verify,
 };
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     transaction_validity::{TransactionSource, TransactionValidity},
-    AccountId32, ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
+    ApplyExtrinsicResult,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -40,7 +39,7 @@ use sp_version::RuntimeVersion;
 
 pub mod apis;
 pub mod constants;
-use constants::{currency::*, time::*};
+use constants::currency::*;
 use sp_runtime::generic::Era;
 
 // A few exports that help ease life for downstream crates.

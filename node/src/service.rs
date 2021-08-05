@@ -20,8 +20,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::cli::Cli;
-
 // Our native executor instance.
 native_executor_instance!(
     pub Executor,
@@ -181,7 +179,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
         select_chain,
         transaction_pool,
         inherent_data_providers,
-        other: ((aura_block_import, grandpa_link), pending_transactions, frontier_backend),
+        other: ((aura_block_import, grandpa_link), _pending_transactions, frontier_backend),
     } = new_partial(&config)?;
 
     if let Some(url) = &config.keystore_remote {
@@ -237,7 +235,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
     let rpc_extensions_builder = {
         let client = client.clone();
         let pool = transaction_pool.clone();
-        let pending = pending_transactions.clone();
+        let _pending = pending_transactions.clone();
         let frontier_backend = frontier_backend.clone();
 
         Box::new(move |deny_unsafe, _| {

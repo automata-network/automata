@@ -1,4 +1,4 @@
-use automata_primitives::{AccountId, Block, BlockId, Hash};
+use automata_primitives::{Block, BlockId};
 use automata_runtime::apis::AttestorApi as AttestorRuntimeApi;
 use jsonrpc_core::{Error, ErrorCode, Result};
 use jsonrpc_derive::rpc;

@@ -102,6 +102,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     ext
 }
 
+#[allow(dead_code)]
 pub fn events() -> Vec<Event> {
     let evt = System::events()
         .into_iter()
@@ -113,14 +114,15 @@ pub fn events() -> Vec<Event> {
     evt
 }
 
-pub fn register_attestor(attestor_account: <Test as system::Config>::AccountId) {
+pub fn register_attestor(_attestor_account: <Test as system::Config>::AccountId) {
     let url = vec![1];
     let pubkey = vec![2];
     let min_stake = 100;
     let attestor_account = 1;
 
     // set the min stake balance
-    AttestorModule::set_att_stake_min(Origin::root(), min_stake);
+    AttestorModule::set_att_stake_min(Origin::root(), min_stake)
+        .map_err(|err| println!("{:?}", err));
 
     // successfully call register
     AttestorModule::attestor_register(

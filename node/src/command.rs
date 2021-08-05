@@ -16,7 +16,6 @@
 // limitations under the License.
 
 use crate::cli::{Cli, Subcommand};
-use crate::service::new_partial;
 use crate::{chain_spec, service};
 use automata_primitives::Block;
 use sc_cli::{ChainSpec, Role, RuntimeVersion, SubstrateCli};

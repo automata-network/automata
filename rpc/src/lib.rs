@@ -3,8 +3,6 @@
 //! used by Substrate nodes. This file extends those RPC definitions with
 //! capabilities that are specific to this project's runtime configuration.
 
-#![warn(missing_docs)]
-
 use automata_primitives::{AccountId, Balance, Block, Hash, Index};
 use automata_runtime::apis::AttestorApi as AttestorRuntimeApi;
 use automata_runtime::apis::GeodeApi as GeodeRuntimeApi;
@@ -13,7 +11,7 @@ use fc_rpc_core::types::PendingTransactions;
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use pallet_ethereum::EthereumStorageSchema;
 use sc_client_api::{
-    backend::{AuxStore, Backend, StateBackend, StorageProvider},
+    backend::{Backend, StateBackend, StorageProvider},
     client::BlockchainEvents,
 };
 use sc_network::NetworkService;
