@@ -164,6 +164,6 @@ fn it_works_for_set_att_stake_min() {
         assert_ok!(AttestorModule::set_att_stake_min(Origin::root(), min_stake));
 
         // test the value is correct
-        assert_eq!(AttestorModule::att_stake_min(), Some(min_stake));
+        assert_eq!(AttestorModule::att_stake_min(), min_stake);
     });
 }

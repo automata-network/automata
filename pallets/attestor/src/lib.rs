@@ -110,8 +110,8 @@ pub mod pallet {
             pubkey: Vec<u8>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            // let limit = <AttStakeMin<T>>::get().ok_or(Error::<T>::InvalidAttestor)?;
-            // T::Currency::reserve(&who, limit)?;
+            let limit = <AttStakeMin<T>>::get();
+            T::Currency::reserve(&who, limit)?;
 
             let attestor = AttestorOf::<T> {
                 url,
