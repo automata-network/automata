@@ -20,6 +20,7 @@ fn it_works_for_attestor_register() {
 		assert_eq!(data, Attestor{
 			url: url,
 			pubkey: pubkey,
+			geodes: Default::default(),
 		});
 
 		// check the event emit
@@ -62,6 +63,7 @@ fn it_works_for_attestor_remove() {
 		assert_eq!(data, Attestor{
 			url: vec![],
 			pubkey: vec![],
+			geodes: Default::default(),
 		});
 		
 		// check the event emit
@@ -95,6 +97,7 @@ fn it_works_for_attestor_update() {
 		assert_eq!(data, Attestor{
 			url: url,
 			pubkey: pubkey.clone(),
+			geodes: Default::default(),
 		});
 
 		// remove old events
@@ -109,6 +112,7 @@ fn it_works_for_attestor_update() {
 		assert_eq!(data, Attestor{
 			url: new_url,
 			pubkey: pubkey,
+			geodes: Default::default(),
 		});
 		
 		// check the event emit
