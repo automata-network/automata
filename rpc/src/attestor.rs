@@ -1,11 +1,11 @@
+use automata_primitives::{AccountId, Block, BlockId, Hash};
+use automata_runtime::apis::AttestorApi as AttestorRuntimeApi;
 use jsonrpc_core::{Error, ErrorCode, Result};
 use jsonrpc_derive::rpc;
-use std::sync::Arc;
-use automata_runtime::apis::AttestorApi as AttestorRuntimeApi;
 use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
-use automata_primitives::{AccountId, Block, BlockId, Hash};
 use sp_api::ProvideRuntimeApi;
 use sp_runtime::traits::Block as BlockT;
+use std::sync::Arc;
 
 const RUNTIME_ERROR: i64 = 1;
 

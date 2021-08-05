@@ -10,19 +10,19 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
-	use frame_system::pallet_prelude::*;
-    use sp_std::prelude::*;
-    use primitives::{BlockNumber};
+    use core::convert::{TryFrom, TryInto};
+    use frame_support::ensure;
+    use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
+    use frame_system::pallet_prelude::*;
+    use primitives::BlockNumber;
     use sp_runtime::{Percent, RuntimeDebug, SaturatedConversion};
-    use frame_support::{ensure};
     use sp_std::collections::btree_set::BTreeSet;
-    use core::convert::{TryInto, TryFrom};
+    use sp_std::prelude::*;
 
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
 
-	pub const ATTESTOR_REQUIRE: usize = 1;
+    pub const ATTESTOR_REQUIRE: usize = 1;
     pub const REPORT_APPROVAL_RATIO: Percent = Percent::from_percent(50);
     pub const REPORT_EXPIRY_BLOCK_NUMBER: BlockNumber = 10;
 
@@ -40,7 +40,7 @@ pub mod pallet {
 
     impl TryFrom<u8> for ReportType {
         type Error = ();
-    
+
         fn try_from(v: u8) -> Result<Self, Self::Error> {
             match v {
                 x if x == ReportType::Challenge as u8 => Ok(ReportType::Challenge),
@@ -65,31 +65,33 @@ pub mod pallet {
         pub attestors: BTreeSet<AccountId>,
     }
 
-	pub type ReportOf<T> =
-        Report<<T as frame_system::Config>::AccountId>;
+    pub type ReportOf<T> = Report<<T as frame_system::Config>::AccountId>;
 
-	/// Configure the pallet by specifying the parameters and types on which it depends.
-	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_attestor::Config + pallet_geode::Config {
-		/// Because this pallet emits events, it depends on the runtime's definition of an event.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-	}
+    /// Configure the pallet by specifying the parameters and types on which it depends.
+    #[pallet::config]
+    pub trait Config:
+        frame_system::Config + pallet_attestor::Config + pallet_geode::Config
+    {
+        /// Because this pallet emits events, it depends on the runtime's definition of an event.
+        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+    }
 
-	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
-	pub struct Pallet<T>(_);
+    #[pallet::pallet]
+    #[pallet::generate_store(pub(super) trait Store)]
+    pub struct Pallet<T>(_);
 
-	// The pallet's runtime storage items.
-	#[pallet::storage]
+    // The pallet's runtime storage items.
+    #[pallet::storage]
     #[pallet::getter(fn attestors)]
-	pub(super) type Reports<T: Config> = StorageMap<_, Blake2_128Concat, (T::AccountId, u8), ReportOf<T>, ValueQuery>;
+    pub(super) type Reports<T: Config> =
+        StorageMap<_, Blake2_128Concat, (T::AccountId, u8), ReportOf<T>, ValueQuery>;
 
-	// Pallets use events to inform users when important changes are made.
-	// https://substrate.dev/docs/en/knowledgebase/runtime/events
-	#[pallet::event]
-	#[pallet::metadata(T::AccountId = "AccountId")]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config> {
+    // Pallets use events to inform users when important changes are made.
+    // https://substrate.dev/docs/en/knowledgebase/runtime/events
+    #[pallet::event]
+    #[pallet::metadata(T::AccountId = "AccountId")]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
         /// Attestor attested a geode. \[attestor_id, geode_id\]
         AttestFor(T::AccountId, T::AccountId),
         /// Geodes which didn't get enough attestors at limited time after registered.
@@ -99,61 +101,74 @@ pub mod pallet {
         ReportBlame(T::AccountId, T::AccountId),
         /// Geode being slashed due to approval of misconduct report. \[geode_id\]
         SlashGeode(T::AccountId),
-		/// Event documentation should end with an array that provides descriptive names for event
-		/// parameters. [something, who]
-		SomethingStored(u32, T::AccountId),
-	}
+        /// Event documentation should end with an array that provides descriptive names for event
+        /// parameters. [something, who]
+        SomethingStored(u32, T::AccountId),
+    }
 
-	// Errors inform users that something went wrong.
-	#[pallet::error]
-	pub enum Error<T> {
-		 /// Duplicate attestor for geode.
-		 AlreadyAttestFor,
-         /// Attestor not attesting this geode.
-         NotAttestingFor,
-         /// Invalid Report Type
-         InvalidReportType,
-	}
+    // Errors inform users that something went wrong.
+    #[pallet::error]
+    pub enum Error<T> {
+        /// Duplicate attestor for geode.
+        AlreadyAttestFor,
+        /// Attestor not attesting this geode.
+        NotAttestingFor,
+        /// Invalid Report Type
+        InvalidReportType,
+    }
 
-	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         /// At every block, check if a misconduct report has expired or not,
         /// if expired, clean the report.
         fn on_finalize(block_number: T::BlockNumber) {
             match TryInto::<BlockNumber>::try_into(block_number) {
                 Ok(now) => {
                     let mut expired = Vec::<(T::AccountId, u8)>::new();
-                    <Reports<T>>::iter().map(|(key, report)|{
-                        if report.start + REPORT_EXPIRY_BLOCK_NUMBER < now {
-                            expired.push(key);
-                        }
-                    }).all(|_| true);
+                    <Reports<T>>::iter()
+                        .map(|(key, report)| {
+                            if report.start + REPORT_EXPIRY_BLOCK_NUMBER < now {
+                                expired.push(key);
+                            }
+                        })
+                        .all(|_| true);
                     for key in expired {
                         <Reports<T>>::remove(key);
                     }
-                },
-                Err(_) => {
-
                 }
+                Err(_) => {}
             }
         }
     }
 
-	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
-	// These functions materialize as "extrinsics", which are often compared to transactions.
-	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
-	#[pallet::call]
-	impl<T:Config> Pallet<T> {
+    // Dispatchable functions allows users to interact with the pallet and invoke state changes.
+    // These functions materialize as "extrinsics", which are often compared to transactions.
+    // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {
         /// Report that somebody did a misconduct. The actual usage is being considered.
         #[pallet::weight(0)]
-        pub fn report_misconduct(origin: OriginFor<T>, geode_id: T::AccountId, report_type: u8, _proof: Vec<u8>) -> DispatchResultWithPostInfo {
+        pub fn report_misconduct(
+            origin: OriginFor<T>,
+            geode_id: T::AccountId,
+            report_type: u8,
+            _proof: Vec<u8>,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             // check attestor existance and whether attested
-            ensure!(pallet_attestor::Attestors::<T>::contains_key(&who), pallet_attestor::Error::<T>::InvalidAttestor);
-            ensure!(pallet_attestor::Attestors::<T>::get(&who).geodes.contains(&geode_id), Error::<T>::NotAttestingFor);
+            ensure!(
+                pallet_attestor::Attestors::<T>::contains_key(&who),
+                pallet_attestor::Error::<T>::InvalidAttestor
+            );
+            ensure!(
+                pallet_attestor::Attestors::<T>::get(&who)
+                    .geodes
+                    .contains(&geode_id),
+                Error::<T>::NotAttestingFor
+            );
             // check have report
             match ReportType::try_from(report_type.clone()) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(_) => {
                     return Err(Error::<T>::InvalidReportType.into());
                 }
@@ -170,7 +185,11 @@ pub mod pallet {
             }
 
             // check current amount of misconduct satisfying the approval ratio
-            if Percent::from_rational_approximation(report.attestors.len(), pallet_attestor::GeodeAttestors::<T>::get(&geode_id).len()) >= REPORT_APPROVAL_RATIO {
+            if Percent::from_rational_approximation(
+                report.attestors.len(),
+                pallet_attestor::GeodeAttestors::<T>::get(&geode_id).len(),
+            ) >= REPORT_APPROVAL_RATIO
+            {
                 // slash the geode
                 Self::slash_geode(&key, report.clone());
                 <Reports<T>>::remove(&key);
@@ -186,23 +205,38 @@ pub mod pallet {
 
         /// Called by attestor to attest Geode.
         #[pallet::weight(0)]
-        pub fn attestor_attest_geode(origin: OriginFor<T>, geode: T::AccountId) -> DispatchResultWithPostInfo {
+        pub fn attestor_attest_geode(
+            origin: OriginFor<T>,
+            geode: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             // check attestor existance and whether atteseted
-            ensure!(pallet_attestor::Attestors::<T>::contains_key(&who), pallet_attestor::Error::<T>::InvalidAttestor);
+            ensure!(
+                pallet_attestor::Attestors::<T>::contains_key(&who),
+                pallet_attestor::Error::<T>::InvalidAttestor
+            );
             let mut attestor = pallet_attestor::Attestors::<T>::get(&who);
-            ensure!(!attestor.geodes.contains(&geode), Error::<T>::AlreadyAttestFor);
+            ensure!(
+                !attestor.geodes.contains(&geode),
+                Error::<T>::AlreadyAttestFor
+            );
 
             // check geode existance and state
-            ensure!(pallet_geode::Geodes::<T>::contains_key(&geode), pallet_geode::Error::<T>::InvalidGeode);
+            ensure!(
+                pallet_geode::Geodes::<T>::contains_key(&geode),
+                pallet_geode::Error::<T>::InvalidGeode
+            );
             let mut geode_record = pallet_geode::Geodes::<T>::get(&geode);
-            ensure!(geode_record.state != pallet_geode::GeodeState::Unknown && geode_record.state != pallet_geode::GeodeState::Offline, 
-                pallet_geode::Error::<T>::InvalidGeodeState);
-                 
+            ensure!(
+                geode_record.state != pallet_geode::GeodeState::Unknown
+                    && geode_record.state != pallet_geode::GeodeState::Offline,
+                pallet_geode::Error::<T>::InvalidGeodeState
+            );
+
             // update pallet_attestor::Attestors
             attestor.geodes.insert(geode.clone());
             pallet_attestor::Attestors::<T>::insert(&who, attestor);
-            
+
             // update pallet_attestor::GeodeAttestors
             let mut attestors = BTreeSet::<T::AccountId>::new();
             if pallet_attestor::GeodeAttestors::<T>::contains_key(&geode) {
@@ -212,7 +246,9 @@ pub mod pallet {
             pallet_attestor::GeodeAttestors::<T>::insert(&geode, &attestors);
 
             // first attestor attesting this geode
-            if geode_record.state == pallet_geode::GeodeState::Registered && attestors.len() >= ATTESTOR_REQUIRE {
+            if geode_record.state == pallet_geode::GeodeState::Registered
+                && attestors.len() >= ATTESTOR_REQUIRE
+            {
                 // update pallet_geode::Geodes
                 geode_record.state = pallet_geode::GeodeState::Attested;
                 pallet_geode::Geodes::<T>::insert(&geode, geode_record);
@@ -222,13 +258,16 @@ pub mod pallet {
 
                 // move into pallet_geode::AttestedGeodes
                 let block_number = <frame_system::Module<T>>::block_number();
-                pallet_geode::AttestedGeodes::<T>::insert(&geode, block_number.saturated_into::<BlockNumber>());
+                pallet_geode::AttestedGeodes::<T>::insert(
+                    &geode,
+                    block_number.saturated_into::<BlockNumber>(),
+                );
             }
 
             Self::deposit_event(Event::AttestFor(who, geode));
             Ok(().into())
         }
-	}
+    }
 
     impl<T: Config> Pallet<T> {
         /// Return attestors' url and pubkey list for rpc.
@@ -246,10 +285,10 @@ pub mod pallet {
             match geode.state {
                 pallet_geode::GeodeState::Registered => {
                     pallet_geode::RegisteredGeodes::<T>::remove(&key.0);
-                },
+                }
                 pallet_geode::GeodeState::Attested => {
                     pallet_geode::AttestedGeodes::<T>::remove(&key.0);
-                },
+                }
                 _ => {
                     // TODO...
                 }
@@ -257,6 +296,6 @@ pub mod pallet {
             geode.state = pallet_geode::GeodeState::Unknown;
             pallet_geode::Geodes::<T>::insert(&key.0, geode);
             // TODO...
-		}
-	}
+        }
+    }
 }

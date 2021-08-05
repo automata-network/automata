@@ -14,25 +14,28 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use sp_std::{prelude::*,collections::btree_map::BTreeMap};
-    use frame_system::pallet_prelude::*;
-    use frame_support::{pallet_prelude::*,};
     use codec::{Decode, Encode};
     use dispatch::DispatchResult;
+    use frame_support::pallet_prelude::*;
     use frame_support::traits::{OnUnbalanced, Vec};
     use frame_support::{
         dispatch, ensure,
-        traits::{Currency, ExistenceRequirement, LockIdentifier, LockableCurrency, WithdrawReasons},
+        traits::{
+            Currency, ExistenceRequirement, LockIdentifier, LockableCurrency, WithdrawReasons,
+        },
     };
-    
+    use frame_system::pallet_prelude::*;
+    use sp_std::{collections::btree_map::BTreeMap, prelude::*};
+
+    pub use crate::offline::{
+        AutomataOffence, AutomataOffenceDetails, AutomataOffenceError, AutomataReportOffence,
+        GeodeIdd, GeodeOffence, Kind, OffenceReason, OffenceTempRecord, OnAutomataOffenceHandler,
+        SlashParams,
+    };
     use primitives::BlockNumber;
     use sp_runtime::{
         traits::{Hash, Zero},
         Perbill, RuntimeDebug,
-    };
-    pub use crate::offline::{
-        GeodeOffence, AutomataOffence, AutomataOffenceDetails, AutomataOffenceError, AutomataReportOffence, GeodeIdd,
-        Kind, OffenceReason, OffenceTempRecord, OnAutomataOffenceHandler, SlashParams,
     };
 
     pub type Weight = u64;
@@ -73,27 +76,33 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-    
+        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
         type Currency: Currency<Self::AccountId> + LockableCurrency<Self::AccountId>;
-    
+
         type Slash: OnUnbalanced<NegativeImbalanceOf<Self>>;
-    
+
         type Reward: OnUnbalanced<PositiveImbalanceOf<Self>>;
     }
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
-    
+
     #[pallet::event]
-	#[pallet::metadata(T::AccountId = "AccountId")]
-	pub enum Event<T: Config> {
+    #[pallet::metadata(T::AccountId = "AccountId")]
+    pub enum Event<T: Config> {
         /// when a user is slashed.(AccountId, GeodeId, OrderId, DealId, Balance)
-        Slashed(T::AccountId, T::AccountId, T::AccountId, T::AccountId, BalanceOf<T>)
+        Slashed(
+            T::AccountId,
+            T::AccountId,
+            T::AccountId,
+            T::AccountId,
+            BalanceOf<T>,
+        ),
     }
-    
+
     #[pallet::error]
-	pub enum Error<T> {
+    pub enum Error<T> {
         AlreadyRegistered,
         NotRegistered,
         InsufficientBalance,
@@ -103,33 +112,40 @@ pub mod pallet {
     }
 
     #[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
-	pub struct Pallet<T>(_);
-    
-	#[pallet::storage]
-	#[pallet::getter(fn slash_rule)]
+    #[pallet::generate_store(pub(super) trait Store)]
+    pub struct Pallet<T>(_);
+
+    #[pallet::storage]
+    #[pallet::getter(fn slash_rule)]
     pub(super) type SlashRule<T: Config> = StorageValue<_, SlashParams>;
-    
+
     #[pallet::storage]
-	#[pallet::getter(fn reward_rule)]
-	pub(super) type RewardRule<T: Config> = StorageValue<_, Perbill>;
-    
-	#[pallet::storage]
+    #[pallet::getter(fn reward_rule)]
+    pub(super) type RewardRule<T: Config> = StorageValue<_, Perbill>;
+
+    #[pallet::storage]
     #[pallet::getter(fn users)]
-	pub(super) type Users<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, UserLedgerOf<T>, ValueQuery>;
-    
-    #[pallet::storage]
-	#[pallet::getter(fn reports)]
-	pub(super) type Reports<T: Config> = StorageMap<_, Blake2_128Concat, ReportIdOf<T>, AutomataOffenceDetails<T::AccountId, T::BlockNumber>, ValueQuery>;
+    pub(super) type Users<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, UserLedgerOf<T>, ValueQuery>;
 
     #[pallet::storage]
-	#[pallet::getter(fn temp_offence)]
-	pub(super) type TempOffence<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, OffenceTempRecordOf<T>, ValueQuery>;
+    #[pallet::getter(fn reports)]
+    pub(super) type Reports<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        ReportIdOf<T>,
+        AutomataOffenceDetails<T::AccountId, T::BlockNumber>,
+        ValueQuery,
+    >;
 
+    #[pallet::storage]
+    #[pallet::getter(fn temp_offence)]
+    pub(super) type TempOffence<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, OffenceTempRecordOf<T>, ValueQuery>;
 
     #[pallet::call]
-    impl<T:Config> Pallet<T> {}
-    
+    impl<T: Config> Pallet<T> {}
+
     /// ledger
     impl<T: Config> Pallet<T> {
         fn update_ledger(user: &T::AccountId, ledger: &UserLedgerOf<T>) {
@@ -178,7 +194,10 @@ pub mod pallet {
 
         /// query if the account have enough active staking to put up an order.
         /// if not,return an error [InsufficientPledge],else lock some staking.
-        pub fn enough_stake_put_order(account: &T::AccountId, pledge: BalanceOf<T>) -> DispatchResult {
+        pub fn enough_stake_put_order(
+            account: &T::AccountId,
+            pledge: BalanceOf<T>,
+        ) -> DispatchResult {
             let mut ledger = <Users<T>>::get(&account);
             ensure!(ledger.active > pledge, Error::<T>::InsufficientPledge);
             ledger.active -= pledge;
@@ -273,7 +292,10 @@ pub mod pallet {
             Ok(())
         }
 
-        pub fn remove_order_or_expire_deal(seller: T::AccountId, deal_id: DealId<T>) -> DispatchResult {
+        pub fn remove_order_or_expire_deal(
+            seller: T::AccountId,
+            deal_id: DealId<T>,
+        ) -> DispatchResult {
             <Users<T>>::mutate(&seller, |ledger| {
                 ledger.active += ledger.seller[&deal_id];
                 ledger.seller.remove(&deal_id);
@@ -388,7 +410,7 @@ pub mod pallet {
             let seller_list = ledger.seller;
             let lock_bal = seller_list.get(&offenders.offender).unwrap();
 
-            let reward_rate: Perbill = <RewardRule::<T>>::get().unwrap();
+            let reward_rate: Perbill = <RewardRule<T>>::get().unwrap();
             let (to_extra_slash, to_reward_reporter, compensation_to_user) =
                 Self::compute_slash(lock_bal, &slash_fraction, &reward_rate);
 
@@ -453,7 +475,11 @@ pub mod pallet {
 
             Self::update_report(&unique_key, offender_detail.clone());
 
-            let extra_slash = offence.slash(current_offence, total_offence, <SlashRule::<T>>::get().unwrap());
+            let extra_slash = offence.slash(
+                current_offence,
+                total_offence,
+                <SlashRule<T>>::get().unwrap(),
+            );
 
             // TODO: handle result
             Self::on_offence(offender_detail, extra_slash).expect("failed");
@@ -467,5 +493,3 @@ pub mod pallet {
         }
     }
 }
-
-

@@ -1,14 +1,14 @@
+use automata_primitives::{AccountId, Block, BlockId, BlockNumber, Hash};
+use automata_runtime::apis::GeodeApi as GeodeRuntimeApi;
 use jsonrpc_core::{Error, ErrorCode, Result};
 use jsonrpc_derive::rpc;
-use std::sync::Arc;
-use automata_runtime::apis::GeodeApi as GeodeRuntimeApi;
-use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
 use pallet_geode::{Geode, GeodeState};
-use automata_primitives::{AccountId, Block, BlockId, Hash, BlockNumber};
+use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
 use sp_api::ProvideRuntimeApi;
 use sp_runtime::{traits::Block as BlockT, RuntimeDebug};
+use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 use std::convert::TryInto;
-use sp_std::{prelude::*,collections::btree_map::BTreeMap};
+use std::sync::Arc;
 
 // #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -53,7 +53,7 @@ pub struct WrappedGeode<Hash> {
 
 impl From<Geode<AccountId, Hash>> for WrappedGeode<Hash> {
     fn from(geode: Geode<AccountId, Hash>) -> Self {
-        WrappedGeode{
+        WrappedGeode {
             id: geode.id.into(),
             provider: geode.provider.into(),
             order: geode.order,
@@ -61,7 +61,7 @@ impl From<Geode<AccountId, Hash>> for WrappedGeode<Hash> {
             dns: geode.dns,
             props: geode.props,
             state: geode.state,
-            promise: geode.promise
+            promise: geode.promise,
         }
     }
 }
@@ -125,11 +125,13 @@ where
         let api = self.client.runtime_api();
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
-        let attestor_attested_geodes_list = api.attestor_attested_geodes(&at, attestor.into()).map_err(|e| Error {
-            code: ErrorCode::ServerError(RUNTIME_ERROR),
-            message: "Runtime unable to get attestor attested geodes list.".into(),
-            data: Some(format!("{:?}", e).into()),
-        })?;
+        let attestor_attested_geodes_list = api
+            .attestor_attested_geodes(&at, attestor.into())
+            .map_err(|e| Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Runtime unable to get attestor attested geodes list.".into(),
+                data: Some(format!("{:?}", e).into()),
+            })?;
         let mut res = Vec::<WrappedGeode<Hash>>::new();
         for geode in attestor_attested_geodes_list {
             res.push(geode.into())

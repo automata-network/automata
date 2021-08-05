@@ -3,8 +3,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
-mod slash;
 mod property;
+mod slash;
 
 #[cfg(test)]
 mod mock;
@@ -14,20 +14,20 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
+    pub use crate::property::{GeodeProperties, GeodeProperty};
     use codec::{Decode, Encode};
-    use dispatch::{ DispatchResultWithPostInfo};
-    use frame_support::{ dispatch, ensure, traits::Currency,};
-    use frame_system::pallet_prelude::*;
+    use core::convert::TryInto;
+    use dispatch::DispatchResultWithPostInfo;
     use frame_support::pallet_prelude::*;
+    use frame_support::{dispatch, ensure, traits::Currency};
+    use frame_system::pallet_prelude::*;
     use frame_system::{ensure_root, ensure_signed};
     use sp_runtime::{RuntimeDebug, SaturatedConversion};
     use sp_std::prelude::*;
-    use core::{convert::TryInto,};
-    pub use crate::property::{GeodeProperties, GeodeProperty};
-    
+
+    pub use crate::slash::{GeodeOffenceTrait, GeodeReport, GeodeReportOffenceHandler};
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
-    pub use crate::slash::{GeodeOffenceTrait, GeodeReport, GeodeReportOffenceHandler};
 
     pub const ATTESTOR_REQUIRE: usize = 1;
     pub const TIMELIMIT: u64 = u64::max_value();
@@ -45,7 +45,6 @@ pub mod pallet {
         /// When the geode is sold out and be working.
         InWork,
     }
-
 
     impl Default for GeodeState {
         fn default() -> Self {
@@ -107,7 +106,7 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_stake::Config {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-        
+
         type GeodeOffReport: GeodeReport<Self>;
     }
 
@@ -121,13 +120,15 @@ pub mod pallet {
                 Ok(now) => {
                     let mut attested_list = Vec::new();
                     let mut timeout_list = Vec::new();
-                    <RegisterGeodes<T>>::iter().map(|(_key, register_geode)|{
-                        if register_geode.geode_record.attestors.len() >= ATTESTOR_REQUIRE {
-                            attested_list.push(register_geode.geode_record);
-                        } else if now - register_geode.start > TIMELIMIT {
-                            timeout_list.push(register_geode.geode_record.owner);
-                        }
-                    }).all(|_| true);
+                    <RegisterGeodes<T>>::iter()
+                        .map(|(_key, register_geode)| {
+                            if register_geode.geode_record.attestors.len() >= ATTESTOR_REQUIRE {
+                                attested_list.push(register_geode.geode_record);
+                            } else if now - register_geode.start > TIMELIMIT {
+                                timeout_list.push(register_geode.geode_record.owner);
+                            }
+                        })
+                        .all(|_| true);
                     for mut geode_use in attested_list.clone() {
                         <RegisterGeodes<T>>::remove(&geode_use.owner.clone());
                         geode_use.state = GeodeState::Attested;
@@ -139,18 +140,16 @@ pub mod pallet {
                     if !timeout_list.is_empty() {
                         Self::deposit_event(Event::AttestTimeOut(timeout_list));
                     }
-                },
-                Err(_) => {
-
                 }
+                Err(_) => {}
             }
         }
     }
-    
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
-	#[pallet::metadata(T::AccountId = "AccountId")]
-	pub enum Event<T: Config> {
+    #[pallet::metadata(T::AccountId = "AccountId")]
+    pub enum Event<T: Config> {
         /// Somebody report a misconduct. \[reporter, offender\]
         ReportBlame(T::AccountId, T::AccountId),
         /// Attestor registered. \[attestor_id\]
@@ -175,9 +174,9 @@ pub mod pallet {
         /// \[Vec<geode_id>\]
         AttestTimeOut(Vec<T::AccountId>),
     }
-    
+
     #[pallet::error]
-	pub enum Error<T> {
+    pub enum Error<T> {
         /// Duplicate attestor for geode.
         AlreadyAttestFor,
         /// Duplicate register geode.
@@ -197,27 +196,30 @@ pub mod pallet {
     }
 
     #[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
+    #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);
-    
+
     #[pallet::storage]
-	#[pallet::getter(fn att_stake_min)]
-	pub(super) type AttStakeMin<T: Config> = StorageValue<_, BalanceOf<T>>;
-    
+    #[pallet::getter(fn att_stake_min)]
+    pub(super) type AttStakeMin<T: Config> = StorageValue<_, BalanceOf<T>>;
+
     #[pallet::storage]
     #[pallet::getter(fn register_geodes)]
-	pub(super) type RegisterGeodes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, RegisterOf<T>, ValueQuery>;
-    
+    pub(super) type RegisterGeodes<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, RegisterOf<T>, ValueQuery>;
+
     #[pallet::storage]
     #[pallet::getter(fn geodes)]
-	pub(super) type Geodes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, GeodeOf<T>, ValueQuery>;
-    
+    pub(super) type Geodes<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, GeodeOf<T>, ValueQuery>;
+
     #[pallet::storage]
     #[pallet::getter(fn attestors)]
-	pub(super) type Attestors<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, Attestor, ValueQuery>;
-    
+    pub(super) type Attestors<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, Attestor, ValueQuery>;
+
     #[pallet::call]
-    impl<T:Config> Pallet<T> {
+    impl<T: Config> Pallet<T> {
         /// Show that I'm in work. Not in use now.
         #[pallet::weight(0)]
 
@@ -230,7 +232,11 @@ pub mod pallet {
         /// Report that somebody did a misconduct. The actual usage is being considered.
         #[pallet::weight(0)]
 
-        pub fn report_misconduct(origin: OriginFor<T>, geode_id: T::AccountId, _proof: Vec<u8>) -> DispatchResultWithPostInfo {
+        pub fn report_misconduct(
+            origin: OriginFor<T>,
+            geode_id: T::AccountId,
+            _proof: Vec<u8>,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             Self::report_geode_offence(who.clone(), geode_id.clone());
             Self::deposit_event(Event::ReportBlame(who, geode_id));
@@ -241,17 +247,29 @@ pub mod pallet {
         /// Return Ok() only when the geode's state is Registered/Attested
         #[pallet::weight(0)]
 
-        pub fn geode_remove(origin: OriginFor<T>, geode: T::AccountId) -> DispatchResultWithPostInfo {
+        pub fn geode_remove(
+            origin: OriginFor<T>,
+            geode: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             if <Geodes<T>>::contains_key(&geode) {
                 let geode_use = <Geodes<T>>::get(&geode);
                 ensure!(geode_use.provider == Some(who), Error::<T>::NoRight);
-                ensure!(geode_use.state == GeodeState::Attested, Error::<T>::InvalidGeodeState);
+                ensure!(
+                    geode_use.state == GeodeState::Attested,
+                    Error::<T>::InvalidGeodeState
+                );
                 <Geodes<T>>::remove(&geode);
             } else if <RegisterGeodes<T>>::contains_key(&geode) {
                 let register_geode = <RegisterGeodes<T>>::get(&geode);
-                ensure!(register_geode.geode_record.provider == Some(who), Error::<T>::NoRight);
-                ensure!(register_geode.geode_record.state == GeodeState::Registered, Error::<T>::InvalidGeodeState);
+                ensure!(
+                    register_geode.geode_record.provider == Some(who),
+                    Error::<T>::NoRight
+                );
+                ensure!(
+                    register_geode.geode_record.state == GeodeState::Registered,
+                    Error::<T>::InvalidGeodeState
+                );
                 <RegisterGeodes<T>>::remove(&geode);
             } else {
                 return Err(Error::<T>::InvalidGeode.into());
@@ -270,11 +288,18 @@ pub mod pallet {
         /// you won't own the control of the geode.
         #[pallet::weight(0)]
 
-        pub fn geode_update(origin: OriginFor<T>, geode: T::AccountId, record: GeodeOf<T>) -> DispatchResultWithPostInfo {
+        pub fn geode_update(
+            origin: OriginFor<T>,
+            geode: T::AccountId,
+            record: GeodeOf<T>,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let geode_use = <Geodes<T>>::get(&geode);
             ensure!(geode_use.provider == Some(who), Error::<T>::NoRight);
-            ensure!(geode_use.state != GeodeState::InWork, Error::<T>::GeodeInWork);
+            ensure!(
+                geode_use.state != GeodeState::InWork,
+                Error::<T>::GeodeInWork
+            );
             let mut record = record;
             record.attestors = geode_use.attestors;
             record.state = geode_use.state;
@@ -287,17 +312,18 @@ pub mod pallet {
         /// Register as an attestor.
         #[pallet::weight(0)]
 
-        pub fn attestor_register(origin: OriginFor<T>, url: Vec<u8>, pubkey: Vec<u8>) -> DispatchResultWithPostInfo {
+        pub fn attestor_register(
+            origin: OriginFor<T>,
+            url: Vec<u8>,
+            pubkey: Vec<u8>,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let limit = <AttStakeMin<T>>::get().ok_or(Error::<T>::InvalidAttestor)?;
             <pallet_stake::Module<T>>::enough_stake(&who, limit)?;
-            let attestor = Attestor {
-                url,
-                pubkey
-            };
-             <Attestors<T>>::insert(who.clone(), attestor);
-             Self::deposit_event(Event::AttestorRegister(who));
-             Ok(().into())
+            let attestor = Attestor { url, pubkey };
+            <Attestors<T>>::insert(who.clone(), attestor);
+            Self::deposit_event(Event::AttestorRegister(who));
+            Ok(().into())
         }
 
         /// Remove self from attestors.
@@ -310,7 +336,10 @@ pub mod pallet {
 
         pub fn attestor_remove(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            ensure!(<Attestors<T>>::contains_key(&who), Error::<T>::InvalidAttestor);
+            ensure!(
+                <Attestors<T>>::contains_key(&who),
+                Error::<T>::InvalidAttestor
+            );
             <Attestors<T>>::remove(&who);
             Self::deposit_event(Event::AttestorRemove(who));
             Ok(().into())
@@ -331,9 +360,15 @@ pub mod pallet {
         /// Called by attestor to attest Geode.
         #[pallet::weight(0)]
 
-        pub fn attestor_attest_geode(origin: OriginFor<T>, geode: T::AccountId) -> DispatchResultWithPostInfo {
+        pub fn attestor_attest_geode(
+            origin: OriginFor<T>,
+            geode: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            ensure!(<Attestors<T>>::contains_key(&who), Error::<T>::InvalidAttestor);
+            ensure!(
+                <Attestors<T>>::contains_key(&who),
+                Error::<T>::InvalidAttestor
+            );
 
             let mut register_geode = <RegisterGeodes<T>>::get(&geode);
             for att in register_geode.geode_record.attestors.clone() {
@@ -349,7 +384,11 @@ pub mod pallet {
         /// Called by provider to bound dns with geode's ip.
         #[pallet::weight(0)]
 
-        pub fn provider_update_geode_dns(origin: OriginFor<T>, geode: T::AccountId, dns: Vec<u8>) -> DispatchResultWithPostInfo {
+        pub fn provider_update_geode_dns(
+            origin: OriginFor<T>,
+            geode: T::AccountId,
+            dns: Vec<u8>,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let mut geode_use = <Geodes<T>>::get(&geode);
             ensure!(geode_use.provider == Some(who), Error::<T>::NoRight);
@@ -363,7 +402,10 @@ pub mod pallet {
         /// set automatically regardless of what you set.
         #[pallet::weight(0)]
 
-        pub fn provider_register_geode(origin: OriginFor<T>, geode_record: GeodeOf<T>) -> DispatchResultWithPostInfo {
+        pub fn provider_register_geode(
+            origin: OriginFor<T>,
+            geode_record: GeodeOf<T>,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let mut geode_record = geode_record;
             geode_record.user = None;
@@ -371,13 +413,16 @@ pub mod pallet {
             geode_record.state = GeodeState::Registered;
             geode_record.provider = Some(who.clone());
             let geode = geode_record.owner.clone();
-            ensure!(!<RegisterGeodes<T>>::contains_key(&geode), Error::<T>::AlreadyGeode);
+            ensure!(
+                !<RegisterGeodes<T>>::contains_key(&geode),
+                Error::<T>::AlreadyGeode
+            );
             ensure!(!<Geodes<T>>::contains_key(&geode), Error::<T>::AlreadyGeode);
 
             let block_number = <frame_system::Module<T>>::block_number();
             let register_geode = RegisterGeode {
                 start: block_number.saturated_into::<u64>(),
-                geode_record
+                geode_record,
             };
             <RegisterGeodes<T>>::insert(geode.clone(), register_geode);
             Self::deposit_event(Event::GeodeRegister(who, geode));
@@ -387,30 +432,38 @@ pub mod pallet {
         /// Called by vendor who get the geode from market to update the binary hash
         #[pallet::weight(0)]
 
-        pub fn vendor_set_binary(origin: OriginFor<T>, geode: T::AccountId, hash: T::Hash) -> DispatchResultWithPostInfo {
+        pub fn vendor_set_binary(
+            origin: OriginFor<T>,
+            geode: T::AccountId,
+            hash: T::Hash,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
 
             let mut geode_use = <Geodes<T>>::get(&geode);
             ensure!(geode_use.user == Some(who), Error::<T>::NoRight);
-            ensure!(geode_use.state == GeodeState::InWork, Error::<T>::InvalidGeode);
+            ensure!(
+                geode_use.state == GeodeState::InWork,
+                Error::<T>::InvalidGeode
+            );
             geode_use.binary = Some(hash);
             <Geodes<T>>::insert(geode.clone(), geode_use);
             Self::deposit_event(Event::SetBinary(geode));
             Ok(().into())
         }
 
-        
-
         /// Set the min stake request to be an attestor. This should called by "root".
         #[pallet::weight(0)]
 
-        pub fn set_att_stake_min(origin: OriginFor<T>, stake: BalanceOf<T>) -> DispatchResultWithPostInfo {
+        pub fn set_att_stake_min(
+            origin: OriginFor<T>,
+            stake: BalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
             let _who = ensure_root(origin)?;
             <AttStakeMin<T>>::put(stake);
             Ok(().into())
         }
     }
-    
+
     /// ledger
     impl<T: Config> Pallet<T> {
         /// Return attestors' url and pubkey list for rpc.
@@ -449,10 +502,9 @@ pub mod pallet {
         }
     }
 
-
     pub trait Commodity<AccountId> {
         type Value;
-    
+
         /// Return the geode's provider id.
         fn provider(id: &AccountId) -> Option<AccountId>;
         /// Check if the geode is valid.
@@ -462,13 +514,12 @@ pub mod pallet {
         /// Set the geode's state.
         fn set_geode_state(id: &AccountId, state: GeodeState) -> bool;
     }
-    
 
     impl<T: Config> Commodity<T::AccountId> for Pallet<T> {
         type Value = Geode<T::AccountId, T::Hash>;
 
         fn provider(id: &T::AccountId) -> Option<T::AccountId> {
-            <Geodes<T>>::get(id).provider 
+            <Geodes<T>>::get(id).provider
         }
 
         fn contains_key(id: &T::AccountId) -> bool {
@@ -476,9 +527,7 @@ pub mod pallet {
         }
 
         fn set_user(id: &T::AccountId, to: T::AccountId) {
-            <Geodes<T>>::mutate(id, |geode| {
-                geode.user = Some(to)
-            })
+            <Geodes<T>>::mutate(id, |geode| geode.user = Some(to))
         }
 
         fn set_geode_state(id: &T::AccountId, state: GeodeState) -> bool {
