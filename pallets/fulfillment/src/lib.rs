@@ -30,7 +30,7 @@ pub mod pallet {
     use serde::{Deserialize, Serialize};
 
     pub const ATTESTOR_REQUIRE: usize = 1;
-    pub const TIMELIMIT: u64 = u64::max_value();
+    pub const TIMELIMIT: u64 = 30;
 
     /// Geode state
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -124,7 +124,7 @@ pub mod pallet {
                         .map(|(_key, register_geode)| {
                             if register_geode.geode_record.attestors.len() >= ATTESTOR_REQUIRE {
                                 attested_list.push(register_geode.geode_record);
-                            } else if now - register_geode.start > TIMELIMIT {
+                            } else if now - register_geode.start > 0 {
                                 timeout_list.push(register_geode.geode_record.owner);
                             }
                         })
