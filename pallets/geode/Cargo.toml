@@ -1,0 +1,45 @@
+[package]
+authors = ["Automata Team"]
+description = 'FRAME pallet for defining geode related logic.'
+edition = '2018'
+homepage = 'https://www.ata.network/'
+license = 'Apache-2.0'
+name = 'pallet-geode'
+repository = "https://github.com/automata-network/automata"
+version = '0.1.0'
+
+[package.metadata.docs.rs]
+targets = ['x86_64-unknown-linux-gnu']
+
+[dependencies]
+serde_json = { version = "1", optional = true }
+serde = { version = "1.0.119", optional = true, features = ["derive"] }
+codec = { default-features = false, features = ['derive'], package = 'parity-scale-codec', version = '2.0.0' }
+frame-system = { default-features = false, version = '3.0.0' }
+frame-support = { default-features = false, version = '3.0.0' }
+sp-runtime = { default-features = false, version = '3.0.0' }
+sp-std = {version  = "3.0.0", default-features = false }
+
+# local dependencies
+primitives = { package = "automata-primitives", path = "../../primitives", default-features = false }
+pallet-attestor = { version = "0.1.0", default-features = false, path = '../attestor' }
+
+[dev-dependencies]
+sp-core = { default-features = false, version = '3.0.0' }
+sp-io = { default-features = false, version = '3.0.0' }
+
+[features]
+default = ['std']
+std = [
+	'codec/std',
+	'frame-support/std',
+	'frame-system/std',
+	'sp-std/std',
+	'sp-runtime/std',
+	'serde',
+	'serde_json',
+]
+# runtime-benchmarks = ['frame-benchmarking']
+# Note: frame-support `try-runtime` feature is released after v3.
+#   Uncomment the following line when `frame-support` version > `3.0.0`.
+# try-runtime = ['frame-support/try-runtime']

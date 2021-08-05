@@ -3,7 +3,7 @@ FROM rust as builder
 LABEL maintainer "Automata Team"
 
 ARG PROFILE=release
-ARG TOOLCHAIN=nightly-2020-10-25
+ARG TOOLCHAIN=nightly-2021-06-16
 
 RUN apt-get update && \
 	apt-get install -y --no-install-recommends cmake clang curl
