@@ -1,4 +1,4 @@
-use crate as attestor;
+use crate as liveness;
 use frame_support::parameter_types;
 use frame_system as system;
 use sp_core::H256;
@@ -21,7 +21,9 @@ frame_support::construct_runtime!(
     {
         System: frame_system::{Module, Call, Config, Storage, Event<T>},
         Balances: pallet_balances::{Module, Call, Storage, Event<T>},
-        AttestorModule: attestor::{Module, Call, Storage, Event<T>},
+        AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
+        GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
+        LivenessModule: liveness::{Module, Call, Storage, Event<T>},
     }
 );
 
@@ -71,9 +73,17 @@ impl pallet_balances::Config for Test {
     type WeightInfo = ();
 }
 
-impl attestor::Config for Test {
+impl pallet_attestor::Config for Test {
     type Event = Event;
     type Currency = Balances;
+}
+
+impl pallet_geode::Config for Test {
+    type Event = Event;
+}
+
+impl liveness::Config for Test {
+    type Event = Event;
 }
 
 // Build genesis storage according to the mock runtime.
@@ -92,6 +102,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     ext
 }
 
+#[allow(dead_code)]
 pub fn events() -> Vec<Event> {
     let evt = System::events()
         .into_iter()
@@ -101,4 +112,43 @@ pub fn events() -> Vec<Event> {
     System::reset_events();
 
     evt
+}
+
+pub fn register_attestor(_attestor_account: <Test as system::Config>::AccountId) {
+    let url = vec![1];
+    let pubkey = vec![2];
+    let min_stake = 100;
+    let attestor_account = 1;
+
+    // set the min stake balance
+    AttestorModule::set_att_stake_min(Origin::root(), min_stake)
+        .map_err(|err| println!("{:?}", err));
+
+    // successfully call register
+    AttestorModule::attestor_register(
+        Origin::signed(attestor_account),
+        url.clone(),
+        pubkey.clone(),
+    );
+}
+
+pub fn provider_register_geode(
+    provider: <Test as system::Config>::AccountId,
+    geode_id: <Test as system::Config>::AccountId,
+) {
+    let geode: pallet_geode::Geode<
+        <Test as system::Config>::AccountId,
+        <Test as system::Config>::Hash,
+    > = pallet_geode::Geode {
+        id: geode_id,
+        provider: provider,
+        order: None,
+        ip: vec![],
+        dns: vec![],
+        props: Default::default(),
+        state: Default::default(),
+        promise: Default::default(),
+    };
+
+    GeodeModule::provider_register_geode(Origin::signed(provider), geode);
 }

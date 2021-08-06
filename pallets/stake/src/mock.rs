@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-use crate::{Config,};
-use frame_support::{parameter_types, weights::Weight,};
+use crate::Config;
+use frame_support::{parameter_types, weights::Weight};
 use frame_system as system;
 use pallet_balances as balances;
 use sp_core::H256;
@@ -12,15 +12,15 @@ type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 frame_support::construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
+    pub enum Test where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
         System: frame_system::{Module, Call, Config, Storage, Event<T>},
         Stake: stake::{Module, Call, Storage, Event<T>},
         Balances: balances::{Module, Call, Storage, Event<T>},
-	}
+    }
 );
 
 parameter_types! {
