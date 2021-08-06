@@ -150,7 +150,7 @@ pub mod pallet {
                         })
                         .all(|_| true);
                     for key in expired {
-                        <pallet_geode::Module<T>>::remove_geode(key, None)
+                        <pallet_geode::Module<T>>::detach_geode(pallet_geode::DetachOption::Remove, key, None)
                             .map_err(|e| {
                                 debug!("{:?}", e);
                             })

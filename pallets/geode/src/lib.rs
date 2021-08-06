@@ -31,6 +31,16 @@ pub mod pallet {
         Offline,
     }
 
+    #[derive(PartialEq, Eq, Clone, RuntimeDebug)]
+    pub enum DetachOption {
+        /// Remove the geode
+        Remove,
+        /// Turn the geode into Offline state
+        Offline,
+        /// Turn the geode into Unknown state
+        Unknown,
+    }
+
     impl Default for GeodeState {
         fn default() -> Self {
             GeodeState::Registered
@@ -87,6 +97,8 @@ pub mod pallet {
         /// Event documentation should end with an array that provides descriptive names for event
         /// parameters. [something, who]
         SomethingStored(u32, T::AccountId),
+        /// Geode's state updated
+        GeodeStateUpdate(T::AccountId),
     }
 
     #[pallet::error]
@@ -124,6 +136,11 @@ pub mod pallet {
     pub type AttestedGeodes<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn offline_geodes_ids)]
+    pub type OfflineGeodes<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// Called by provider to register a geode. The user/attestors/state/provider will be
@@ -144,7 +161,7 @@ pub mod pallet {
 
             <Geodes<T>>::insert(geode.clone(), geode_record);
             <RegisteredGeodes<T>>::insert(
-                geode.clone(),
+                &geode,
                 block_number.saturated_into::<BlockNumber>(),
             );
             Self::deposit_event(Event::GeodeRegister(who, geode));
@@ -159,7 +176,7 @@ pub mod pallet {
             geode: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            match Self::remove_geode(geode, Some(who)) {
+            match Self::detach_geode(DetachOption::Remove, geode, Some(who)) {
                 Ok(_) => Ok(().into()),
                 Err(e) => Err(e.into()),
             }
@@ -177,7 +194,7 @@ pub mod pallet {
             let mut geode_use = <Geodes<T>>::get(&geode);
             ensure!(geode_use.provider == who, Error::<T>::NoRight);
             geode_use.props.insert(prop_name, prop_value);
-            <Geodes<T>>::insert(geode.clone(), geode_use);
+            <Geodes<T>>::insert(&geode, geode_use);
             Self::deposit_event(Event::PropsUpdate(geode));
             Ok(().into())
         }
@@ -193,8 +210,41 @@ pub mod pallet {
             let mut geode_use = <Geodes<T>>::get(&geode);
             ensure!(geode_use.provider == who, Error::<T>::NoRight);
             geode_use.dns = dns;
-            <Geodes<T>>::insert(geode.clone(), geode_use);
+            <Geodes<T>>::insert(&geode, geode_use);
             Self::deposit_event(Event::DnsUpdate(geode));
+            Ok(().into())
+        }
+
+        /// Called by provider to turn geode offline
+        #[pallet::weight(0)]
+        pub fn turn_geode_offline(origin: OriginFor<T>, geode: T::AccountId) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            match Self::detach_geode(DetachOption::Offline, geode, Some(who)) {
+                Ok(_) => Ok(().into()),
+                Err(e) => Err(e.into()),
+            }
+        }
+
+        /// Called by provider to turn geode online
+        #[pallet::weight(0)]
+        pub fn turn_geode_online(origin: OriginFor<T>, geode: T::AccountId) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            ensure!(!<OfflineGeodes<T>>::contains_key(&geode), Error::<T>::InvalidGeodeState);
+            let mut geode_use = <Geodes<T>>::get(&geode);
+            ensure!(geode_use.provider == who, Error::<T>::NoRight);
+
+            geode_use.state = GeodeState::Registered;
+            <Geodes<T>>::insert(&geode, &geode_use);
+
+            let block_number = <frame_system::Module<T>>::block_number();
+            <RegisteredGeodes<T>>::insert(
+                &geode,
+                block_number.saturated_into::<BlockNumber>(),
+            );
+
+            <OfflineGeodes<T>>::remove(&geode);
+
+            Self::deposit_event(Event::GeodeStateUpdate(geode));
             Ok(().into())
         }
     }
@@ -233,12 +283,13 @@ pub mod pallet {
             res
         }
 
-        pub fn remove_geode(
+        pub fn detach_geode(
+            option: DetachOption,
             geode: T::AccountId,
             who: Option<T::AccountId>,
         ) -> Result<(), Error<T>> {
             if <Geodes<T>>::contains_key(&geode) {
-                let geode_use = <Geodes<T>>::get(&geode);
+                let mut geode_use = <Geodes<T>>::get(&geode);
                 match who {
                     Some(who) => ensure!(geode_use.provider == who, Error::<T>::NoRight),
                     None => {}
@@ -248,14 +299,30 @@ pub mod pallet {
                         || geode_use.state == GeodeState::Attested,
                     Error::<T>::InvalidGeodeState
                 );
-                <Geodes<T>>::remove(&geode);
+
+                match option {
+                    DetachOption::Remove => {
+                        <Geodes<T>>::remove(&geode);
+                    },
+                    DetachOption::Offline => {
+                        geode_use.state = GeodeState::Offline;
+                        <Geodes<T>>::insert(&geode, &geode_use);
+                        let block_number = <frame_system::Module<T>>::block_number();
+                        <OfflineGeodes<T>>::insert(&geode, block_number.saturated_into::<BlockNumber>());
+                    },
+                    DetachOption::Unknown => {
+                        geode_use.state = GeodeState::Unknown;
+                        <Geodes<T>>::insert(&geode, &geode_use);
+                    },
+                }
+
                 match geode_use.state {
                     GeodeState::Registered => {
                         <RegisteredGeodes<T>>::remove(&geode);
-                    }
+                    },
                     GeodeState::Attested => {
                         <AttestedGeodes<T>>::remove(&geode);
-                    }
+                    },
                     _ => {
                         // shouldn't happen
                     }
@@ -273,7 +340,14 @@ pub mod pallet {
                 return Err(Error::<T>::InvalidGeode);
             }
 
-            Self::deposit_event(Event::GeodeRemove(geode));
+            match option {
+                DetachOption::Remove => {
+                    Self::deposit_event(Event::GeodeRemove(geode));
+                },
+                _ => {
+                    Self::deposit_event(Event::GeodeStateUpdate(geode));
+                }
+            }
             Ok(())
         }
     }

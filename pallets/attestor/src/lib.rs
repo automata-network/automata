@@ -118,7 +118,7 @@ pub mod pallet {
                 pubkey,
                 geodes: BTreeSet::new(),
             };
-            <Attestors<T>>::insert(who.clone(), attestor);
+            <Attestors<T>>::insert(&who, attestor);
             Self::deposit_event(Event::AttestorRegister(who));
             Ok(().into())
         }
