@@ -4378,6 +4378,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-attestor",
+ "pallet-balances",
  "parity-scale-codec",
  "serde",
  "serde_json",
