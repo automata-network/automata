@@ -280,7 +280,7 @@ fn testnet_genesis(
 
     if let Some(ethereum_accounts) = ethereum_accounts {
         ethereum_accounts.iter().for_each(|x| {
-            if !endowed_accounts.contains(&x) {
+            if !endowed_accounts.contains(x) {
                 endowed_accounts.push(x.clone())
             }
         });
