@@ -125,39 +125,40 @@ pub mod pallet {
         /// 2. At every block, check if any geode haven't get attested after an expiring block,
         /// if expired, clean the report.
         fn on_initialize(block_number: T::BlockNumber) -> Weight {
-            match TryInto::<BlockNumber>::try_into(block_number) {
-                Ok(now) => {
-                    // clean expired reports
-                    let mut expired = Vec::<(T::AccountId, u8)>::new();
-                    <Reports<T>>::iter()
-                        .map(|(key, report)| {
-                            if report.start + REPORT_EXPIRY_BLOCK_NUMBER < now {
-                                expired.push(key);
-                            }
-                        })
-                        .all(|_| true);
-                    for key in expired {
-                        <Reports<T>>::remove(key);
-                    }
-
-                    // clean expired geodes
-                    let mut expired = Vec::<T::AccountId>::new();
-                    pallet_geode::RegisteredGeodes::<T>::iter()
-                        .map(|(key, start)| {
-                            if start + ATTESTATION_EXPIRY_BLOCK_NUMBER < now {
-                                expired.push(key);
-                            }
-                        })
-                        .all(|_| true);
-                    for key in expired {
-                        <pallet_geode::Module<T>>::detach_geode(pallet_geode::DetachOption::Remove, key, None)
-                            .map_err(|e| {
-                                debug!("{:?}", e);
-                            })
-                            .ok();
-                    }
+            if let Ok(now) = TryInto::<BlockNumber>::try_into(block_number) {
+                // clean expired reports
+                let mut expired = Vec::<(T::AccountId, u8)>::new();
+                <Reports<T>>::iter()
+                    .map(|(key, report)| {
+                        if report.start + REPORT_EXPIRY_BLOCK_NUMBER < now {
+                            expired.push(key);
+                        }
+                    })
+                    .all(|_| true);
+                for key in expired {
+                    <Reports<T>>::remove(key);
                 }
-                Err(_) => {}
+
+                // clean expired geodes
+                let mut expired = Vec::<T::AccountId>::new();
+                pallet_geode::RegisteredGeodes::<T>::iter()
+                    .map(|(key, start)| {
+                        if start + ATTESTATION_EXPIRY_BLOCK_NUMBER < now {
+                            expired.push(key);
+                        }
+                    })
+                    .all(|_| true);
+                for key in expired {
+                    <pallet_geode::Module<T>>::detach_geode(
+                        pallet_geode::DetachOption::Remove,
+                        key,
+                        None,
+                    )
+                    .map_err(|e| {
+                        debug!("{:?}", e);
+                    })
+                    .ok();
+                }
             }
             0
         }
@@ -189,7 +190,7 @@ pub mod pallet {
                 Error::<T>::NotAttestingFor
             );
             // check have report
-            match ReportType::try_from(report_type.clone()) {
+            match ReportType::try_from(report_type) {
                 Ok(_) => {}
                 Err(_) => {
                     return Err(Error::<T>::InvalidReportType.into());
@@ -213,7 +214,7 @@ pub mod pallet {
             ) >= REPORT_APPROVAL_RATIO
             {
                 // slash the geode
-                Self::slash_geode(&key, report.clone());
+                Self::slash_geode(&key, report);
                 <Reports<T>>::remove(&key);
                 Self::deposit_event(Event::SlashGeode(key.0.clone()))
             } else {

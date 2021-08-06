@@ -164,10 +164,7 @@ pub mod pallet {
             geode_record.provider = who.clone();
 
             <Geodes<T>>::insert(geode.clone(), geode_record);
-            <RegisteredGeodes<T>>::insert(
-                &geode,
-                block_number.saturated_into::<BlockNumber>(),
-            );
+            <RegisteredGeodes<T>>::insert(&geode, block_number.saturated_into::<BlockNumber>());
             Self::deposit_event(Event::GeodeRegister(who, geode));
             Ok(().into())
         }
@@ -221,12 +218,19 @@ pub mod pallet {
 
         /// Called by provider to set promise block number
         #[pallet::weight(0)]
-        pub fn update_geode_promise(origin: OriginFor<T>, geode: T::AccountId, promise: BlockNumber) -> DispatchResultWithPostInfo {
+        pub fn update_geode_promise(
+            origin: OriginFor<T>,
+            geode: T::AccountId,
+            promise: BlockNumber,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let mut geode_use = <Geodes<T>>::get(&geode);
             ensure!(geode_use.provider == who, Error::<T>::NoRight);
             let block_number = <frame_system::Module<T>>::block_number();
-            ensure!(promise == 0 || promise > block_number.saturated_into::<BlockNumber>(), Error::<T>::InvalidInput);
+            ensure!(
+                promise == 0 || promise > block_number.saturated_into::<BlockNumber>(),
+                Error::<T>::InvalidInput
+            );
             geode_use.promise = promise;
             <Geodes<T>>::insert(&geode, geode_use);
             Self::deposit_event(Event::GeodePromiseUpdate(geode));
@@ -236,7 +240,10 @@ pub mod pallet {
 
         /// Called by provider to turn geode offline
         #[pallet::weight(0)]
-        pub fn turn_geode_offline(origin: OriginFor<T>, geode: T::AccountId) -> DispatchResultWithPostInfo {
+        pub fn turn_geode_offline(
+            origin: OriginFor<T>,
+            geode: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             match Self::detach_geode(DetachOption::Offline, geode, Some(who)) {
                 Ok(_) => Ok(().into()),
@@ -246,9 +253,15 @@ pub mod pallet {
 
         /// Called by provider to turn geode online
         #[pallet::weight(0)]
-        pub fn turn_geode_online(origin: OriginFor<T>, geode: T::AccountId) -> DispatchResultWithPostInfo {
+        pub fn turn_geode_online(
+            origin: OriginFor<T>,
+            geode: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            ensure!(!<OfflineGeodes<T>>::contains_key(&geode), Error::<T>::InvalidGeodeState);
+            ensure!(
+                !<OfflineGeodes<T>>::contains_key(&geode),
+                Error::<T>::InvalidGeodeState
+            );
             let mut geode_use = <Geodes<T>>::get(&geode);
             ensure!(geode_use.provider == who, Error::<T>::NoRight);
 
@@ -256,10 +269,7 @@ pub mod pallet {
             <Geodes<T>>::insert(&geode, &geode_use);
 
             let block_number = <frame_system::Module<T>>::block_number();
-            <RegisteredGeodes<T>>::insert(
-                &geode,
-                block_number.saturated_into::<BlockNumber>(),
-            );
+            <RegisteredGeodes<T>>::insert(&geode, block_number.saturated_into::<BlockNumber>());
 
             <OfflineGeodes<T>>::remove(&geode);
 
@@ -309,9 +319,8 @@ pub mod pallet {
         ) -> Result<(), Error<T>> {
             if <Geodes<T>>::contains_key(&geode) {
                 let mut geode_use = <Geodes<T>>::get(&geode);
-                match who {
-                    Some(who) => ensure!(geode_use.provider == who, Error::<T>::NoRight),
-                    None => {}
+                if let Some(who) = who {
+                    ensure!(geode_use.provider == who, Error::<T>::NoRight)
                 }
                 ensure!(
                     geode_use.state == GeodeState::Registered
@@ -322,26 +331,29 @@ pub mod pallet {
                 match option {
                     DetachOption::Remove => {
                         <Geodes<T>>::remove(&geode);
-                    },
+                    }
                     DetachOption::Offline => {
                         geode_use.state = GeodeState::Offline;
                         <Geodes<T>>::insert(&geode, &geode_use);
                         let block_number = <frame_system::Module<T>>::block_number();
-                        <OfflineGeodes<T>>::insert(&geode, block_number.saturated_into::<BlockNumber>());
-                    },
+                        <OfflineGeodes<T>>::insert(
+                            &geode,
+                            block_number.saturated_into::<BlockNumber>(),
+                        );
+                    }
                     DetachOption::Unknown => {
                         geode_use.state = GeodeState::Unknown;
                         <Geodes<T>>::insert(&geode, &geode_use);
-                    },
+                    }
                 }
 
                 match geode_use.state {
                     GeodeState::Registered => {
                         <RegisteredGeodes<T>>::remove(&geode);
-                    },
+                    }
                     GeodeState::Attested => {
                         <AttestedGeodes<T>>::remove(&geode);
-                    },
+                    }
                     _ => {
                         // shouldn't happen
                     }
@@ -362,7 +374,7 @@ pub mod pallet {
             match option {
                 DetachOption::Remove => {
                     Self::deposit_event(Event::GeodeRemove(geode));
-                },
+                }
                 _ => {
                     Self::deposit_event(Event::GeodeStateUpdate(geode));
                 }

@@ -129,14 +129,14 @@ pub fn new_partial(
     );
 
     let aura_block_import = sc_consensus_aura::AuraBlockImport::<_, _, _, AuraPair>::new(
-        frontier_block_import.clone(),
+        frontier_block_import,
         client.clone(),
     );
 
     let import_queue = sc_consensus_aura::import_queue::<_, _, _, AuraPair, _, _>(
         sc_consensus_aura::slot_duration(&*client)?,
         aura_block_import.clone(),
-        Some(Box::new(grandpa_block_import.clone())),
+        Some(Box::new(grandpa_block_import)),
         client.clone(),
         inherent_data_providers.clone(),
         &task_manager.spawn_handle(),
@@ -156,7 +156,7 @@ pub fn new_partial(
         other: (
             (aura_block_import, grandpa_link),
             pending_transactions,
-            frontier_backend.clone(),
+            frontier_backend,
         ),
     })
 }

@@ -122,7 +122,7 @@ where
         pool.clone(),
         automata_runtime::TransactionConverter,
         network.clone(),
-        pending_transactions.clone(),
+        pending_transactions,
         signers,
         overrides_map,
         backend,
@@ -139,7 +139,7 @@ where
     io.extend_with(EthPubSubApiServer::to_delegate(EthPubSubApi::new(
         pool.clone(),
         client.clone(),
-        network.clone(),
+        network,
         SubscriptionManager::<HexEncodedIdProvider>::with_id_provider(
             HexEncodedIdProvider::default(),
             Arc::new(subscription_task_executor),
@@ -150,9 +150,7 @@ where
         client.clone(),
     )));
 
-    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
-        client.clone(),
-    )));
+    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(client)));
 
     io
 }
