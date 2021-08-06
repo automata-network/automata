@@ -11,7 +11,7 @@ mod tests;
 #[frame_support::pallet]
 pub mod pallet {
     use core::convert::{TryFrom, TryInto};
-    use frame_support::ensure;
+    use frame_support::{debug::native::debug, ensure};
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
     use frame_system::pallet_prelude::*;
     use primitives::BlockNumber;
@@ -25,6 +25,7 @@ pub mod pallet {
     pub const ATTESTOR_REQUIRE: usize = 1;
     pub const REPORT_APPROVAL_RATIO: Percent = Percent::from_percent(50);
     pub const REPORT_EXPIRY_BLOCK_NUMBER: BlockNumber = 10;
+    pub const ATTESTATION_EXPIRY_BLOCK_NUMBER: BlockNumber = 30;
 
     /// Geode state
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -119,11 +120,14 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        /// At every block, check if a misconduct report has expired or not,
+        /// 1. At every block, check if a misconduct report has expired or not,
         /// if expired, clean the report.
-        fn on_finalize(block_number: T::BlockNumber) {
+        /// 2. At every block, check if any geode haven't get attested after an expiring block,
+        /// if expired, clean the report.
+        fn on_initialize(block_number: T::BlockNumber) -> Weight {
             match TryInto::<BlockNumber>::try_into(block_number) {
                 Ok(now) => {
+                    // clean expired reports
                     let mut expired = Vec::<(T::AccountId, u8)>::new();
                     <Reports<T>>::iter()
                         .map(|(key, report)| {
@@ -135,9 +139,27 @@ pub mod pallet {
                     for key in expired {
                         <Reports<T>>::remove(key);
                     }
+
+                    // clean expired geodes
+                    let mut expired = Vec::<T::AccountId>::new();
+                    pallet_geode::RegisteredGeodes::<T>::iter()
+                        .map(|(key, start)| {
+                            if start + ATTESTATION_EXPIRY_BLOCK_NUMBER < now {
+                                expired.push(key);
+                            }
+                        })
+                        .all(|_| true);
+                    for key in expired {
+                        <pallet_geode::Module<T>>::remove_geode(key, None)
+                            .map_err(|e| {
+                                debug!("{:?}", e);
+                            })
+                            .ok();
+                    }
                 }
                 Err(_) => {}
             }
+            0
         }
     }
 

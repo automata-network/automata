@@ -159,41 +159,10 @@ pub mod pallet {
             geode: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            if <Geodes<T>>::contains_key(&geode) {
-                let geode_use = <Geodes<T>>::get(&geode);
-                ensure!(geode_use.provider == who, Error::<T>::NoRight);
-                ensure!(
-                    geode_use.state == GeodeState::Registered
-                        || geode_use.state == GeodeState::Attested,
-                    Error::<T>::InvalidGeodeState
-                );
-                <Geodes<T>>::remove(&geode);
-                match geode_use.state {
-                    GeodeState::Registered => {
-                        <RegisteredGeodes<T>>::remove(&geode);
-                    }
-                    GeodeState::Attested => {
-                        <AttestedGeodes<T>>::remove(&geode);
-                    }
-                    _ => {
-                        // shouldn't happen
-                    }
-                }
-                // clean record on attestors
-                if pallet_attestor::GeodeAttestors::<T>::contains_key(&geode) {
-                    for id in pallet_attestor::GeodeAttestors::<T>::get(&geode) {
-                        let mut attestor = pallet_attestor::Attestors::<T>::get(&id);
-                        attestor.geodes.remove(&geode);
-                        pallet_attestor::Attestors::<T>::insert(&id, attestor);
-                    }
-                    pallet_attestor::GeodeAttestors::<T>::remove(&geode);
-                }
-            } else {
-                return Err(Error::<T>::InvalidGeode.into());
+            match Self::remove_geode(geode, Some(who)) {
+                Ok(_) => Ok(().into()),
+                Err(e) => Err(e.into()),
             }
-
-            Self::deposit_event(Event::GeodeRemove(geode));
-            Ok(().into())
         }
 
         /// Called by provider to update geode properties
@@ -262,6 +231,50 @@ pub mod pallet {
                 }
             }
             res
+        }
+
+        pub fn remove_geode(
+            geode: T::AccountId,
+            who: Option<T::AccountId>,
+        ) -> Result<(), Error<T>> {
+            if <Geodes<T>>::contains_key(&geode) {
+                let geode_use = <Geodes<T>>::get(&geode);
+                match who {
+                    Some(who) => ensure!(geode_use.provider == who, Error::<T>::NoRight),
+                    None => {}
+                }
+                ensure!(
+                    geode_use.state == GeodeState::Registered
+                        || geode_use.state == GeodeState::Attested,
+                    Error::<T>::InvalidGeodeState
+                );
+                <Geodes<T>>::remove(&geode);
+                match geode_use.state {
+                    GeodeState::Registered => {
+                        <RegisteredGeodes<T>>::remove(&geode);
+                    }
+                    GeodeState::Attested => {
+                        <AttestedGeodes<T>>::remove(&geode);
+                    }
+                    _ => {
+                        // shouldn't happen
+                    }
+                }
+                // clean record on attestors
+                if pallet_attestor::GeodeAttestors::<T>::contains_key(&geode) {
+                    for id in pallet_attestor::GeodeAttestors::<T>::get(&geode) {
+                        let mut attestor = pallet_attestor::Attestors::<T>::get(&id);
+                        attestor.geodes.remove(&geode);
+                        pallet_attestor::Attestors::<T>::insert(&id, attestor);
+                    }
+                    pallet_attestor::GeodeAttestors::<T>::remove(&geode);
+                }
+            } else {
+                return Err(Error::<T>::InvalidGeode);
+            }
+
+            Self::deposit_event(Event::GeodeRemove(geode));
+            Ok(())
         }
     }
 }
