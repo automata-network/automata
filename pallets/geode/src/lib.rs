@@ -99,6 +99,8 @@ pub mod pallet {
         SomethingStored(u32, T::AccountId),
         /// Geode's state updated
         GeodeStateUpdate(T::AccountId),
+        /// Geode's promise updated
+        GeodePromiseUpdate(T::AccountId),
     }
 
     #[pallet::error]
@@ -115,6 +117,8 @@ pub mod pallet {
         GeodeInWork,
         /// The geode is in the market so you can't do this.
         GeodeInOrder,
+        /// Invalid input
+        InvalidInput,
     }
 
     #[pallet::pallet]
@@ -212,6 +216,21 @@ pub mod pallet {
             geode_use.dns = dns;
             <Geodes<T>>::insert(&geode, geode_use);
             Self::deposit_event(Event::DnsUpdate(geode));
+            Ok(().into())
+        }
+
+        /// Called by provider to set promise block number
+        #[pallet::weight(0)]
+        pub fn update_geode_promise(origin: OriginFor<T>, geode: T::AccountId, promise: BlockNumber) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let mut geode_use = <Geodes<T>>::get(&geode);
+            ensure!(geode_use.provider == who, Error::<T>::NoRight);
+            let block_number = <frame_system::Module<T>>::block_number();
+            ensure!(promise == 0 || promise > block_number.saturated_into::<BlockNumber>(), Error::<T>::InvalidInput);
+            geode_use.promise = promise;
+            <Geodes<T>>::insert(&geode, geode_use);
+            Self::deposit_event(Event::GeodePromiseUpdate(geode));
+
             Ok(().into())
         }
 
