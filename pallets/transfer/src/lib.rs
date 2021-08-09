@@ -32,7 +32,7 @@ pub mod pallet {
     type EcdsaSignature = ecdsa::Signature;
 
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(PartialEq, Eq, Clone, RuntimeDebug, Default)]
+    #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default)]
     pub struct TransferParam<AccountId> {
         pub source_address: H160,
         pub target_address: AccountId,
@@ -102,8 +102,16 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let target_account_id = param.target_address;
             let source_account_id = Self::evm_address_to_account_id(param.source_address);
+            let nonce = frame_system::Module::<T>::account_nonce(&source_account_id);
             
-            let address = Self::eth_recover(&param.signature, &target_account_id.using_encoded(Self::to_ascii_hex), &[][..])
+            let mut message: Vec<u8> = Vec::new();
+            message.extend_from_slice(&target_account_id.using_encoded(Self::to_ascii_hex));
+            message.extend_from_slice(b"#");
+            message.extend_from_slice(&param.value.to_be_bytes());
+            message.extend_from_slice(b"#");
+            message.extend_from_slice(&nonce.encode().as_slice());
+
+            let address = Self::eth_recover(&param.signature, &message, &[][..])
                 .ok_or(Error::<T>::SignatureInvalid)?;
             ensure!(address == param.source_address, Error::<T>::SignatureMismatch);
             
@@ -113,6 +121,7 @@ pub mod pallet {
                 param.value.into(),
 				ExistenceRequirement::AllowDeath
 			)?;
+            frame_system::Module::<T>::inc_account_nonce(&source_account_id);
             Ok(().into())
         }
 
@@ -122,9 +131,10 @@ pub mod pallet {
             data[4..24].copy_from_slice(&evm_address[..]);
             let mut hasher = VarBlake2b::new(32).unwrap();
             hasher.update(&data);
-            let hash = hasher.finalize_boxed();
-            let mut hash_bytes = [0u8, 32];
-            hash_bytes.copy_from_slice(&hash);
+            let mut hash_bytes = [0u8; 32];
+            hasher.finalize_variable(|res| {
+                hash_bytes.copy_from_slice(&res[..32]);
+            });            
 
             T::AccountId::decode(&mut &hash_bytes[..]).unwrap_or_default()
         }

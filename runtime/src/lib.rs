@@ -402,6 +402,7 @@ impl pallet_liveness::Config for Runtime {
 
 impl pallet_transfer::Config for Runtime {
     type Event = Event;
+    type Currency = Balances;
 }
 
 pub struct TransactionConverter;
