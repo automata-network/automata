@@ -15,6 +15,9 @@ frame-support = { version = "3.0.0", default-features = false }
 frame-system = { version = "3.0.0", default-features = false }
 sp-runtime = { version = "3.0.0", default-features = false }
 sp-std = {version  = "3.0.0", default-features = false }
+sp-core = {version  = "3.0.0", default-features = false }
+sp-io = { version = "3.0.0", default-features = false }
+blake2 = { version = "0.9.1", default-features = false }
 primitives = { package = "automata-primitives", path = "../../primitives", default-features = false }
 
 [dev-dependencies]
@@ -31,5 +34,5 @@ std = [
     'sp-runtime/std',
     'primitives/std',
     'frame-support/std',
-    'frame-system/std',
+    'frame-system/std'
 ]

@@ -19,6 +19,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
 use pallet_geode::Geode;
+use pallet_transfer::TransferParam;
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use sp_api::impl_runtime_apis;
@@ -69,6 +70,7 @@ pub use pallet_geode;
 pub use pallet_liveness;
 /// Import the template pallet.
 pub use pallet_template;
+pub use pallet_transfer;
 
 pub use automata_primitives::*;
 
@@ -398,6 +400,10 @@ impl pallet_liveness::Config for Runtime {
     type Event = Event;
 }
 
+impl pallet_transfer::Config for Runtime {
+    type Event = Event;
+}
+
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
@@ -446,6 +452,7 @@ construct_runtime!(
         AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
         GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
         LivenessModule: pallet_liveness::{Module, Call, Storage, Event<T>},
+        TransferModule: pallet_transfer::{Module, Call, Storage, Event<T>},
     }
 );
 
@@ -631,6 +638,12 @@ impl_runtime_apis! {
 
         fn attestor_attested_geodes(attestor: AccountId) -> Vec<Geode<AccountId, Hash>> {
             GeodeModule::attestor_attested_geodes(attestor)
+        }
+    }
+
+    impl apis::TransferApi<Block> for Runtime {
+        fn transfer_to_substrate_account(param: TransferParam<AccountId>) {
+            TransferModule::transfer_from_evm_account(param);
         }
     }
 

@@ -34,6 +34,7 @@ sp-std = '3.0.0'
 automata-primitives = { path = "../primitives" }
 automata-runtime = { path = '../runtime' }
 pallet-geode = { path = "../pallets/geode" }
+pallet-transfer = { path = "../pallets/transfer" }
 
 fc-rpc = { default-features = false, version = '1.0.0'}
 fc-rpc-core = { default-features = false, version = '1.0.0'}
