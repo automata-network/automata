@@ -78,9 +78,9 @@ where
 
     use attestor::AttestorServer;
     use geode::GeodeServer;
-    use transfer::TransferServer;
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
     use substrate_frame_rpc_system::{FullSystem, SystemApi};
+    use transfer::TransferServer;
 
     let mut io = jsonrpc_core::IoHandler::default();
     let FullDeps {
@@ -154,9 +154,13 @@ where
         client.clone(),
     )));
 
-    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(client.clone())));
+    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
+        client.clone(),
+    )));
 
-    io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(client)));
+    io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(
+        client,
+    )));
 
     io
 }
