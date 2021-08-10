@@ -1,8 +1,12 @@
-use automata_primitives::{AccountId, Block, BlockId, BlockNumber, Hash};
-use sp_core::{ecdsa};
+use automata_primitives::{AccountId, Block, BlockId};
 use std::sync::Arc;
 use pallet_transfer::TransferParam;
 use automata_runtime::apis::TransferApi as TransferRuntimeApi;
+use jsonrpc_core::{Error, ErrorCode};
+use jsonrpc_derive::rpc;
+use sp_api::ProvideRuntimeApi;
+use sp_runtime::{traits::Block as BlockT};
+use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
 
 const RUNTIME_ERROR: i64 = 1;
 
@@ -19,7 +23,7 @@ pub struct TransferApi<C> {
 
 impl<C> TransferApi<C> {
     pub fn new(client: Arc<C>) -> Self {
-        GeodeApi { client }
+        TransferApi { client }
     }
 }
 
@@ -37,9 +41,8 @@ where
         api.transfer_to_substrate_account(&at, param)
             .map_err(|e| Error {
                 code: ErrorCode::ServerError(RUNTIME_ERROR),
-                message: "Transfer to substrate account failed.",
+                message: "Transfer to substrate account failed.".into(),
                 data: Some(format!("{:?}", e).into()),
-            })?;
-        Ok()
+            });
     }
 }
