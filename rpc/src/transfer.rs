@@ -18,7 +18,7 @@ pub trait TransferServer<BlockHash> {
         source_address: [u8; 20], 
         target_address: [u8; 32], 
         value: u128, 
-        signature: String);
+        signature: String) -> Result<u64>;
 
     #[rpc(name = "silly_double")]
 	fn silly_double(&self, val: u64) -> Result<u64>;
@@ -44,8 +44,7 @@ where
         source_address: [u8; 20], 
         target_address: [u8; 32], 
         value: u128, 
-        signature: String) 
-    {
+        signature: String) -> Result<u64> {
         let api = self.client.runtime_api();
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
@@ -60,6 +59,7 @@ where
                 message: "Transfer to substrate account failed.".into(),
                 data: Some(format!("{:?}", e).into()),
             }).ok();
+        Ok(1)
     }
 
     fn silly_double(&self, val: u64) -> Result<u64> {
