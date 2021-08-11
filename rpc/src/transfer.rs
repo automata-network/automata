@@ -43,6 +43,6 @@ where
                 code: ErrorCode::ServerError(RUNTIME_ERROR),
                 message: "Transfer to substrate account failed.".into(),
                 data: Some(format!("{:?}", e).into()),
-            });
+            }).ok();
     }
 }
