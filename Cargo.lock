@@ -542,6 +542,7 @@ dependencies = [
 name = "automata-runtime-traits"
 version = "0.1.0"
 dependencies = [
+ "frame-support",
  "frame-system",
  "parity-scale-codec",
  "sp-application-crypto",

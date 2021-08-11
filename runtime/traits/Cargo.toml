@@ -11,6 +11,7 @@ frame-system = { default-features = false, version = '3.0.0' }
 sp-application-crypto = { default-features = false, version = '3.0.0' }
 sp-core = { default-features = false, version = '3.0.0' }
 sp-runtime = { default-features = false, version = '3.0.0' }
+frame-support = { default-features = false, version = '3.0.0' }
 
 [features]
 default = ["std"]

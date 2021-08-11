@@ -90,6 +90,8 @@ pub mod pallet {
     }
 
     impl<T: Config>  AttestorAccounting for Pallet<T> {
+        type AccountId = T::AccountId;
+        type Currency = T::Currency;
         fn attestor_staking(&self) -> Result<u32, u32> {
             Ok(0_u32)
         }
