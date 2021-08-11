@@ -52,10 +52,12 @@ where
         source_address_bytes.copy_from_slice(hex::decode(source_address).unwrap().as_slice());
         let mut signature_bytes = [0u8; 65];
         signature_bytes.copy_from_slice(hex::decode(signature).unwrap().as_slice());
+        let account_id = AccountId::from_ss58check(&target_address.as_str()).unwrap();
 
         api.transfer_to_substrate_account(&at,
             H160::from(&source_address_bytes),
-            AccountId::from_ss58check(target_address.as_str()).unwrap(),
+            target_address.into_bytes(),
+            account_id,
             // AccountId::from(target_address_bytes),
             value,
             ecdsa::Signature::from_slice(&signature_bytes))

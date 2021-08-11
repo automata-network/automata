@@ -22,7 +22,7 @@ pub mod pallet {
     use serde::{Deserialize, Serialize};
     use sp_io::{crypto::secp256k1_ecdsa_recover, hashing::keccak_256};
     use sp_runtime::traits::UniqueSaturatedInto;
-    use sp_runtime::SaturatedConversion;
+    use sp_runtime::{SaturatedConversion, print};
 
     /// Type alias for currency balance.
     type BalanceOf<T> =
@@ -101,24 +101,30 @@ pub mod pallet {
         //transfer from a evm account to substrate account, target address is the address who sign the extrinsics
         pub fn transfer_from_evm_account(
             source_address: H160,
-            target_address: T::AccountId,
+            target_address: Vec<u8>,
+            target_account_id: T::AccountId,
             value: u128,
             signature: ecdsa::Signature
         ) -> DispatchResultWithPostInfo {
-            let target_account_id = target_address;
+            // let target_account_id = target_address;
             let source_account_id = Self::evm_address_to_account_id(source_address);
             let transfer_value = Balance::from(value);
             let nonce = frame_system::Module::<T>::account_nonce(&source_account_id);
 
             let mut message: Vec<u8> = Vec::new();
-            message.extend_from_slice(&target_account_id.using_encoded(Self::to_ascii_hex));
+            // message.extend_from_slice(&target_account_id.using_encoded(Self::to_ascii_hex));
+            message.extend_from_slice(&target_address.as_slice());
             message.extend_from_slice(b"#");
             message.extend_from_slice(&transfer_value.to_be_bytes());
             message.extend_from_slice(b"#");
             message.extend_from_slice(&nonce.encode().as_slice());
-
+            print(&target_address.as_slice());
+            print(&value.to_be_bytes()[..]);
             let address = Self::eth_recover(&signature, &message, &[][..])
                 .ok_or(Error::<T>::SignatureInvalid)?;
+            print(nonce.encode().as_slice());
+            print(address.as_bytes());
+            print(message.as_slice());
             ensure!(
                 address == source_address,
                 Error::<T>::SignatureMismatch

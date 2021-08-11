@@ -40,7 +40,7 @@ use sp_version::RuntimeVersion;
 pub mod apis;
 pub mod constants;
 use constants::currency::*;
-use sp_runtime::generic::Era;
+use sp_runtime::{generic::Era, print};
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -643,10 +643,12 @@ impl_runtime_apis! {
 
     impl apis::TransferApi<Block> for Runtime {
         fn transfer_to_substrate_account(source_address: H160,
-            target_address: AccountId,
+            target_address: Vec<u8>,
+            target_account_id: AccountId,
             value: u128,
             signature: ecdsa::Signature) {
-            TransferModule::transfer_from_evm_account(source_address, target_address, value, signature);
+            print("runtime api");
+            TransferModule::transfer_from_evm_account(source_address, target_address, target_account_id, value, signature).map_err(|err| print(err)).ok();
         }
     }
 
