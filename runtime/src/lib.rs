@@ -21,10 +21,9 @@ use fp_rpc::TransactionStatus;
 use pallet_geode::Geode;
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-use pallet_transfer::TransferParam;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256, ecdsa};
 use sp_runtime::traits::{
     BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion, StaticLookup, Verify,
 };
@@ -643,8 +642,11 @@ impl_runtime_apis! {
     }
 
     impl apis::TransferApi<Block> for Runtime {
-        fn transfer_to_substrate_account(param: TransferParam<AccountId>) {
-            TransferModule::transfer_from_evm_account(param);
+        fn transfer_to_substrate_account(source_address: H160,
+            target_address: AccountId,
+            value: u128,
+            signature: ecdsa::Signature) {
+            TransferModule::transfer_from_evm_account(source_address, target_address, value, signature);
         }
     }
 

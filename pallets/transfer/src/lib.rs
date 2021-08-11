@@ -13,7 +13,7 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_support::traits::{Currency, ExistenceRequirement, Vec};
     use frame_system::pallet_prelude::*;
-    use sp_core::{ecdsa, H160, U256};
+    use sp_core::{ecdsa, H160};
     // use sp_runtime::AccountId32;
     use blake2::digest::{Update, VariableOutput};
     use blake2::VarBlake2b;
@@ -94,36 +94,40 @@ pub mod pallet {
                 value.saturated_into(),
             ));
             Ok(().into())
-        }
+        }        
     }
 
     impl<T: Config> Pallet<T> {
         //transfer from a evm account to substrate account, target address is the address who sign the extrinsics
         pub fn transfer_from_evm_account(
-            param: TransferParam<T::AccountId>,
+            source_address: H160,
+            target_address: T::AccountId,
+            value: u128,
+            signature: ecdsa::Signature
         ) -> DispatchResultWithPostInfo {
-            let target_account_id = param.target_address;
-            let source_account_id = Self::evm_address_to_account_id(param.source_address);
+            let target_account_id = target_address;
+            let source_account_id = Self::evm_address_to_account_id(source_address);
+            let transfer_value = Balance::from(value);
             let nonce = frame_system::Module::<T>::account_nonce(&source_account_id);
 
             let mut message: Vec<u8> = Vec::new();
             message.extend_from_slice(&target_account_id.using_encoded(Self::to_ascii_hex));
             message.extend_from_slice(b"#");
-            message.extend_from_slice(&param.value.to_be_bytes());
+            message.extend_from_slice(&transfer_value.to_be_bytes());
             message.extend_from_slice(b"#");
             message.extend_from_slice(&nonce.encode().as_slice());
 
-            let address = Self::eth_recover(&param.signature, &message, &[][..])
+            let address = Self::eth_recover(&signature, &message, &[][..])
                 .ok_or(Error::<T>::SignatureInvalid)?;
             ensure!(
-                address == param.source_address,
+                address == source_address,
                 Error::<T>::SignatureMismatch
             );
 
             T::Currency::transfer(
                 &source_account_id,
                 &target_account_id,
-                param.value.unique_saturated_into(),
+                transfer_value.unique_saturated_into(),
                 ExistenceRequirement::AllowDeath,
             )?;
             frame_system::Module::<T>::inc_account_nonce(&source_account_id);
