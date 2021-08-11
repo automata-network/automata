@@ -3,6 +3,7 @@ members = [
     'node',
     'pallets/*',
     'runtime',
+    'runtime/traits',
     'primitives'
 ]
 [profile.release]
