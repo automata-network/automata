@@ -5,30 +5,28 @@ pub use pallet::*;
 #[cfg(test)]
 mod mock;
 
-// #[cfg(test)]
-// mod tests;
-
-
+#[cfg(test)]
+mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
     use frame_support::traits::{Currency, ExistenceRequirement, Vec};
-    use sp_core::{H160, ecdsa, U256};
+    use frame_system::pallet_prelude::*;
+    use sp_core::{ecdsa, H160, U256};
     // use sp_runtime::AccountId32;
-    use sp_io::{
-        crypto::secp256k1_ecdsa_recover, 
-        hashing::keccak_256
-    };
-    use blake2::VarBlake2b;
     use blake2::digest::{Update, VariableOutput};
+    use blake2::VarBlake2b;
+    use primitives::*;
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
-    // use primitives::AccountId;
+    use sp_io::{crypto::secp256k1_ecdsa_recover, hashing::keccak_256};
+    use sp_runtime::traits::UniqueSaturatedInto;
+    use sp_runtime::SaturatedConversion;
 
     /// Type alias for currency balance.
-    type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+    type BalanceOf<T> =
+        <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
     type EcdsaSignature = ecdsa::Signature;
 
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -36,9 +34,8 @@ pub mod pallet {
     pub struct TransferParam<AccountId> {
         pub source_address: H160,
         pub target_address: AccountId,
-        pub value: u32,
-        pub signature: ecdsa::Signature
-        //shoule we maintain a nonce for each user?
+        pub value: Balance,
+        pub signature: ecdsa::Signature, //shoule we maintain a nonce for each user?
     }
 
     #[pallet::config]
@@ -56,9 +53,10 @@ pub mod pallet {
     // https://substrate.dev/docs/en/knowledgebase/runtime/events
     #[pallet::event]
     #[pallet::metadata(T::AccountId = "AccountId")]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        TransferToEVM(T::AccountId, H160, U256),
-        TransferToSubstrate(H160, T::AccountId, U256),
+        TransferToEVM(T::AccountId, H160, Balance),
+        TransferToSubstrate(H160, T::AccountId, Balance),
     }
 
     // Errors inform users that something went wrong.
@@ -75,7 +73,6 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-
         //transfer from a substrate account to evm account, source address is the address who sign the extrinsics
         #[pallet::weight(0)]
         pub fn transfer_to_evm_account(
@@ -86,11 +83,16 @@ pub mod pallet {
             let source_account_id = ensure_signed(origin)?;
             let target_account_id = Self::evm_address_to_account_id(target_address);
             T::Currency::transfer(
-				&source_account_id,
-				&target_account_id,
-				value,
-				ExistenceRequirement::AllowDeath
-			)?;
+                &source_account_id,
+                &target_account_id,
+                value,
+                ExistenceRequirement::AllowDeath,
+            )?;
+            Self::deposit_event(Event::TransferToEVM(
+                source_account_id,
+                target_address,
+                value.saturated_into(),
+            ));
             Ok(().into())
         }
     }
@@ -98,12 +100,12 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         //transfer from a evm account to substrate account, target address is the address who sign the extrinsics
         pub fn transfer_from_evm_account(
-            param: TransferParam<T::AccountId>
+            param: TransferParam<T::AccountId>,
         ) -> DispatchResultWithPostInfo {
             let target_account_id = param.target_address;
             let source_account_id = Self::evm_address_to_account_id(param.source_address);
             let nonce = frame_system::Module::<T>::account_nonce(&source_account_id);
-            
+
             let mut message: Vec<u8> = Vec::new();
             message.extend_from_slice(&target_account_id.using_encoded(Self::to_ascii_hex));
             message.extend_from_slice(b"#");
@@ -113,19 +115,22 @@ pub mod pallet {
 
             let address = Self::eth_recover(&param.signature, &message, &[][..])
                 .ok_or(Error::<T>::SignatureInvalid)?;
-            ensure!(address == param.source_address, Error::<T>::SignatureMismatch);
-            
+            ensure!(
+                address == param.source_address,
+                Error::<T>::SignatureMismatch
+            );
+
             T::Currency::transfer(
-				&source_account_id,
-				&target_account_id,
-                param.value.into(),
-				ExistenceRequirement::AllowDeath
-			)?;
+                &source_account_id,
+                &target_account_id,
+                param.value.unique_saturated_into(),
+                ExistenceRequirement::AllowDeath,
+            )?;
             frame_system::Module::<T>::inc_account_nonce(&source_account_id);
             Ok(().into())
         }
 
-        fn evm_address_to_account_id(evm_address: H160) -> T::AccountId {
+        pub fn evm_address_to_account_id(evm_address: H160) -> T::AccountId {
             let mut data = [0u8; 24];
             data[0..4].copy_from_slice(b"evm:");
             data[4..24].copy_from_slice(&evm_address[..]);
@@ -134,7 +139,7 @@ pub mod pallet {
             let mut hash_bytes = [0u8; 32];
             hasher.finalize_variable(|res| {
                 hash_bytes.copy_from_slice(&res[..32]);
-            });            
+            });
 
             T::AccountId::decode(&mut &hash_bytes[..]).unwrap_or_default()
         }
@@ -142,7 +147,8 @@ pub mod pallet {
         fn eth_recover(s: &EcdsaSignature, message: &[u8], extra: &[u8]) -> Option<H160> {
             let msg = keccak_256(&Self::ethereum_signable_message(message, extra));
             let mut res = H160::default();
-            res.0.copy_from_slice(&keccak_256(&secp256k1_ecdsa_recover(&s.0, &msg).ok()?[..])[12..]);
+            res.0
+                .copy_from_slice(&keccak_256(&secp256k1_ecdsa_recover(&s.0, &msg).ok()?[..])[12..]);
             Some(res)
         }
 

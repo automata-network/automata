@@ -1,12 +1,12 @@
 use automata_primitives::{AccountId, Block, BlockId};
-use std::sync::Arc;
-use pallet_transfer::TransferParam;
 use automata_runtime::apis::TransferApi as TransferRuntimeApi;
 use jsonrpc_core::{Error, ErrorCode};
 use jsonrpc_derive::rpc;
-use sp_api::ProvideRuntimeApi;
-use sp_runtime::{traits::Block as BlockT};
+use pallet_transfer::TransferParam;
 use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
+use sp_api::ProvideRuntimeApi;
+use sp_runtime::traits::Block as BlockT;
+use std::sync::Arc;
 
 const RUNTIME_ERROR: i64 = 1;
 
@@ -14,11 +14,11 @@ const RUNTIME_ERROR: i64 = 1;
 pub trait TransferServer<BlockHash> {
     //transfer to substrate address
     #[rpc(name = "transfer_to_substrate_account")]
-    fn transfer_to_substrate_account(&self, parameter:  TransferParam<AccountId>);
+    fn transfer_to_substrate_account(&self, parameter: TransferParam<AccountId>);
 }
 
 pub struct TransferApi<C> {
-    client: Arc<C>
+    client: Arc<C>,
 }
 
 impl<C> TransferApi<C> {
