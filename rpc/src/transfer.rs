@@ -16,8 +16,7 @@ pub trait TransferServer<BlockHash> {
     #[rpc(name = "transfer_to_substrate_account")]
     fn transfer_to_substrate_account(&self, 
         source_address: String, 
-        target_address: String, 
-        value: u128, 
+        message: String,
         signature: String) -> Result<u64>;
 
     #[rpc(name = "silly_double")]
@@ -42,8 +41,7 @@ where
 {
     fn transfer_to_substrate_account(&self, 
         source_address: String, 
-        target_address: String, 
-        value: u128, 
+        message: String, 
         signature: String) -> Result<u64> {
         let api = self.client.runtime_api();
         let best = self.client.info().best_hash;
@@ -52,14 +50,10 @@ where
         source_address_bytes.copy_from_slice(hex::decode(source_address).unwrap().as_slice());
         let mut signature_bytes = [0u8; 65];
         signature_bytes.copy_from_slice(hex::decode(signature).unwrap().as_slice());
-        let account_id = AccountId::from_ss58check(&target_address.as_str()).unwrap();
 
         api.transfer_to_substrate_account(&at,
             H160::from(&source_address_bytes),
-            target_address.into_bytes(),
-            account_id,
-            // AccountId::from(target_address_bytes),
-            value,
+            message.into_bytes(),
             ecdsa::Signature::from_slice(&signature_bytes))
             .map_err(|e| Error {
                 code: ErrorCode::ServerError(RUNTIME_ERROR),

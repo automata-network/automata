@@ -643,12 +643,10 @@ impl_runtime_apis! {
 
     impl apis::TransferApi<Block> for Runtime {
         fn transfer_to_substrate_account(source_address: H160,
-            target_address: Vec<u8>,
-            target_account_id: AccountId,
-            value: u128,
+            message: Vec<u8>,
             signature: ecdsa::Signature) {
             print("runtime api");
-            TransferModule::transfer_from_evm_account(source_address, target_address, target_account_id, value, signature).map_err(|err| print(err)).ok();
+            TransferModule::transfer_from_evm_account(source_address, message, signature).map_err(|err| print(err)).ok();
         }
     }
 

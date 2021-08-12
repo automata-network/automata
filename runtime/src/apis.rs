@@ -17,9 +17,7 @@ sp_api::decl_runtime_apis! {
     pub trait TransferApi {
         fn transfer_to_substrate_account(
             source_address: H160,
-            target_address: Vec<u8>,
-            target_account_id: AccountId,
-            value: u128,
+            message: Vec<u8>,
             signature: ecdsa::Signature);
     }
 }

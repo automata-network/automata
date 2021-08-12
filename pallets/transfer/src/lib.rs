@@ -13,7 +13,7 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_support::traits::{Currency, ExistenceRequirement, Vec};
     use frame_system::pallet_prelude::*;
-    use sp_core::{ecdsa, H160};
+    use sp_core::{ecdsa, H160, crypto::Ss58Codec};
     // use sp_runtime::AccountId32;
     use blake2::digest::{Update, VariableOutput};
     use blake2::VarBlake2b;
@@ -21,8 +21,9 @@ pub mod pallet {
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
     use sp_io::{crypto::secp256k1_ecdsa_recover, hashing::keccak_256};
-    use sp_runtime::traits::UniqueSaturatedInto;
-    use sp_runtime::{SaturatedConversion, print};
+    use sp_runtime::{traits::UniqueSaturatedInto, SaturatedConversion, print};
+    #[cfg(feature = "std")]
+    use std::str;
 
     /// Type alias for currency balance.
     type BalanceOf<T> =
@@ -98,47 +99,84 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        //transfer from a evm account to substrate account, target address is the address who sign the extrinsics
         pub fn transfer_from_evm_account(
             source_address: H160,
-            target_address: Vec<u8>,
-            target_account_id: T::AccountId,
-            value: u128,
+            message: Vec<u8>,
             signature: ecdsa::Signature
         ) -> DispatchResultWithPostInfo {
             // let target_account_id = target_address;
             let source_account_id = Self::evm_address_to_account_id(source_address);
-            let transfer_value = Balance::from(value);
             let nonce = frame_system::Module::<T>::account_nonce(&source_account_id);
 
-            let mut message: Vec<u8> = Vec::new();
-            // message.extend_from_slice(&target_account_id.using_encoded(Self::to_ascii_hex));
-            message.extend_from_slice(&target_address.as_slice());
-            message.extend_from_slice(b"#");
-            message.extend_from_slice(&transfer_value.to_be_bytes());
-            message.extend_from_slice(b"#");
-            message.extend_from_slice(&nonce.encode().as_slice());
-            print(&target_address.as_slice());
-            print(&value.to_be_bytes()[..]);
             let address = Self::eth_recover(&signature, &message, &[][..])
                 .ok_or(Error::<T>::SignatureInvalid)?;
-            print(nonce.encode().as_slice());
+            print(&nonce.encode().as_slice());
             print(address.as_bytes());
-            print(message.as_slice());
+            print(&message.as_slice());
             ensure!(
                 address == source_address,
                 Error::<T>::SignatureMismatch
             );
+            print("signature match");
+            
+            let message_str: String = String::from_utf8(message).expect("Invalid UTF-8");
+            let splited_params: Vec<&str> = message_str.split("#").collect();
+            let target_account_id  = AccountId::from_ss58check(splited_params[0]).unwrap();
+            let value_str = splited_params[1];
+            let nonce_str = splited_params[2];
 
-            T::Currency::transfer(
-                &source_account_id,
-                &target_account_id,
-                transfer_value.unique_saturated_into(),
-                ExistenceRequirement::AllowDeath,
-            )?;
+            // T::Currency::transfer(
+            //     &source_account_id,
+            //     &target_account_id,
+            //     transfer_value.unique_saturated_into(),
+            //     ExistenceRequirement::AllowDeath,
+            // )?;
             frame_system::Module::<T>::inc_account_nonce(&source_account_id);
             Ok(().into())
         }
+        //transfer from a evm account to substrate account, target address is the address who sign the extrinsics
+        // pub fn transfer_from_evm_account(
+        //     source_address: H160,
+        //     target_address: Vec<u8>,
+        //     target_account_id: T::AccountId,
+        //     value: u128,
+        //     signature: ecdsa::Signature
+        // ) -> DispatchResultWithPostInfo {
+        //     // let target_account_id = target_address;
+        //     let source_account_id = Self::evm_address_to_account_id(source_address);
+        //     let transfer_value = Balance::from(value);
+        //     let nonce = frame_system::Module::<T>::account_nonce(&source_account_id);
+
+        //     let mut message: Vec<u8> = Vec::new();
+        //     // message.extend_from_slice(&target_account_id.using_encoded(Self::to_ascii_hex));
+        //     // let message_str = std::fmt::format!("{:?}#{:?}#{:?}", std::str::from_utf8(&target_address.as_slice()).unwrap(), value, nonce);
+        //     // message.extend_from_slice(message_str.as_bytes());
+        //     message.extend_from_slice(&target_address.as_slice());
+        //     message.extend_from_slice(b"#");
+        //     message.extend_from_slice(&transfer_value.to_be_bytes());
+        //     message.extend_from_slice(b"#");
+        //     message.extend_from_slice(&nonce.encode().as_slice());
+        //     print(&target_address.as_slice());
+        //     print(&value.to_be_bytes()[..]);
+        //     let address = Self::eth_recover(&signature, &message, &[][..])
+        //         .ok_or(Error::<T>::SignatureInvalid)?;
+        //     print(nonce.encode().as_slice());
+        //     print(address.as_bytes());
+        //     print(message.as_slice());
+        //     ensure!(
+        //         address == source_address,
+        //         Error::<T>::SignatureMismatch
+        //     );
+
+        //     T::Currency::transfer(
+        //         &source_account_id,
+        //         &target_account_id,
+        //         transfer_value.unique_saturated_into(),
+        //         ExistenceRequirement::AllowDeath,
+        //     )?;
+        //     frame_system::Module::<T>::inc_account_nonce(&source_account_id);
+        //     Ok(().into())
+        // }
 
         pub fn evm_address_to_account_id(evm_address: H160) -> T::AccountId {
             let mut data = [0u8; 24];
@@ -178,14 +216,14 @@ pub mod pallet {
             v
         }
 
-        fn to_ascii_hex(data: &[u8]) -> Vec<u8> {
-            let mut r = Vec::with_capacity(data.len() * 2);
-            let mut push_nibble = |n| r.push(if n < 10 { b'0' + n } else { b'a' - 10 + n });
-            for &b in data.iter() {
-                push_nibble(b / 16);
-                push_nibble(b % 16);
-            }
-            r
-        }
+        // fn to_ascii_hex(data: &[u8]) -> Vec<u8> {
+        //     let mut r = Vec::with_capacity(data.len() * 2);
+        //     let mut push_nibble = |n| r.push(if n < 10 { b'0' + n } else { b'a' - 10 + n });
+        //     for &b in data.iter() {
+        //         push_nibble(b / 16);
+        //         push_nibble(b % 16);
+        //     }
+        //     r
+        // }
     }
 }
