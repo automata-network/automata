@@ -26,6 +26,7 @@ pub mod pallet {
     pub const REPORT_APPROVAL_RATIO: Percent = Percent::from_percent(50);
     pub const REPORT_EXPIRY_BLOCK_NUMBER: BlockNumber = 10;
     pub const ATTESTATION_EXPIRY_BLOCK_NUMBER: BlockNumber = 30;
+    pub const UNKNOWN_EXPIRY_BLOCK_NUMBER: BlockNumber = 5760;
 
     /// Geode state
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -148,6 +149,14 @@ pub mod pallet {
                         }
                     })
                     .all(|_| true);
+
+                // clean expired unknown geode
+                pallet_geode::UnknownGeodes::<T>::iter().map(|(key, start)| {
+                    if start + UNKNOWN_EXPIRY_BLOCK_NUMBER < now {
+                        expired.push(key);
+                    }
+                }).all(|_| true);
+
                 for key in expired {
                     <pallet_geode::Module<T>>::detach_geode(
                         pallet_geode::DetachOption::Remove,

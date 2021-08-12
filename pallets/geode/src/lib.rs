@@ -151,6 +151,11 @@ pub mod pallet {
     pub type OfflineGeodes<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn unknown_geodes_ids)]
+    pub type UnknownGeodes<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// Called by provider to register a geode. The user/attestors/state/provider will be
@@ -330,7 +335,7 @@ pub mod pallet {
                 }
                 ensure!(
                     geode_use.state == GeodeState::Registered
-                        || geode_use.state == GeodeState::Attested,
+                        || geode_use.state == GeodeState::Attested || geode_use.state == GeodeState::Unknown,
                     Error::<T>::InvalidGeodeState
                 );
 
@@ -350,6 +355,11 @@ pub mod pallet {
                     DetachOption::Unknown => {
                         geode_use.state = GeodeState::Unknown;
                         <Geodes<T>>::insert(&geode, &geode_use);
+                        let block_number = <frame_system::Module<T>>::block_number();
+                        <UnknownGeodes<T>>::insert(
+                            &geode,
+                            block_number.saturated_into::<BlockNumber>(),
+                        );
                     }
                 }
 
@@ -359,6 +369,9 @@ pub mod pallet {
                     }
                     GeodeState::Attested => {
                         <AttestedGeodes<T>>::remove(&geode);
+                    }
+                    GeodeState::Unknown => {
+                        <UnknownGeodes<T>>::remove(&geode);
                     }
                     _ => {
                         // shouldn't happen
