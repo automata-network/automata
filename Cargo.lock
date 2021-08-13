@@ -4461,6 +4461,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-service"
+version = "0.1.0"
+dependencies = [
+ "automata-primitives",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "serde_json",
+ "sha2 0.9.5",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-session"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

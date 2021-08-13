@@ -11,6 +11,9 @@ use sp_runtime::{
 /// An index to a block.
 pub type BlockNumber = u32;
 
+/// An index to a order.
+pub type OrderNumber = u32;
+
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = MultiSignature;
 

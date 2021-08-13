@@ -203,8 +203,8 @@ pub mod pallet {
                 report.attestors.insert(who.clone());
             } else {
                 report.attestors.insert(who.clone());
-                let block_number = <frame_system::Module<T>>::block_number();
-                report.start = block_number.saturated_into::<BlockNumber>();
+                let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+                report.start = block_number;
             }
 
             // check current amount of misconduct satisfying the approval ratio
@@ -274,17 +274,22 @@ pub mod pallet {
             {
                 // update pallet_geode::Geodes
                 geode_record.state = pallet_geode::GeodeState::Attested;
-                pallet_geode::Geodes::<T>::insert(&geode, geode_record);
+                pallet_geode::Geodes::<T>::insert(&geode, &geode_record);
 
                 // remove from pallet_geode::RegisteredGeodes
                 pallet_geode::RegisteredGeodes::<T>::remove(&geode);
 
                 // move into pallet_geode::AttestedGeodes
-                let block_number = <frame_system::Module<T>>::block_number();
+                let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
                 pallet_geode::AttestedGeodes::<T>::insert(
                     &geode,
-                    block_number.saturated_into::<BlockNumber>(),
+                    block_number,
                 );
+
+                // move into the PromisedGeodes for queueing for job
+                let mut promised_geodes = pallet_geode::PromisedGeodes::<T>::get(&geode_record.promise);
+                promised_geodes.push(geode.clone());
+                pallet_geode::PromisedGeodes::<T>::insert(geode_record.promise, &promised_geodes);
             }
 
             Self::deposit_event(Event::AttestFor(who, geode));
