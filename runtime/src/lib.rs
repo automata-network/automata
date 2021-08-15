@@ -386,9 +386,14 @@ impl pallet_template::Config for Runtime {
     type Event = Event;
 }
 
+parameter_types! {
+	pub const AttestorStakingAmount: Balance = 1 * CENTS;
+}
+
 impl pallet_accounting::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
+    type AttestorStakingAmount = AttestorStakingAmount;
 }
 
 impl pallet_attestor::Config for Runtime {

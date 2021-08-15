@@ -46,6 +46,7 @@ pub mod pallet {
         type Currency: ReservableCurrency<Self::AccountId>;
 
         type Accounting: AttestorAccounting;
+
     }
 
     #[pallet::pallet]

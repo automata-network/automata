@@ -28,6 +28,8 @@ pub mod pallet {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         /// The currency in which fees are paid and contract balances are held.
         type Currency: ReservableCurrency<Self::AccountId>;
+
+        type AttestorStakingAmount: Get<BalanceOf<Self>>;
     }
 
     #[pallet::pallet]
@@ -85,15 +87,14 @@ pub mod pallet {
         /// Return attestors' url and pubkey list for rpc.
         pub fn attestor_list() {
         }
-
-        
     }
 
     impl<T: Config>  AttestorAccounting for Pallet<T> {
         type AccountId = T::AccountId;
         type Currency = T::Currency;
-        fn attestor_staking(&self) -> Result<u32, u32> {
-            Ok(0_u32)
+        fn attestor_staking(&self, who: Self::AccountId) -> DispatchResultWithPostInfo {
+            T::Currency::reserve(&who, T::AttestorStakingAmount::get())?;
+            Ok(().into())
         }
 
     }
