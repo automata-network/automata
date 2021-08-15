@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use frame_support::traits::{Currency, ReservableCurrency};
 
 pub trait AttestorAccounting {

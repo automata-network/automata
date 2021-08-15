@@ -67,6 +67,7 @@ use pallet_evm::{
 pub use pallet_attestor;
 pub use pallet_geode;
 pub use pallet_liveness;
+pub use pallet_accouting;
 /// Import the template pallet.
 pub use pallet_template;
 
@@ -385,9 +386,15 @@ impl pallet_template::Config for Runtime {
     type Event = Event;
 }
 
+impl pallet_accounting::Config for for Runtime {
+    type Event = Event;
+    type Currency = Balances;
+}
+
 impl pallet_attestor::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
+    type Accounting = AccountingModule;
 }
 
 impl pallet_geode::Config for Runtime {
@@ -446,6 +453,7 @@ construct_runtime!(
         AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
         GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
         LivenessModule: pallet_liveness::{Module, Call, Storage, Event<T>},
+        AccountingModule: pallet_accouting::{Module, Call, Storage, Event<T>},
     }
 );
 

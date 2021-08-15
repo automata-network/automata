@@ -18,6 +18,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use sp_std::collections::btree_set::BTreeSet;
     use sp_std::prelude::*;
+    use automata_runtime_traits::AttestorAccounting;
 
     /// Attestor struct
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default)]
@@ -43,6 +44,8 @@ pub mod pallet {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         /// The currency in which fees are paid and contract balances are held.
         type Currency: ReservableCurrency<Self::AccountId>;
+
+        type Accounting: AttestorAccounting;
     }
 
     #[pallet::pallet]

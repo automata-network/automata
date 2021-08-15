@@ -55,6 +55,7 @@ pallet-template = { default-features = false, path = '../pallets/template', vers
 pallet-attestor = { default-features = false, path = '../pallets/attestor', version = '0.1.0' }
 pallet-geode = { default-features = false, path = '../pallets/geode', version = '0.1.0' }
 pallet-liveness = { default-features = false, path = '../pallets/liveness', version = '0.1.0' }
+pallet-accounting = { default-features = false, path = '../pallets/accounting', version = '0.1.0' }
 automata-primitives = { default-features = false, path = "../primitives" }
 
 [features]

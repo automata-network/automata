@@ -21,6 +21,8 @@ sp-std = {version  = "3.0.0", default-features = false }
 # local dependencies
 primitives = { package = "automata-primitives", path = "../../primitives", default-features = false }
 
+automata-runtime-traits = { package = "automata-runtime-traits", path = "../../runtime/traits", default-features = false }
+
 [dev-dependencies]
 serde = { version = "1.0.119" }
 sp-core = { default-features = false, version = '3.0.0' }
