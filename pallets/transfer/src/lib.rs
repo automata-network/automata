@@ -10,40 +10,29 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use frame_support::pallet_prelude::*;
-    use frame_support::traits::{Currency, ExistenceRequirement, Vec};
-    use frame_system::pallet_prelude::*;
-    use sp_core::{ecdsa, H160, crypto::Ss58Codec};
-    // use sp_runtime::AccountId32;
+    use frame_support::{pallet_prelude::*, traits::{Currency, ExistenceRequirement, Vec}, unsigned::ValidateUnsigned};
+    use frame_system::{pallet_prelude::*, offchain::{SendTransactionTypes, SubmitTransaction}};
+    use sp_core::{ecdsa, H160};
+    use sp_io::{crypto::secp256k1_ecdsa_recover, hashing::keccak_256};
+    use sp_runtime::{traits::UniqueSaturatedInto, SaturatedConversion, print};
+    use sp_std::str;
     use blake2::digest::{Update, VariableOutput};
     use blake2::VarBlake2b;
     use primitives::*;
-    #[cfg(feature = "std")]
-    use serde::{Deserialize, Serialize};
-    use sp_io::{crypto::secp256k1_ecdsa_recover, hashing::keccak_256};
-    use sp_runtime::{traits::UniqueSaturatedInto, SaturatedConversion, print};
-    #[cfg(feature = "std")]
-    use std::str;
+
 
     /// Type alias for currency balance.
     type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
     type EcdsaSignature = ecdsa::Signature;
 
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default)]
-    pub struct TransferParam<AccountId> {
-        pub source_address: H160,
-        pub target_address: AccountId,
-        pub value: Balance,
-        pub signature: ecdsa::Signature, //shoule we maintain a nonce for each user?
-    }
+    const UNSIGNED_TXS_PRIORITY: u64 = 100;
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
-        /// Because this pallet emits events, it depends on the runtime's definition of an event.
+    pub trait Config: SendTransactionTypes<Call<Self>> + frame_system::Config {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type Currency: Currency<Self::AccountId>;
+        type Call: From<Call<Self>>;
     }
 
     #[pallet::pallet]
@@ -67,6 +56,27 @@ pub mod pallet {
         InsufficientBalance,
         SignatureInvalid,
         SignatureMismatch,
+        IncorrectNonce,
+    }
+
+    #[pallet::validate_unsigned]
+    impl<T: Config> ValidateUnsigned for Pallet<T> {
+        type Call = Call<T>;
+
+        fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+            let valid_tx = |provide| ValidTransaction::with_tag_prefix("Automata/evm/transfer")
+                .priority(UNSIGNED_TXS_PRIORITY)
+                .and_provides([&provide])
+                .longevity(3)
+                .propagate(true)
+                .build();
+            
+            match call {
+                Call::transfer_from_evm_account2(_message, _signature_raw_bytes) => valid_tx(b"submit_number_unsigned".to_vec()),
+                _ => InvalidTransaction::Call.into(),
+            }
+        }
+
     }
 
     #[pallet::hooks]
@@ -95,135 +105,107 @@ pub mod pallet {
                 value.saturated_into(),
             ));
             Ok(().into())
-        }        
-    }
-
-    impl<T: Config> Pallet<T> {
-        pub fn transfer_from_evm_account(
-            source_address: H160,
-            message: Vec<u8>,
-            signature: ecdsa::Signature
+        }      
+        
+        #[pallet::weight(0)]
+        pub fn transfer_from_evm_account2(
+            _origin: OriginFor<T>,
+            message: [u8; 68],
+            signature_raw_bytes: [u8; 65]
         ) -> DispatchResultWithPostInfo {
+            let mut signature_bytes = [0u8; 65];
+            signature_bytes.copy_from_slice(&signature_raw_bytes);
+            let signature = ecdsa::Signature::from_slice(&signature_bytes);
             // let target_account_id = target_address;
+            let mut source_address_bytes = [0u8; 20];
+            source_address_bytes.copy_from_slice(&message[0..20]);
+            let source_address = source_address_bytes.into();
             let source_account_id = Self::evm_address_to_account_id(source_address);
-            let nonce = frame_system::Module::<T>::account_nonce(&source_account_id);
+            // let nonce = frame_system::Module::<T>::account_nonce(&source_account_id);
+            let mut target_account_id_bytes = [0u8; 32];
+            target_account_id_bytes.copy_from_slice(&message[20..52]);
+            let target_account_id = T::AccountId::decode(&mut &target_account_id_bytes[..]).unwrap_or_default();
+            let mut value_bytes = [0u8; 16];
+            value_bytes.copy_from_slice(&message[52..68]);
+            let value_128: u128 = u128::from_be_bytes(value_bytes);
+            let value = Balance::from(value_128);
 
-            let address = Self::eth_recover(&signature, &message, &[][..])
+            let address = eth_recover(&signature, &message, &[][..])
                 .ok_or(Error::<T>::SignatureInvalid)?;
-            print(&nonce.encode().as_slice());
+            // print(&nonce.encode().as_slice());
             print(address.as_bytes());
-            print(&message.as_slice());
             ensure!(
                 address == source_address,
                 Error::<T>::SignatureMismatch
             );
             print("signature match");
-            
-            let message_str: String = String::from_utf8(message).expect("Invalid UTF-8");
-            let splited_params: Vec<&str> = message_str.split("#").collect();
-            let target_account_id  = AccountId::from_ss58check(splited_params[0]).unwrap();
-            let value_str = splited_params[1];
-            let nonce_str = splited_params[2];
 
-            // T::Currency::transfer(
-            //     &source_account_id,
-            //     &target_account_id,
-            //     transfer_value.unique_saturated_into(),
-            //     ExistenceRequirement::AllowDeath,
-            // )?;
-            frame_system::Module::<T>::inc_account_nonce(&source_account_id);
+            T::Currency::transfer(
+                &source_account_id,
+                &target_account_id,
+                value.unique_saturated_into(),
+                ExistenceRequirement::AllowDeath,
+            )?;
+            print("after transfer");
+            Self::deposit_event(Event::TransferToSubstrate(
+                source_address,
+                target_account_id,
+                value.saturated_into(),
+            ));
+            // frame_system::Module::<T>::inc_account_nonce(&source_account_id);
             Ok(().into())
         }
-        //transfer from a evm account to substrate account, target address is the address who sign the extrinsics
-        // pub fn transfer_from_evm_account(
-        //     source_address: H160,
-        //     target_address: Vec<u8>,
-        //     target_account_id: T::AccountId,
-        //     value: u128,
-        //     signature: ecdsa::Signature
-        // ) -> DispatchResultWithPostInfo {
-        //     // let target_account_id = target_address;
-        //     let source_account_id = Self::evm_address_to_account_id(source_address);
-        //     let transfer_value = Balance::from(value);
-        //     let nonce = frame_system::Module::<T>::account_nonce(&source_account_id);
+    }
 
-        //     let mut message: Vec<u8> = Vec::new();
-        //     // message.extend_from_slice(&target_account_id.using_encoded(Self::to_ascii_hex));
-        //     // let message_str = std::fmt::format!("{:?}#{:?}#{:?}", std::str::from_utf8(&target_address.as_slice()).unwrap(), value, nonce);
-        //     // message.extend_from_slice(message_str.as_bytes());
-        //     message.extend_from_slice(&target_address.as_slice());
-        //     message.extend_from_slice(b"#");
-        //     message.extend_from_slice(&transfer_value.to_be_bytes());
-        //     message.extend_from_slice(b"#");
-        //     message.extend_from_slice(&nonce.encode().as_slice());
-        //     print(&target_address.as_slice());
-        //     print(&value.to_be_bytes()[..]);
-        //     let address = Self::eth_recover(&signature, &message, &[][..])
-        //         .ok_or(Error::<T>::SignatureInvalid)?;
-        //     print(nonce.encode().as_slice());
-        //     print(address.as_bytes());
-        //     print(message.as_slice());
-        //     ensure!(
-        //         address == source_address,
-        //         Error::<T>::SignatureMismatch
-        //     );
-
-        //     T::Currency::transfer(
-        //         &source_account_id,
-        //         &target_account_id,
-        //         transfer_value.unique_saturated_into(),
-        //         ExistenceRequirement::AllowDeath,
-        //     )?;
-        //     frame_system::Module::<T>::inc_account_nonce(&source_account_id);
-        //     Ok(().into())
-        // }
+    impl<T: Config> Pallet<T> {
+        pub fn submit_unsigned_transaction(
+            message: [u8; 68],
+            signature_raw_bytes: [u8; 65]
+        ) -> Result<(), ()> {
+            let call = Call::transfer_from_evm_account2(message, signature_raw_bytes);
+            SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(
+                call.into()
+            )
+        }
 
         pub fn evm_address_to_account_id(evm_address: H160) -> T::AccountId {
-            let mut data = [0u8; 24];
-            data[0..4].copy_from_slice(b"evm:");
-            data[4..24].copy_from_slice(&evm_address[..]);
-            let mut hasher = VarBlake2b::new(32).unwrap();
-            hasher.update(&data);
-            let mut hash_bytes = [0u8; 32];
-            hasher.finalize_variable(|res| {
-                hash_bytes.copy_from_slice(&res[..32]);
-            });
-
+            let hash_bytes = evm_address_to_account_id_bytes(evm_address);
             T::AccountId::decode(&mut &hash_bytes[..]).unwrap_or_default()
         }
+    }
 
-        fn eth_recover(s: &EcdsaSignature, message: &[u8], extra: &[u8]) -> Option<H160> {
-            let msg = keccak_256(&Self::ethereum_signable_message(message, extra));
-            let mut res = H160::default();
-            res.0
-                .copy_from_slice(&keccak_256(&secp256k1_ecdsa_recover(&s.0, &msg).ok()?[..])[12..]);
-            Some(res)
+    pub fn evm_address_to_account_id_bytes(evm_address: H160) -> [u8; 32] {
+        let mut data = [0u8; 24];
+        data[0..4].copy_from_slice(b"evm:");
+        data[4..24].copy_from_slice(&evm_address[..]);
+        let mut hasher = VarBlake2b::new(32).unwrap();
+        hasher.update(&data);
+        let mut hash_bytes = [0u8; 32];
+        hasher.finalize_variable(|res| {
+            hash_bytes.copy_from_slice(&res[..32]);
+        });
+        hash_bytes
+    }
+
+    pub fn eth_recover(s: &EcdsaSignature, message: &[u8], extra: &[u8]) -> Option<H160> {
+        let msg = keccak_256(&ethereum_signable_message(message, extra));
+        let mut res = H160::default();
+        res.0
+            .copy_from_slice(&keccak_256(&secp256k1_ecdsa_recover(&s.0, &msg).ok()?[..])[12..]);
+        Some(res)
+    }
+
+    fn ethereum_signable_message(what: &[u8], extra: &[u8]) -> Vec<u8> {
+        let mut l = what.len() + extra.len();
+        let mut rev = Vec::new();
+        while l > 0 {
+            rev.push(b'0' + (l % 10) as u8);
+            l /= 10;
         }
-
-        fn ethereum_signable_message(what: &[u8], extra: &[u8]) -> Vec<u8> {
-            let prefix = b"automata:transfer_from_evm_account:";
-            let mut l = prefix.len() + what.len() + extra.len();
-            let mut rev = Vec::new();
-            while l > 0 {
-                rev.push(b'0' + (l % 10) as u8);
-                l /= 10;
-            }
-            let mut v = b"\x19Ethereum Signed Message:\n".to_vec();
-            v.extend(rev.into_iter().rev());
-            v.extend_from_slice(&prefix[..]);
-            v.extend_from_slice(what);
-            v.extend_from_slice(extra);
-            v
-        }
-
-        // fn to_ascii_hex(data: &[u8]) -> Vec<u8> {
-        //     let mut r = Vec::with_capacity(data.len() * 2);
-        //     let mut push_nibble = |n| r.push(if n < 10 { b'0' + n } else { b'a' - 10 + n });
-        //     for &b in data.iter() {
-        //         push_nibble(b / 16);
-        //         push_nibble(b % 16);
-        //     }
-        //     r
-        // }
+        let mut v = b"\x19Ethereum Signed Message:\n".to_vec();
+        v.extend(rev.into_iter().rev());
+        v.extend_from_slice(what);
+        v.extend_from_slice(extra);
+        v
     }
 }

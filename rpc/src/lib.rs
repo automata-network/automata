@@ -159,7 +159,7 @@ where
     )));
 
     io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(
-        client,
+        client.clone(),
     )));
 
     io

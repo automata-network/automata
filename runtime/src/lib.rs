@@ -23,7 +23,7 @@ use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256, ecdsa};
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
 use sp_runtime::traits::{
     BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion, StaticLookup, Verify,
 };
@@ -31,6 +31,7 @@ use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     transaction_validity::{TransactionSource, TransactionValidity},
     ApplyExtrinsicResult,
+    print,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -40,7 +41,7 @@ use sp_version::RuntimeVersion;
 pub mod apis;
 pub mod constants;
 use constants::currency::*;
-use sp_runtime::{generic::Era, print};
+use sp_runtime::{generic::Era};
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -402,6 +403,7 @@ impl pallet_liveness::Config for Runtime {
 impl pallet_transfer::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
+    type Call = Call;
 }
 
 pub struct TransactionConverter;
@@ -452,7 +454,7 @@ construct_runtime!(
         AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
         GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
         LivenessModule: pallet_liveness::{Module, Call, Storage, Event<T>},
-        TransferModule: pallet_transfer::{Module, Call, Storage, Event<T>},
+        TransferModule: pallet_transfer::{Module, Call, Storage, Event<T>, ValidateUnsigned},
     }
 );
 
@@ -642,11 +644,12 @@ impl_runtime_apis! {
     }
 
     impl apis::TransferApi<Block> for Runtime {
-        fn transfer_to_substrate_account(source_address: H160,
-            message: Vec<u8>,
-            signature: ecdsa::Signature) {
+        fn submit_unsigned_transaction(
+            message: [u8; 68],
+            signature_raw_bytes: [u8; 65]
+        ) -> Result<(), ()> {
             print("runtime api");
-            TransferModule::transfer_from_evm_account(source_address, message, signature).map_err(|err| print(err)).ok();
+            TransferModule::submit_unsigned_transaction(message, signature_raw_bytes)
         }
     }
 

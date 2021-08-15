@@ -1,7 +1,6 @@
 use automata_primitives::{AccountId, Hash};
 use pallet_geode::Geode;
 use sp_std::vec::Vec;
-use sp_core::{ecdsa, H160};
 
 sp_api::decl_runtime_apis! {
     pub trait AttestorApi {
@@ -15,9 +14,9 @@ sp_api::decl_runtime_apis! {
     }
 
     pub trait TransferApi {
-        fn transfer_to_substrate_account(
-            source_address: H160,
-            message: Vec<u8>,
-            signature: ecdsa::Signature);
+        fn submit_unsigned_transaction(
+            message: [u8; 68],
+            signature_raw_bytes: [u8; 65]
+        ) -> Result<(), ()>;
     }
 }
