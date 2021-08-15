@@ -387,19 +387,23 @@ impl pallet_template::Config for Runtime {
 }
 
 parameter_types! {
-	pub const AttestorStakingAmount: Balance = 1 * CENTS;
+    pub const AttestorStakingAmount: Balance = 1 * CENTS;
+    pub const AttestorTotalReward: Balance = 1 * CENTS;
+    pub const BasicRewardRatio: u8 = 20_u8;
 }
 
 impl pallet_accounting::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
     type AttestorStakingAmount = AttestorStakingAmount;
+    type AttestorTotalReward =  AttestorTotalReward;
+    type BasicRewardRatio = BasicRewardRatio;
 }
 
 impl pallet_attestor::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
-    type Accounting = AccountingModule;
+    type AttestorAccounting = AccountingModule;
 }
 
 impl pallet_geode::Config for Runtime {

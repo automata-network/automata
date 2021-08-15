@@ -29,7 +29,14 @@ pub mod pallet {
         /// The currency in which fees are paid and contract balances are held.
         type Currency: ReservableCurrency<Self::AccountId>;
 
+        /// Staked token for attestor register
         type AttestorStakingAmount: Get<BalanceOf<Self>>;
+
+        /// Total reward to attestors
+        type AttestorTotalReward: Get<BalanceOf<Self>>;
+
+        /// The percentage as basic reward, (100 - BasicRewardRatio) as commission
+        type BasicRewardRatio: Get<u8>;
     }
 
     #[pallet::pallet]
@@ -42,43 +49,31 @@ pub mod pallet {
     pub type Attestors<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, T::AccountId, ValueQuery>;
 
-    // Pallets use events to inform users when important changes are made.
-    // https://substrate.dev/docs/en/knowledgebase/runtime/events
     #[pallet::event]
     #[pallet::metadata(T::AccountId = "AccountId")]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Attestor registered. \[attestor_id\]
         AttestorRegister(T::AccountId),
-       
     }
 
-    // Errors inform users that something went wrong.
     #[pallet::error]
     pub enum Error<T> {
-        /// Use an invalid attestor id.
         InvalidAttestor,
     }
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
-    // Dispatchable functions allows users to interact with the pallet and invoke state changes.
-    // These functions materialize as "extrinsics", which are often compared to transactions.
-    // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Register as an attestor.
         #[pallet::weight(0)]
         pub fn attestor_register(
             origin: OriginFor<T>,
-            url: Vec<u8>,
-            pubkey: Vec<u8>,
+            
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            // T::Currency::reserve(&who, limit)?;
-            // <Attestors<T>>::insert(&who, attestor);
-            // Self::deposit_event(Event::AttestorRegister(who));
+          
             Ok(().into())
         }
     }
@@ -90,12 +85,11 @@ pub mod pallet {
     }
 
     impl<T: Config>  AttestorAccounting for Pallet<T> {
-        type AccountId = T::AccountId;
-        type Currency = T::Currency;
-        fn attestor_staking(&self, who: Self::AccountId) -> DispatchResultWithPostInfo {
+        type AccountId = <T as frame_system::Config>::AccountId;
+        // type Currency = T::Currency;
+        fn attestor_staking(who: T::AccountId) -> DispatchResultWithPostInfo {
             T::Currency::reserve(&who, T::AttestorStakingAmount::get())?;
             Ok(().into())
         }
-
     }
 }

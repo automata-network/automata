@@ -45,7 +45,7 @@ pub mod pallet {
         /// The currency in which fees are paid and contract balances are held.
         type Currency: ReservableCurrency<Self::AccountId>;
 
-        type Accounting: AttestorAccounting;
+        type AttestorAccounting: AttestorAccounting<AccountId=Self::AccountId>;
 
     }
 
@@ -63,16 +63,6 @@ pub mod pallet {
     #[pallet::getter(fn geode_attestors)]
     pub type GeodeAttestors<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, BTreeSet<T::AccountId>, ValueQuery>;
-
-    #[pallet::type_value]
-    pub(super) fn DefaultAttStakeMin<T: Config>() -> BalanceOf<T> {
-        T::Currency::minimum_balance()
-    }
-
-    #[pallet::storage]
-    #[pallet::getter(fn att_stake_min)]
-    pub(super) type AttStakeMin<T: Config> =
-        StorageValue<_, BalanceOf<T>, ValueQuery, DefaultAttStakeMin<T>>;
 
     // Pallets use events to inform users when important changes are made.
     // https://substrate.dev/docs/en/knowledgebase/runtime/events
@@ -114,8 +104,8 @@ pub mod pallet {
             pubkey: Vec<u8>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            let limit = <AttStakeMin<T>>::get();
-            T::Currency::reserve(&who, limit)?;
+
+            T::AttestorAccounting::attestor_staking(who.clone().into())?;
 
             let attestor = AttestorOf::<T> {
                 url,
@@ -159,17 +149,6 @@ pub mod pallet {
             attestor.url = url;
             <Attestors<T>>::insert(&who, attestor);
             Self::deposit_event(Event::AttestorUpdate(who));
-            Ok(().into())
-        }
-
-        /// Called by root to set the min stake
-        #[pallet::weight(0)]
-        pub fn set_att_stake_min(
-            origin: OriginFor<T>,
-            stake: BalanceOf<T>,
-        ) -> DispatchResultWithPostInfo {
-            let _who = ensure_root(origin)?;
-            <AttStakeMin<T>>::put(stake);
             Ok(().into())
         }
     }
