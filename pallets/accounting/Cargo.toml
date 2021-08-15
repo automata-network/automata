@@ -18,7 +18,7 @@ frame-support = { default-features = false, version = '3.0.0' }
 frame-benchmarking = { default-features = false, optional = true, version = '3.1.0' }
 sp-std = {version  = "3.0.0", default-features = false }
 
-automata-runtime-traits = { path = "../../runtime/traits"}
+automata-runtime-traits = { path = "../../runtime/traits", default-features = false}
 
 [dev-dependencies]
 serde = { version = "1.0.119" }
@@ -35,4 +35,5 @@ std = [
 	'frame-system/std',
 	'frame-benchmarking/std',
 	'sp-std/std',
+	'automata-runtime-traits/std',
 ]
