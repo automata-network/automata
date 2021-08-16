@@ -16,10 +16,10 @@ const RUNTIME_ERROR: i64 = 1;
 #[rpc]
 pub trait TransferServer<BlockHash> {
     //transfer to substrate address
-    #[rpc(name = "transfer_to_substrate_account")]
+    #[rpc(name = "transfer_transferToSubstrateAccount")]
     fn transfer_to_substrate_account(&self, message: String, signature: String) -> Result<u64>;
 
-    #[rpc(name = "transfer_nonce")]
+    #[rpc(name = "transfer_transferNonce")]
     fn transfer_nonce(&self, evm_addr: String) -> Result<u32>;
 }
 
