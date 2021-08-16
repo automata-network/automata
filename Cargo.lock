@@ -469,6 +469,7 @@ dependencies = [
  "fc-rpc",
  "fc-rpc-core",
  "fp-rpc",
+ "frame-system-rpc-runtime-api",
  "hex",
  "jsonrpc-core 15.1.0",
  "jsonrpc-core-client 15.1.0",

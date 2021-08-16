@@ -14,7 +14,7 @@ pub mod pallet {
     use frame_system::{pallet_prelude::*, offchain::{SendTransactionTypes, SubmitTransaction}};
     use sp_core::{ecdsa, H160};
     use sp_io::{crypto::secp256k1_ecdsa_recover, hashing::keccak_256};
-    use sp_runtime::{traits::UniqueSaturatedInto, SaturatedConversion, print};
+    use sp_runtime::{traits::UniqueSaturatedInto, SaturatedConversion};
     use sp_std::str;
     use blake2::digest::{Update, VariableOutput};
     use blake2::VarBlake2b;
@@ -110,7 +110,7 @@ pub mod pallet {
         #[pallet::weight(0)]
         pub fn transfer_from_evm_account(
             _origin: OriginFor<T>,
-            message: [u8; 68],
+            message: [u8; 72],
             signature_raw_bytes: [u8; 65]
         ) -> DispatchResultWithPostInfo {
             let mut signature_bytes = [0u8; 65];
@@ -125,10 +125,15 @@ pub mod pallet {
             let mut target_account_id_bytes = [0u8; 32];
             target_account_id_bytes.copy_from_slice(&message[20..52]);
             let target_account_id = T::AccountId::decode(&mut &target_account_id_bytes[..]).unwrap_or_default();
+
             let mut value_bytes = [0u8; 16];
             value_bytes.copy_from_slice(&message[52..68]);
             let value_128: u128 = u128::from_be_bytes(value_bytes);
             let value = Balance::from(value_128);
+
+            let mut nonce_bytes = [0u8; 4];
+            nonce_bytes.copy_from_slice(&message[68..72]);
+            let nonce: T::Index = u32::from_be_bytes(nonce_bytes).into();
 
             let address = eth_recover(&signature, &message, &[][..])
                 .ok_or(Error::<T>::SignatureInvalid)?;
@@ -136,6 +141,12 @@ pub mod pallet {
             ensure!(
                 address == source_address,
                 Error::<T>::SignatureMismatch
+            );
+
+            let real_nonce: T::Index = frame_system::Module::<T>::account_nonce(&source_account_id);
+            ensure!(
+                nonce == real_nonce,
+                Error::<T>::IncorrectNonce
             );
 
             T::Currency::transfer(
@@ -151,13 +162,14 @@ pub mod pallet {
                 value.saturated_into(),
             ));
             
+            frame_system::Module::<T>::inc_account_nonce(&source_account_id);
             Ok(().into())
         }
     }
 
     impl<T: Config> Pallet<T> {
         pub fn submit_unsigned_transaction(
-            message: [u8; 68],
+            message: [u8; 72],
             signature_raw_bytes: [u8; 65]
         ) -> Result<(), ()> {
             let call = Call::transfer_from_evm_account(message, signature_raw_bytes);

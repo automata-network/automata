@@ -1,14 +1,15 @@
-use automata_primitives::{Block, BlockId};
+use automata_primitives::{Block, BlockId, AccountId, Index};
 use jsonrpc_core::{Error, ErrorCode, Result};
 use jsonrpc_derive::rpc;
 use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
 use sp_api::ProvideRuntimeApi;
-use sp_runtime::{traits::Block as BlockT};
+use sp_runtime::{traits::Block as BlockT, codec::{Decode}};
 use std::sync::Arc;
 use sp_core::ecdsa;
 use automata_runtime::apis::TransferApi as TransferRuntimeApi;
 use fp_rpc::EthereumRuntimeRPCApi;
-use pallet_transfer::{eth_recover};
+use frame_system_rpc_runtime_api::AccountNonceApi;
+use pallet_transfer::{eth_recover, evm_address_to_account_id_bytes};
 
 const RUNTIME_ERROR: i64 = 1;
 
@@ -21,6 +22,12 @@ pub trait TransferServer<BlockHash> {
         message: String,
         signature: String
     ) -> Result<u64>;
+
+    #[rpc(name = "transfer_nonce")]
+    fn transfer_nonce(
+        &self,
+        evm_addr: String
+    ) -> Result<u32>;
 }
 
 pub struct TransferApi<C> {
@@ -39,7 +46,7 @@ impl<C> TransferServer<<Block as BlockT>::Hash> for TransferApi<C>
 where
     C: Send + Sync + 'static,
     C: ProvideRuntimeApi<Block> + HeaderBackend<Block>,
-    C::Api: TransferRuntimeApi<Block> + EthereumRuntimeRPCApi<Block>,
+    C::Api: TransferRuntimeApi<Block> + EthereumRuntimeRPCApi<Block> + AccountNonceApi<Block, AccountId, Index>,
 {
     fn transfer_to_substrate_account(
         &self, 
@@ -69,7 +76,7 @@ where
         signature_bytes.copy_from_slice(&signature_param_bytes);
         let signature = ecdsa::Signature::from_slice(&signature_bytes);
 
-        let mut message_bytes = [0u8; 68];
+        let mut message_bytes = [0u8; 72];
         let message_param_bytes = match hex::decode(message) {
             Ok(bytes) => bytes,
             Err(e) => return Err(Error {
@@ -78,7 +85,7 @@ where
                 data: Some(format!("{:?}", e).into()),
             }),
         };
-        if message_param_bytes.len() != 68 {
+        if message_param_bytes.len() != 72 {
             return Err(Error {
                 code: ErrorCode::ServerError(RUNTIME_ERROR),
                 message: "Message bytes length should be 65.".into(),
@@ -90,11 +97,18 @@ where
         let mut source_address_bytes = [0u8; 20];
         source_address_bytes.copy_from_slice(&message_bytes[0..20]);
         let source_address = source_address_bytes.into();
+        let source_account_id_bytes = evm_address_to_account_id_bytes(source_address);
+        let source_account_id = AccountId::decode(&mut &source_account_id_bytes[..]).unwrap_or_default();
 
-        //transfer amount: 52-68 bytes
+        //transfer amount: 52-67 bytes
         let mut value_bytes = [0u8; 16];
         value_bytes.copy_from_slice(&message_bytes[52..68]);
         let value_128: u128 = u128::from_be_bytes(value_bytes);
+
+        //nonce: 68-71
+        let mut nonce_bytes = [0u8; 4];
+        nonce_bytes.copy_from_slice(&message_bytes[68..72]);
+        let nonce: Index = u32::from_be_bytes(nonce_bytes).into();
 
         let address = match eth_recover(&signature, &message_bytes, &[][..]) {
             Some(addr) => addr,
@@ -122,6 +136,22 @@ where
                 data: None,
             });
         }
+        //make sure use correct nonce
+        let real_nonce = match api.account_nonce(&at, source_account_id) {
+            Ok(nonce) => nonce,
+            Err(e) => return Err(Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Failed to get nonce.".into(),
+                data: Some(format!("{:?}", e).into()),
+            })
+        };
+        if nonce != real_nonce {
+            return Err(Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Account nonce mismatch.".into(),
+                data: None,
+            });
+        }
 
         //submit a unsigned extrinsics into transaction pool
         let _ = api.submit_unsigned_transaction(&at, message_bytes, signature_bytes).map_err(|e| Error {
@@ -133,5 +163,39 @@ where
         //TODO how to handle result???
 
         Ok(0)
+    }
+
+    fn transfer_nonce(
+        &self,
+        evm_addr: String
+    ) -> Result<u32> {
+        let api = self.client.runtime_api();
+        let best = self.client.info().best_hash;
+        let at = BlockId::hash(best);
+
+        let evm_addr_bytes = match hex::decode(&evm_addr) {
+            Ok(bytes) => bytes,
+            Err(e) => return Err(Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Failed to decode address.".into(),
+                data: Some(format!("{:?}", e).into()),
+            }),
+        };
+        let mut address_bytes = [0u8; 20];
+        address_bytes.copy_from_slice(&evm_addr_bytes[..]);
+        let evm_address = address_bytes.into();
+        let account_id_bytes = evm_address_to_account_id_bytes(evm_address);
+        let account_id = AccountId::decode(&mut &account_id_bytes[..]).unwrap_or_default();
+
+        let nonce = match api.account_nonce(&at, account_id) {
+            Ok(nonce) => nonce,
+            Err(e) => return Err(Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Failed to get nonce.".into(),
+                data: Some(format!("{:?}", e).into()),
+            })
+        };
+        
+        Ok(nonce)
     }
 }

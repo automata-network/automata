@@ -31,7 +31,6 @@ use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     transaction_validity::{TransactionSource, TransactionValidity},
     ApplyExtrinsicResult,
-    print,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -645,7 +644,7 @@ impl_runtime_apis! {
 
     impl apis::TransferApi<Block> for Runtime {
         fn submit_unsigned_transaction(
-            message: [u8; 68],
+            message: [u8; 72],
             signature_raw_bytes: [u8; 65]
         ) -> Result<(), ()> {
             TransferModule::submit_unsigned_transaction(message, signature_raw_bytes)
