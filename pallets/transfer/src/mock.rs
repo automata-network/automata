@@ -74,6 +74,7 @@ impl pallet_balances::Config for Test {
 impl transfer::Config for Test {
     type Event = Event;
     type Currency = Balances;
+    type Call = Call;
 }
 
 // Build genesis storage according to the mock runtime.

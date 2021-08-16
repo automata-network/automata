@@ -40,7 +40,7 @@ use sp_version::RuntimeVersion;
 pub mod apis;
 pub mod constants;
 use constants::currency::*;
-use sp_runtime::{generic::Era};
+use sp_runtime::generic::Era;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
