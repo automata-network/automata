@@ -4,6 +4,7 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use core::convert::{TryInto};
     use codec::{Decode, Encode};
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
@@ -65,6 +66,8 @@ pub mod pallet {
     pub struct Service<AccountId: Ord, Hash> {
         /// Service order id.
         pub order_id: Hash,
+        /// Service counter.
+        pub counter: OrderNumber,
         /// Service creator id.
         pub owner: AccountId,
         /// Geodes being dispatched to fulfill the service.
@@ -83,21 +86,33 @@ pub mod pallet {
         Service<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash>;
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: frame_system::Config + pallet_geode::Config {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
     }
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         // /// 1. At every block, check if there is any pending service order and dispatch a geode for it
-        // fn on_initialze(block_number: T::BlockNumber) -> Weight {
-        //     if let Ok(now) = TryInto::<BlockNumber>::try_into(block_number) {
-        //         <PendingServices<T>>::iter().map(|(key, report)|) {
-                    
-        //         }
-        //     }
-        //     0
-        // }
+        fn on_initialize(block_number: T::BlockNumber) -> Weight {
+            if let Ok(_now) = TryInto::<BlockNumber>::try_into(block_number) {
+                <PendingServicesQueue<T>>::iter()
+                    .map(|(count, order_id)| {
+                        let order = <Orders<T>>::get(order_id);
+                        match order.duration {
+                            Some(d) => {
+
+                            },
+                            None => {
+                                let geodes = pallet_geode::PromisedGeodes::<T>::get(0);
+                                // querying geode for dispatching
+
+                            }
+                        };
+                    })
+                    .all(|_| true);
+            }
+            0
+        }
     }
 
     #[pallet::event]
@@ -118,6 +133,8 @@ pub mod pallet {
         ServiceOffline(T::Hash),
         /// Service gets completed. \[service_hash\]
         ServiceCompleted(T::Hash),
+        /// Service query geode for dispatching. \[geode_id, service_hash\]
+        ServiceQueriedGeode(T::AccountId, T::Hash)
     }
 
     #[pallet::error]
@@ -208,8 +225,12 @@ pub mod pallet {
             let result = H256::from_slice(hasher.finalize().as_slice());
             let order_id: T::Hash = sp_core::hash::convert_hash(&result);
 
+            let mut counter = <OrderCount<T>>::get();
+            counter += 1;
+
             let service = Service {
                 order_id: order_id.clone(),
+                counter: counter,
                 owner: who.clone(),
                 geode: Vec::new(),
                 uptime: 0,
@@ -224,8 +245,6 @@ pub mod pallet {
             let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
             <PendingServices<T>>::insert(&order_id, block_number);
 
-            let mut counter = <OrderCount<T>>::get();
-            counter += 1;
             <PendingServicesQueue<T>>::insert(&counter, &order_id);
             <OrderCount<T>>::put(counter);
 
@@ -244,6 +263,7 @@ pub mod pallet {
             let service = <Services<T>>::get(&service_id);
             ensure!(service.owner == who, Error::<T>::NoRight);
 
+            <PendingServicesQueue<T>>::remove(&service.counter);
             <PendingServices<T>>::remove(&service_id);
             <Services<T>>::remove(&service_id);
             <Orders<T>>::remove(&service_id);
@@ -288,6 +308,10 @@ pub mod pallet {
                 push_nibble(b % 16);
             }
             r
+        }
+
+        pub fn query_geode_for_dispatching(geode: T::AccountId, order_id: T::Hash) {
+            Self::deposit_event(Event::ServiceQueriedGeode(geode, order_id));
         }
     }
 }

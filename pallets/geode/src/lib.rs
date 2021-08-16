@@ -10,6 +10,7 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use core::convert::{TryInto};
     use codec::{Decode, Encode};
     use frame_support::ensure;
     use frame_support::pallet_prelude::*;
@@ -84,7 +85,26 @@ pub mod pallet {
     }
 
     #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        /// 1. At every block, check if any promise already expired
+        fn on_initialize(block_number: T::BlockNumber) -> Weight {
+            if let Ok(now) = TryInto::<BlockNumber>::try_into(block_number) {
+                // clean expired promised geodes
+                let mut expired = Vec::<BlockNumber>::new();
+                <PromisedGeodes<T>>::iter()
+                    .map(|(promise, _geodes)| {
+                        if promise != 0 && promise <= now {
+                            expired.push(promise);
+                        }
+                    })
+                    .all(|_| true);
+                for promise in expired {
+                    <PromisedGeodes<T>>::remove(promise);
+                }
+            }
+            0
+        }
+    }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -384,6 +404,8 @@ pub mod pallet {
                     Error::<T>::InvalidGeodeState
                 );
 
+                let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+
                 match option {
                     DetachOption::Remove => {
                         <Geodes<T>>::remove(&geode);
@@ -391,19 +413,18 @@ pub mod pallet {
                     DetachOption::Offline => {
                         geode_use.state = GeodeState::Offline;
                         <Geodes<T>>::insert(&geode, &geode_use);
-                        let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+                        
                         <OfflineGeodes<T>>::insert(
                             &geode,
-                            block_number,
+                            &block_number,
                         );
                     }
                     DetachOption::Unknown => {
                         geode_use.state = GeodeState::Unknown;
                         <Geodes<T>>::insert(&geode, &geode_use);
-                        let block_number = <frame_system::Module<T>>::block_number();
                         <UnknownGeodes<T>>::insert(
                             &geode,
-                            block_number.saturated_into::<BlockNumber>(),
+                            &block_number.saturated_into::<BlockNumber>(),
                         );
                     }
                 }
@@ -414,6 +435,19 @@ pub mod pallet {
                     }
                     GeodeState::Attested => {
                         <AttestedGeodes<T>>::remove(&geode);
+                        // remove PromisedGeode record if there is
+                        if geode_use.promise > block_number || geode_use.promise == 0 {
+                            let mut geodes = <PromisedGeodes<T>>::get(&geode_use.promise);
+                            if let Some(pos) = geodes.iter().position(|x| *x == geode) {
+                                geodes.remove(pos);
+                            }
+                            
+                            if geodes.is_empty() {
+                                <PromisedGeodes<T>>::remove(&geode_use.promise);
+                            } else {
+                                <PromisedGeodes<T>>::insert(&geode_use.promise, geodes);
+                            }
+                        }
                     }
                     GeodeState::Unknown => {
                         <UnknownGeodes<T>>::remove(&geode);

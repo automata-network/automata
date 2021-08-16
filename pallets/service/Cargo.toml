@@ -24,6 +24,7 @@ sha2 = { version = "0.9.5", default-features = false }
 
 # local dependencies
 primitives = { package = "automata-primitives", path = "../../primitives", default-features = false }
+pallet-geode = { version = "0.1.0", default-features = false, path = '../geode' }
 
 [dev-dependencies]
 sp-core = { default-features = false, version = '3.0.0' }
