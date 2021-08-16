@@ -3,15 +3,12 @@ use jsonrpc_core::{Error, ErrorCode, Result};
 use jsonrpc_derive::rpc;
 use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
 use sp_api::ProvideRuntimeApi;
-use sp_runtime::{traits::Block as BlockT, codec::Decode};
+use sp_runtime::{traits::Block as BlockT};
 use std::sync::Arc;
 use sp_core::ecdsa;
 use automata_runtime::apis::TransferApi as TransferRuntimeApi;
 use fp_rpc::EthereumRuntimeRPCApi;
-// use serde::{Deserialize, Serialize};
 use pallet_transfer::{eth_recover};
-// use sp_core::Decode;
-// use codec::{Decode, Encode};
 
 const RUNTIME_ERROR: i64 = 1;
 
@@ -53,13 +50,42 @@ where
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
 
-        //TODO what if params are illegal???
         let mut signature_bytes = [0u8; 65];
-        signature_bytes.copy_from_slice(&hex::decode(signature).unwrap().as_slice());
+        let signature_param_bytes = match hex::decode(&signature) {
+            Ok(bytes) => bytes,
+            Err(e) => return Err(Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Failed to decode signature.".into(),
+                data: Some(format!("{:?}", e).into()),
+            }),
+        };
+        if signature_param_bytes.len() != 65 {
+            return Err(Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Signature bytes length should be 65.".into(),
+                data: None,
+            });
+        }
+        signature_bytes.copy_from_slice(&signature_param_bytes);
         let signature = ecdsa::Signature::from_slice(&signature_bytes);
 
         let mut message_bytes = [0u8; 68];
-        message_bytes.copy_from_slice(&hex::decode(message).unwrap().as_slice());
+        let message_param_bytes = match hex::decode(message) {
+            Ok(bytes) => bytes,
+            Err(e) => return Err(Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Failed to decode message.".into(),
+                data: Some(format!("{:?}", e).into()),
+            }),
+        };
+        if message_param_bytes.len() != 68 {
+            return Err(Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Message bytes length should be 65.".into(),
+                data: None,
+            });
+        }
+        message_bytes.copy_from_slice(&message_param_bytes);
         //source address bytes(evm): 0-19 bytes
         let mut source_address_bytes = [0u8; 20];
         source_address_bytes.copy_from_slice(&message_bytes[0..20]);
@@ -70,7 +96,14 @@ where
         value_bytes.copy_from_slice(&message_bytes[52..68]);
         let value_128: u128 = u128::from_be_bytes(value_bytes);
 
-        let address = eth_recover(&signature, &message_bytes, &[][..]).unwrap();
+        let address = match eth_recover(&signature, &message_bytes, &[][..]) {
+            Some(addr) => addr,
+            None => return Err(Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Failed to recover message signer.".into(),
+                data: None,
+            }),
+        };
 
         //make sure that the signature is signed by source_address
         if address != source_address {
@@ -91,11 +124,11 @@ where
         }
 
         //submit a unsigned extrinsics into transaction pool
-        let result = api.submit_unsigned_transaction(&at, message_bytes, signature_bytes).map_err(|e| Error {
+        let _ = api.submit_unsigned_transaction(&at, message_bytes, signature_bytes).map_err(|e| Error {
             code: ErrorCode::ServerError(RUNTIME_ERROR),
             message: "Failed to submit unsigned extrinsics.".into(),
             data: Some(format!("{:?}", e).into()),
-        })?;
+        });
 
         //TODO how to handle result???
 

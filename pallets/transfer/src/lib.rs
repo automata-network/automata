@@ -72,7 +72,7 @@ pub mod pallet {
                 .build();
             
             match call {
-                Call::transfer_from_evm_account2(_message, _signature_raw_bytes) => valid_tx(b"submit_number_unsigned".to_vec()),
+                Call::transfer_from_evm_account(_message, _signature_raw_bytes) => valid_tx(b"submit_number_unsigned".to_vec()),
                 _ => InvalidTransaction::Call.into(),
             }
         }
@@ -108,7 +108,7 @@ pub mod pallet {
         }      
         
         #[pallet::weight(0)]
-        pub fn transfer_from_evm_account2(
+        pub fn transfer_from_evm_account(
             _origin: OriginFor<T>,
             message: [u8; 68],
             signature_raw_bytes: [u8; 65]
@@ -116,12 +116,12 @@ pub mod pallet {
             let mut signature_bytes = [0u8; 65];
             signature_bytes.copy_from_slice(&signature_raw_bytes);
             let signature = ecdsa::Signature::from_slice(&signature_bytes);
-            // let target_account_id = target_address;
+            
             let mut source_address_bytes = [0u8; 20];
             source_address_bytes.copy_from_slice(&message[0..20]);
             let source_address = source_address_bytes.into();
             let source_account_id = Self::evm_address_to_account_id(source_address);
-            // let nonce = frame_system::Module::<T>::account_nonce(&source_account_id);
+            
             let mut target_account_id_bytes = [0u8; 32];
             target_account_id_bytes.copy_from_slice(&message[20..52]);
             let target_account_id = T::AccountId::decode(&mut &target_account_id_bytes[..]).unwrap_or_default();
@@ -132,13 +132,11 @@ pub mod pallet {
 
             let address = eth_recover(&signature, &message, &[][..])
                 .ok_or(Error::<T>::SignatureInvalid)?;
-            // print(&nonce.encode().as_slice());
-            print(address.as_bytes());
+
             ensure!(
                 address == source_address,
                 Error::<T>::SignatureMismatch
             );
-            print("signature match");
 
             T::Currency::transfer(
                 &source_account_id,
@@ -146,13 +144,13 @@ pub mod pallet {
                 value.unique_saturated_into(),
                 ExistenceRequirement::AllowDeath,
             )?;
-            print("after transfer");
+
             Self::deposit_event(Event::TransferToSubstrate(
                 source_address,
                 target_account_id,
                 value.saturated_into(),
             ));
-            // frame_system::Module::<T>::inc_account_nonce(&source_account_id);
+            
             Ok(().into())
         }
     }
@@ -162,7 +160,7 @@ pub mod pallet {
             message: [u8; 68],
             signature_raw_bytes: [u8; 65]
         ) -> Result<(), ()> {
-            let call = Call::transfer_from_evm_account2(message, signature_raw_bytes);
+            let call = Call::transfer_from_evm_account(message, signature_raw_bytes);
             SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(
                 call.into()
             )

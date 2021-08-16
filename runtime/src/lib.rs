@@ -648,7 +648,6 @@ impl_runtime_apis! {
             message: [u8; 68],
             signature_raw_bytes: [u8; 65]
         ) -> Result<(), ()> {
-            print("runtime api");
             TransferModule::submit_unsigned_transaction(message, signature_raw_bytes)
         }
     }
