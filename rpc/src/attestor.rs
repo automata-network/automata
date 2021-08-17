@@ -14,7 +14,7 @@ const RUNTIME_ERROR: i64 = 1;
 pub trait AttestorServer<BlockHash> {
     /// return the attestor list
     #[rpc(name = "attestor_list")]
-    fn attestor_list(&self) -> Result<Vec<(Vec<u8>, Vec<u8>)>>;
+    fn attestor_list(&self) -> Result<Vec<(Vec<u8>, Vec<u8>, u32)>>;
 }
 
 /// An implementation of attestor specific RPC methods.
@@ -36,7 +36,7 @@ where
     C::Api: AttestorRuntimeApi<Block>,
 {
     /// get attestor list
-    fn attestor_list(&self) -> Result<Vec<(Vec<u8>, Vec<u8>)>> {
+    fn attestor_list(&self) -> Result<Vec<(Vec<u8>, Vec<u8>, u32)>> {
         let api = self.client.runtime_api();
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);

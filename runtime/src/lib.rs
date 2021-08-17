@@ -18,7 +18,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 
 use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
-use pallet_geode::Geode;
+use pallet_geode::{Geode, GeodeState};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use sp_api::impl_runtime_apis;
@@ -615,7 +615,7 @@ impl_runtime_apis! {
     }
 
     impl apis::AttestorApi<Block> for Runtime {
-        fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>)> {
+        fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>, u32)> {
             AttestorModule::attestor_list()
         }
     }
@@ -631,6 +631,10 @@ impl_runtime_apis! {
 
         fn attestor_attested_geodes(attestor: AccountId) -> Vec<Geode<AccountId, Hash>> {
             GeodeModule::attestor_attested_geodes(attestor)
+        }
+
+        fn geode_state(geode: AccountId) -> Option<GeodeState> {
+            GeodeModule::geode_state(geode)
         }
     }
 

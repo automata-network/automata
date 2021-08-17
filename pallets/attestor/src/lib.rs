@@ -18,6 +18,8 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use sp_std::collections::btree_set::BTreeSet;
     use sp_std::prelude::*;
+    use sp_runtime::{RuntimeDebug, SaturatedConversion};
+    use primitives::BlockNumber;
 
     /// Attestor struct
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default)]
@@ -60,6 +62,11 @@ pub mod pallet {
     pub type GeodeAttestors<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, BTreeSet<T::AccountId>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn attestor_last_notification)]
+    pub type AttestorLastNotify<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
+
     #[pallet::type_value]
     pub(super) fn DefaultAttStakeMin<T: Config>() -> BalanceOf<T> {
         T::Currency::minimum_balance()
@@ -69,6 +76,16 @@ pub mod pallet {
     #[pallet::getter(fn att_stake_min)]
     pub(super) type AttStakeMin<T: Config> =
         StorageValue<_, BalanceOf<T>, ValueQuery, DefaultAttStakeMin<T>>;
+
+    #[pallet::type_value]
+    pub(super) fn DefaultMinAttestorNum<T: Config>() -> u32 {
+        1
+    }
+
+    #[pallet::storage]
+    #[pallet::getter(fn min_attestor_num)]
+    pub(super) type MinAttestorNum<T: Config> =
+        StorageValue<_, u32, ValueQuery, DefaultMinAttestorNum<T>>;
 
     // Pallets use events to inform users when important changes are made.
     // https://substrate.dev/docs/en/knowledgebase/runtime/events
@@ -92,6 +109,8 @@ pub mod pallet {
     pub enum Error<T> {
         /// Use an invalid attestor id.
         InvalidAttestor,
+        /// Attestor already registered
+        AlreadyRegistered,
     }
 
     #[pallet::hooks]
@@ -110,6 +129,7 @@ pub mod pallet {
             pubkey: Vec<u8>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
+            ensure!(!<Attestors<T>>::contains_key(&who), Error::<T>::AlreadyRegistered);
             let limit = <AttStakeMin<T>>::get();
             T::Currency::reserve(&who, limit)?;
 
@@ -119,31 +139,11 @@ pub mod pallet {
                 geodes: BTreeSet::new(),
             };
             <Attestors<T>>::insert(&who, attestor);
-            Self::deposit_event(Event::AttestorRegister(who));
-            Ok(().into())
-        }
 
-        /// Remove self from attestors.
-        ///
-        ///  #note
-        ///
-        /// Currently, we use reliable attestor which would not do misconducts.
-        /// This function should be called when the attestor is not serving for any geode.
-        #[pallet::weight(0)]
-        pub fn attestor_remove(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-            let who = ensure_signed(origin)?;
-            ensure!(
-                <Attestors<T>>::contains_key(&who),
-                Error::<T>::InvalidAttestor
-            );
-            let attestor = <Attestors<T>>::get(&who);
-            for geode in attestor.geodes.into_iter() {
-                let mut attestors = <GeodeAttestors<T>>::get(&geode);
-                attestors.remove(&who);
-                <GeodeAttestors<T>>::insert(&geode, attestors);
-            }
-            <Attestors<T>>::remove(&who);
-            Self::deposit_event(Event::AttestorRemove(who));
+            let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            <AttestorLastNotify<T>>::insert(&who, block_number);
+
+            Self::deposit_event(Event::AttestorRegister(who));
             Ok(().into())
         }
 
@@ -158,6 +158,19 @@ pub mod pallet {
             Ok(().into())
         }
 
+        #[pallet::weight(0)]
+        pub fn attestor_notify_chain(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            // check attestor existance
+            ensure!(
+                <Attestors::<T>>::contains_key(&who),
+                Error::<T>::InvalidAttestor
+            );
+            let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            <AttestorLastNotify::<T>>::insert(&who, block_number);
+            Ok(().into())
+        }
+
         /// Called by root to set the min stake
         #[pallet::weight(0)]
         pub fn set_att_stake_min(
@@ -168,15 +181,26 @@ pub mod pallet {
             <AttStakeMin<T>>::put(stake);
             Ok(().into())
         }
+
+        /// Called by root to set the min stake
+        #[pallet::weight(0)]
+        pub fn set_min_attestor_num(
+            origin: OriginFor<T>,
+            num: u32,
+        ) -> DispatchResultWithPostInfo {
+            let _who = ensure_root(origin)?;
+            <MinAttestorNum<T>>::put(num);
+            Ok(().into())
+        }
     }
 
     impl<T: Config> Pallet<T> {
         /// Return attestors' url and pubkey list for rpc.
-        pub fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>)> {
-            let mut res = Vec::new();
+        pub fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>, u32)> {
+            let mut res = Vec::<(Vec<u8>, Vec<u8>, u32)>::new();
             <Attestors<T>>::iter()
                 .map(|(_, attestor)| {
-                    res.push((attestor.url.clone(), attestor.pubkey));
+                    res.push((attestor.url.clone(), attestor.pubkey, attestor.geodes.len() as u32));
                 })
                 .all(|_| true);
             res

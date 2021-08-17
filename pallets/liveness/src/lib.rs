@@ -18,15 +18,18 @@ pub mod pallet {
     use sp_runtime::{Percent, RuntimeDebug, SaturatedConversion};
     use sp_std::collections::btree_set::BTreeSet;
     use sp_std::prelude::*;
+    use sp_std::borrow::ToOwned;
 
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
 
     pub const ATTESTOR_REQUIRE: usize = 1;
+    
     pub const REPORT_APPROVAL_RATIO: Percent = Percent::from_percent(50);
     pub const REPORT_EXPIRY_BLOCK_NUMBER: BlockNumber = 10;
     pub const ATTESTATION_EXPIRY_BLOCK_NUMBER: BlockNumber = 30;
     pub const UNKNOWN_EXPIRY_BLOCK_NUMBER: BlockNumber = 5760;
+    pub const ATTESTOR_NOTIFY_TIMEOUT_BLOCK_NUMBER: BlockNumber = 12;
 
     /// Geode state
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -84,7 +87,7 @@ pub mod pallet {
 
     // The pallet's runtime storage items.
     #[pallet::storage]
-    #[pallet::getter(fn attestors)]
+    #[pallet::getter(fn reports)]
     pub(super) type Reports<T: Config> =
         StorageMap<_, Blake2_128Concat, (T::AccountId, u8), ReportOf<T>, ValueQuery>;
 
@@ -106,6 +109,8 @@ pub mod pallet {
         /// Event documentation should end with an array that provides descriptive names for event
         /// parameters. [something, who]
         SomethingStored(u32, T::AccountId),
+        /// Attestor exited
+        AttestorExited(T::AccountId),
     }
 
     // Errors inform users that something went wrong.
@@ -141,11 +146,11 @@ pub mod pallet {
                 }
 
                 // clean expired geodes
-                let mut expired = Vec::<T::AccountId>::new();
+                let mut expired_geodes = Vec::<T::AccountId>::new();
                 pallet_geode::RegisteredGeodes::<T>::iter()
                     .map(|(key, start)| {
                         if start + ATTESTATION_EXPIRY_BLOCK_NUMBER < now {
-                            expired.push(key);
+                            expired_geodes.push(key);
                         }
                     })
                     .all(|_| true);
@@ -153,11 +158,11 @@ pub mod pallet {
                 // clean expired unknown geode
                 pallet_geode::UnknownGeodes::<T>::iter().map(|(key, start)| {
                     if start + UNKNOWN_EXPIRY_BLOCK_NUMBER < now {
-                        expired.push(key);
+                        expired_geodes.push(key);
                     }
                 }).all(|_| true);
 
-                for key in expired {
+                for key in expired_geodes {
                     <pallet_geode::Module<T>>::detach_geode(
                         pallet_geode::DetachOption::Remove,
                         key,
@@ -167,6 +172,19 @@ pub mod pallet {
                         debug!("{:?}", e);
                     })
                     .ok();
+                }
+
+                // clean expired attestors
+                let mut expired_attestors = Vec::<T::AccountId>::new();
+                pallet_attestor::AttestorLastNotify::<T>::iter().map(|(key, notify)| {
+                    if notify + ATTESTOR_NOTIFY_TIMEOUT_BLOCK_NUMBER < now {
+                        
+                        expired_attestors.push(key);
+                    }
+                }).all(|_| true);
+
+                for key in expired_attestors {
+                    Self::remove_attestor(&key);
                 }
             }
             0
@@ -299,6 +317,18 @@ pub mod pallet {
             Self::deposit_event(Event::AttestFor(who, geode));
             Ok(().into())
         }
+
+        /// Remove attestors while unlink the related geodes.
+        #[pallet::weight(0)]
+        pub fn attestor_exit(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            ensure!(
+                pallet_attestor::Attestors::<T>::contains_key(&who),
+                pallet_attestor::Error::<T>::InvalidAttestor
+            );
+            Self::remove_attestor(&who);
+            Ok(().into())
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -322,12 +352,33 @@ pub mod pallet {
                     pallet_geode::AttestedGeodes::<T>::remove(&key.0);
                 }
                 _ => {
-                    // TODO...
+                    // TODO... Other states
                 }
             }
             geode.state = pallet_geode::GeodeState::Unknown;
             pallet_geode::Geodes::<T>::insert(&key.0, geode);
-            // TODO...
+            // TODO... Service related logic
+        }
+
+        pub fn remove_attestor(key: &T::AccountId) {
+            let attestor = pallet_attestor::Attestors::<T>::get(&key);
+            for geode in attestor.geodes.into_iter() {
+                let mut attestors = pallet_attestor::GeodeAttestors::<T>::get(&geode);
+                attestors.remove(&key);
+
+                if attestors.len() < ATTESTOR_REQUIRE {
+                    <pallet_geode::Module<T>>::degrade_geode(&geode);
+                }
+
+                if attestors.is_empty() {
+                    pallet_attestor::GeodeAttestors::<T>::insert(&geode, attestors);
+                } else {
+                    pallet_attestor::GeodeAttestors::<T>::remove(&geode);
+                }
+            }
+            pallet_attestor::AttestorLastNotify::<T>::remove(&key);
+            pallet_attestor::Attestors::<T>::remove(&key);
+            Self::deposit_event(Event::AttestorExited(key.to_owned()));
         }
     }
 }
