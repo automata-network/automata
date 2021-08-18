@@ -5,6 +5,7 @@ use sp_std::vec::Vec;
 sp_api::decl_runtime_apis! {
     pub trait AttestorApi {
         fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>, u32)>;
+        fn geode_attestors(geode: AccountId) -> Vec<(Vec<u8>, Vec<u8>)>;
     }
 
     pub trait GeodeApi {

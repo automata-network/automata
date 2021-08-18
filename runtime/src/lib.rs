@@ -618,6 +618,10 @@ impl_runtime_apis! {
         fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>, u32)> {
             AttestorModule::attestor_list()
         }
+
+        fn geode_attestors(geode: AccountId) -> Vec<(Vec<u8>, Vec<u8>)> {
+            AttestorModule::attestors_of_geode(geode)
+        }
     }
 
     impl apis::GeodeApi<Block> for Runtime {
