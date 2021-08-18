@@ -445,6 +445,12 @@ pub mod pallet {
 
                 if <MinAttestorNum<T>>::get() > attestors.len() as u32 {
                     <pallet_geode::Module<T>>::degrade_geode(geode);
+                } else {
+                    // because GeodeUpdateCounters will be updated in degrade_geode
+                    pallet_geode::GeodeUpdateCounters::<T>::insert(
+                        &geode,
+                        pallet_geode::GeodeUpdateCounters::<T>::get(&geode) + 1,
+                    );
                 }
             }
         }
