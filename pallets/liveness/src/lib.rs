@@ -299,7 +299,7 @@ pub mod pallet {
             ) >= REPORT_APPROVAL_RATIO
             {
                 // slash the geode
-                Self::slash_geode(&key, report);
+                Self::slash_geode(&key.0);
                 <Reports<T>>::remove(&key);
                 Self::deposit_event(Event::SlashGeode(key.0.clone()))
             } else {
@@ -372,6 +372,11 @@ pub mod pallet {
                 );
             }
 
+            pallet_geode::GeodeUpdateCounters::<T>::insert(
+                &geode,
+                pallet_geode::GeodeUpdateCounters::<T>::get(&geode) + 1,
+            );
+
             Self::deposit_event(Event::AttestFor(who, geode));
             Ok(().into())
         }
@@ -408,32 +413,20 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        /// Return attestors' url and pubkey list for rpc.
-        fn slash_geode(key: &(T::AccountId, u8), report: ReportOf<T>) {
-            // update pallet_attestor::Attestors
-            for id in report.attestors {
-                let mut att = pallet_attestor::Attestors::<T>::get(&id);
-                att.geodes.remove(&key.0);
-                pallet_attestor::Attestors::<T>::insert(&id, att);
-            }
-            // remove from pallet_attestor::GeodeAttestors
-            pallet_attestor::GeodeAttestors::<T>::remove(&key.0);
-            // change geode_state
-            let mut geode = pallet_geode::Geodes::<T>::get(&key.0);
-            match geode.state {
-                pallet_geode::GeodeState::Registered => {
-                    pallet_geode::RegisteredGeodes::<T>::remove(&key.0);
-                }
-                pallet_geode::GeodeState::Attested => {
-                    pallet_geode::AttestedGeodes::<T>::remove(&key.0);
-                }
-                _ => {
-                    // TODO... Other states
-                }
-            }
-            geode.state = pallet_geode::GeodeState::Unknown;
-            pallet_geode::Geodes::<T>::insert(&key.0, geode);
+        /// Slash geode including update storage and penalty related logics
+        fn slash_geode(key: &T::AccountId) {
+            <pallet_geode::Module<T>>::detach_geode(
+                pallet_geode::DetachOption::Unknown,
+                key.to_owned(),
+                None,
+            )
+            .map_err(|e| {
+                debug!("{:?}", e);
+            })
+            .ok();
+
             // TODO... Service related logic
+            // TODO... Penalty related logic
         }
 
         /// Remove attestors while unlink the related geodes.

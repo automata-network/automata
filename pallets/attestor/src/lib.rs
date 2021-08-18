@@ -239,6 +239,19 @@ pub mod pallet {
             ret
         }
 
+        /// detach geode from attestors
+        pub fn detach_geode_from_attestors(geode: &T::AccountId) {
+            // clean record on attestors
+            if GeodeAttestors::<T>::contains_key(&geode) {
+                for id in GeodeAttestors::<T>::get(&geode) {
+                    let mut attestor = Attestors::<T>::get(&id);
+                    attestor.geodes.remove(&geode);
+                    Attestors::<T>::insert(&id, attestor);
+                }
+                GeodeAttestors::<T>::remove(&geode);
+            }
+        }
+
         /// clean all the storage, USE WITH CARE!
         pub fn clean_storage() {
             // clean Attestors
