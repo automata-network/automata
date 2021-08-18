@@ -16,20 +16,20 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use primitives::BlockNumber;
     use sp_runtime::{Percent, RuntimeDebug, SaturatedConversion};
+    use sp_std::borrow::ToOwned;
     use sp_std::collections::btree_set::BTreeSet;
     use sp_std::prelude::*;
-    use sp_std::borrow::ToOwned;
 
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
 
-    pub const ATTESTOR_REQUIRE: usize = 1;
-    
     pub const REPORT_APPROVAL_RATIO: Percent = Percent::from_percent(50);
     pub const REPORT_EXPIRY_BLOCK_NUMBER: BlockNumber = 10;
     pub const ATTESTATION_EXPIRY_BLOCK_NUMBER: BlockNumber = 30;
     pub const UNKNOWN_EXPIRY_BLOCK_NUMBER: BlockNumber = 5760;
+    pub const DEGRADED_INSTANTIATED_EXPIRY_BLOCK_NUMBER: BlockNumber = 30;
     pub const ATTESTOR_NOTIFY_TIMEOUT_BLOCK_NUMBER: BlockNumber = 12;
+    pub const DEFAULT_MIN_ATTESTOR_NUM: u32 = 1;
 
     /// Geode state
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -91,6 +91,24 @@ pub mod pallet {
     pub(super) type Reports<T: Config> =
         StorageMap<_, Blake2_128Concat, (T::AccountId, u8), ReportOf<T>, ValueQuery>;
 
+    #[pallet::type_value]
+    pub fn DefaultMinAttestorNum<T: Config>() -> u32 {
+        DEFAULT_MIN_ATTESTOR_NUM
+    }
+
+    #[pallet::storage]
+    #[pallet::getter(fn min_attestor_num)]
+    pub type MinAttestorNum<T: Config> = StorageValue<_, u32, ValueQuery, DefaultMinAttestorNum<T>>;
+
+    #[pallet::type_value]
+    pub fn DefaultDegradeMode<T: Config>() -> bool {
+        true
+    }
+
+    #[pallet::storage]
+    #[pallet::getter(fn degrade_mode)]
+    pub type DegradeMode<T: Config> = StorageValue<_, bool, ValueQuery, DefaultDegradeMode<T>>;
+
     // Pallets use events to inform users when important changes are made.
     // https://substrate.dev/docs/en/knowledgebase/runtime/events
     #[pallet::event]
@@ -111,6 +129,8 @@ pub mod pallet {
         SomethingStored(u32, T::AccountId),
         /// Attestor exited
         AttestorExited(T::AccountId),
+        /// Storage cleaned
+        StorageCleaned,
     }
 
     // Errors inform users that something went wrong.
@@ -132,6 +152,15 @@ pub mod pallet {
         /// if expired, clean the report.
         fn on_initialize(block_number: T::BlockNumber) -> Weight {
             if let Ok(now) = TryInto::<BlockNumber>::try_into(block_number) {
+                // check is there a need to cancel degrade mode
+                if !<DegradeMode<T>>::get()
+                    && pallet_attestor::AttestorNum::<T>::get() >= <MinAttestorNum<T>>::get()
+                {
+                    // reset all the start block num for degraded geode
+                    <pallet_geode::Module<T>>::reset_degraded_block_num();
+                    <DegradeMode<T>>::put(false);
+                }
+
                 // clean expired reports
                 let mut expired = Vec::<(T::AccountId, u8)>::new();
                 <Reports<T>>::iter()
@@ -147,20 +176,24 @@ pub mod pallet {
 
                 // clean expired geodes
                 let mut expired_geodes = Vec::<T::AccountId>::new();
-                pallet_geode::RegisteredGeodes::<T>::iter()
+                if !<DegradeMode<T>>::get() {
+                    pallet_geode::RegisteredGeodes::<T>::iter()
+                        .map(|(key, start)| {
+                            if start + ATTESTATION_EXPIRY_BLOCK_NUMBER < now {
+                                expired_geodes.push(key);
+                            }
+                        })
+                        .all(|_| true);
+                }
+
+                // clean expired unknown geode
+                pallet_geode::UnknownGeodes::<T>::iter()
                     .map(|(key, start)| {
-                        if start + ATTESTATION_EXPIRY_BLOCK_NUMBER < now {
+                        if start + UNKNOWN_EXPIRY_BLOCK_NUMBER < now {
                             expired_geodes.push(key);
                         }
                     })
                     .all(|_| true);
-
-                // clean expired unknown geode
-                pallet_geode::UnknownGeodes::<T>::iter().map(|(key, start)| {
-                    if start + UNKNOWN_EXPIRY_BLOCK_NUMBER < now {
-                        expired_geodes.push(key);
-                    }
-                }).all(|_| true);
 
                 for key in expired_geodes {
                     <pallet_geode::Module<T>>::detach_geode(
@@ -174,14 +207,39 @@ pub mod pallet {
                     .ok();
                 }
 
+                // detach DegradedInstantiated geodes
+                if !<DegradeMode<T>>::get() {
+                    let mut expired_degraded_geodes = Vec::<T::AccountId>::new();
+                    pallet_geode::DegradedInstantiatedGeodes::<T>::iter()
+                        .map(|(key, start)| {
+                            if start + DEGRADED_INSTANTIATED_EXPIRY_BLOCK_NUMBER < now {
+                                expired_degraded_geodes.push(key);
+                            }
+                        })
+                        .all(|_| true);
+
+                    for key in expired_degraded_geodes {
+                        <pallet_geode::Module<T>>::detach_geode(
+                            pallet_geode::DetachOption::Unknown,
+                            key,
+                            None,
+                        )
+                        .map_err(|e| {
+                            debug!("{:?}", e);
+                        })
+                        .ok();
+                    }
+                }
+
                 // clean expired attestors
                 let mut expired_attestors = Vec::<T::AccountId>::new();
-                pallet_attestor::AttestorLastNotify::<T>::iter().map(|(key, notify)| {
-                    if notify + ATTESTOR_NOTIFY_TIMEOUT_BLOCK_NUMBER < now {
-                        
-                        expired_attestors.push(key);
-                    }
-                }).all(|_| true);
+                pallet_attestor::AttestorLastNotify::<T>::iter()
+                    .map(|(key, notify)| {
+                        if notify + ATTESTOR_NOTIFY_TIMEOUT_BLOCK_NUMBER < now {
+                            expired_attestors.push(key);
+                        }
+                    })
+                    .all(|_| true);
 
                 for key in expired_attestors {
                     Self::remove_attestor(&key);
@@ -297,7 +355,7 @@ pub mod pallet {
 
             // first attestor attesting this geode
             if geode_record.state == pallet_geode::GeodeState::Registered
-                && attestors.len() >= ATTESTOR_REQUIRE
+                && attestors.len() as u32 >= <MinAttestorNum<T>>::get()
             {
                 // update pallet_geode::Geodes
                 geode_record.state = pallet_geode::GeodeState::Attested;
@@ -327,6 +385,24 @@ pub mod pallet {
                 pallet_attestor::Error::<T>::InvalidAttestor
             );
             Self::remove_attestor(&who);
+            Ok(().into())
+        }
+
+        /// Called by root to set the min stake
+        #[pallet::weight(0)]
+        pub fn set_min_attestor_num(origin: OriginFor<T>, num: u32) -> DispatchResultWithPostInfo {
+            let _who = ensure_root(origin)?;
+            <MinAttestorNum<T>>::put(num);
+            // TODO: cause geode state change immediately
+            Ok(().into())
+        }
+
+        /// Called by root to clean all the storage
+        #[pallet::weight(0)]
+        pub fn clean_all_storage(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+            let _who = ensure_root(origin)?;
+            Self::clean_storage();
+            Self::deposit_event(Event::StorageCleaned);
             Ok(().into())
         }
     }
@@ -360,13 +436,16 @@ pub mod pallet {
             // TODO... Service related logic
         }
 
+        /// Remove attestors while unlink the related geodes.
         pub fn remove_attestor(key: &T::AccountId) {
             let attestor = pallet_attestor::Attestors::<T>::get(&key);
+
+            // process changes to geodes
             for geode in attestor.geodes.into_iter() {
                 let mut attestors = pallet_attestor::GeodeAttestors::<T>::get(&geode);
                 attestors.remove(&key);
 
-                if attestors.len() < ATTESTOR_REQUIRE {
+                if <MinAttestorNum<T>>::get() > attestors.len() as u32 {
                     <pallet_geode::Module<T>>::degrade_geode(&geode);
                 }
 
@@ -376,9 +455,41 @@ pub mod pallet {
                     pallet_attestor::GeodeAttestors::<T>::remove(&geode);
                 }
             }
+
+            // change storage
+            pallet_attestor::AttestorNum::<T>::put(pallet_attestor::AttestorNum::<T>::get() - 1);
             pallet_attestor::AttestorLastNotify::<T>::remove(&key);
             pallet_attestor::Attestors::<T>::remove(&key);
+
+            // check degrade mode
+            if <MinAttestorNum<T>>::get() > pallet_attestor::AttestorNum::<T>::get() {
+                <DegradeMode<T>>::put(true);
+            }
+
+            // deposit event
             Self::deposit_event(Event::AttestorExited(key.to_owned()));
+        }
+
+        /// clean all the storage, USE WITH CARE!
+        pub fn clean_storage() {
+            // clean Reports
+            {
+                let mut reports = Vec::new();
+                <Reports<T>>::iter()
+                    .map(|(key, _)| {
+                        reports.push(key);
+                    })
+                    .all(|_| true);
+                for report in reports.iter() {
+                    <Reports<T>>::remove(report);
+                }
+            }
+
+            // reset MinAttestorNum
+            <MinAttestorNum<T>>::put(DEFAULT_MIN_ATTESTOR_NUM);
+
+            // reset DegradeMode
+            <DegradeMode<T>>::put(true);
         }
     }
 }

@@ -16,10 +16,10 @@ pub mod pallet {
     use frame_support::traits::{Currency, ReservableCurrency};
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
     use frame_system::pallet_prelude::*;
+    use primitives::BlockNumber;
+    use sp_runtime::{RuntimeDebug, SaturatedConversion};
     use sp_std::collections::btree_set::BTreeSet;
     use sp_std::prelude::*;
-    use sp_runtime::{RuntimeDebug, SaturatedConversion};
-    use primitives::BlockNumber;
 
     /// Attestor struct
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default)]
@@ -78,14 +78,13 @@ pub mod pallet {
         StorageValue<_, BalanceOf<T>, ValueQuery, DefaultAttStakeMin<T>>;
 
     #[pallet::type_value]
-    pub(super) fn DefaultMinAttestorNum<T: Config>() -> u32 {
-        1
+    pub fn DefaultAttestorNum<T: Config>() -> u32 {
+        0
     }
 
     #[pallet::storage]
-    #[pallet::getter(fn min_attestor_num)]
-    pub(super) type MinAttestorNum<T: Config> =
-        StorageValue<_, u32, ValueQuery, DefaultMinAttestorNum<T>>;
+    #[pallet::getter(fn attestor_num)]
+    pub type AttestorNum<T: Config> = StorageValue<_, u32, ValueQuery, DefaultAttestorNum<T>>;
 
     // Pallets use events to inform users when important changes are made.
     // https://substrate.dev/docs/en/knowledgebase/runtime/events
@@ -129,7 +128,10 @@ pub mod pallet {
             pubkey: Vec<u8>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            ensure!(!<Attestors<T>>::contains_key(&who), Error::<T>::AlreadyRegistered);
+            ensure!(
+                !<Attestors<T>>::contains_key(&who),
+                Error::<T>::AlreadyRegistered
+            );
             let limit = <AttStakeMin<T>>::get();
             T::Currency::reserve(&who, limit)?;
 
@@ -140,8 +142,11 @@ pub mod pallet {
             };
             <Attestors<T>>::insert(&who, attestor);
 
-            let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            let block_number =
+                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
             <AttestorLastNotify<T>>::insert(&who, block_number);
+
+            <AttestorNum<T>>::put(<AttestorNum<T>>::get() + 1);
 
             Self::deposit_event(Event::AttestorRegister(who));
             Ok(().into())
@@ -166,8 +171,9 @@ pub mod pallet {
                 <Attestors::<T>>::contains_key(&who),
                 Error::<T>::InvalidAttestor
             );
-            let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
-            <AttestorLastNotify::<T>>::insert(&who, block_number);
+            let block_number =
+                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            <AttestorLastNotify<T>>::insert(&who, block_number);
             Ok(().into())
         }
 
@@ -181,17 +187,6 @@ pub mod pallet {
             <AttStakeMin<T>>::put(stake);
             Ok(().into())
         }
-
-        /// Called by root to set the min stake
-        #[pallet::weight(0)]
-        pub fn set_min_attestor_num(
-            origin: OriginFor<T>,
-            num: u32,
-        ) -> DispatchResultWithPostInfo {
-            let _who = ensure_root(origin)?;
-            <MinAttestorNum<T>>::put(num);
-            Ok(().into())
-        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -200,7 +195,11 @@ pub mod pallet {
             let mut res = Vec::<(Vec<u8>, Vec<u8>, u32)>::new();
             <Attestors<T>>::iter()
                 .map(|(_, attestor)| {
-                    res.push((attestor.url.clone(), attestor.pubkey, attestor.geodes.len() as u32));
+                    res.push((
+                        attestor.url.clone(),
+                        attestor.pubkey,
+                        attestor.geodes.len() as u32,
+                    ));
                 })
                 .all(|_| true);
             res
@@ -217,6 +216,51 @@ pub mod pallet {
                 })
                 .all(|_| true);
             res
+        }
+
+        /// clean all the storage, USE WITH CARE!
+        pub fn clean_storage() {
+            // clean Attestors
+            {
+                let mut attestors = Vec::new();
+                <Attestors<T>>::iter()
+                    .map(|(key, _)| {
+                        attestors.push(key);
+                    })
+                    .all(|_| true);
+                for attestor in attestors.iter() {
+                    <Attestors<T>>::remove(attestor);
+                }
+            }
+
+            // clean GeodeAttestors
+            {
+                let mut geode_attestors = Vec::new();
+                <GeodeAttestors<T>>::iter()
+                    .map(|(key, _)| {
+                        geode_attestors.push(key);
+                    })
+                    .all(|_| true);
+                for geode_attestor in geode_attestors.iter() {
+                    <GeodeAttestors<T>>::remove(geode_attestor);
+                }
+            }
+
+            // clean AttestorLastNotify
+            {
+                let mut attestor_last_notifys = Vec::new();
+                <AttestorLastNotify<T>>::iter()
+                    .map(|(key, _)| {
+                        attestor_last_notifys.push(key);
+                    })
+                    .all(|_| true);
+                for attestor_last_notify in attestor_last_notifys.iter() {
+                    <AttestorLastNotify<T>>::remove(attestor_last_notify);
+                }
+            }
+
+            // reset AttestorNum
+            <AttestorNum<T>>::put(0);
         }
     }
 }
