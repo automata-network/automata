@@ -16,6 +16,8 @@ pub mod pallet {
     use frame_support::traits::{Currency, ReservableCurrency};
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
     use frame_system::pallet_prelude::*;
+    use primitives::BlockNumber;
+    use sp_runtime::{RuntimeDebug, SaturatedConversion};
     use sp_std::collections::btree_set::BTreeSet;
     use sp_std::prelude::*;
 
@@ -60,6 +62,11 @@ pub mod pallet {
     pub type GeodeAttestors<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, BTreeSet<T::AccountId>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn attestor_last_notification)]
+    pub type AttestorLastNotify<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
+
     #[pallet::type_value]
     pub(super) fn DefaultAttStakeMin<T: Config>() -> BalanceOf<T> {
         T::Currency::minimum_balance()
@@ -69,6 +76,15 @@ pub mod pallet {
     #[pallet::getter(fn att_stake_min)]
     pub(super) type AttStakeMin<T: Config> =
         StorageValue<_, BalanceOf<T>, ValueQuery, DefaultAttStakeMin<T>>;
+
+    #[pallet::type_value]
+    pub fn DefaultAttestorNum<T: Config>() -> u32 {
+        0
+    }
+
+    #[pallet::storage]
+    #[pallet::getter(fn attestor_num)]
+    pub type AttestorNum<T: Config> = StorageValue<_, u32, ValueQuery, DefaultAttestorNum<T>>;
 
     // Pallets use events to inform users when important changes are made.
     // https://substrate.dev/docs/en/knowledgebase/runtime/events
@@ -92,6 +108,8 @@ pub mod pallet {
     pub enum Error<T> {
         /// Use an invalid attestor id.
         InvalidAttestor,
+        /// Attestor already registered
+        AlreadyRegistered,
     }
 
     #[pallet::hooks]
@@ -110,6 +128,10 @@ pub mod pallet {
             pubkey: Vec<u8>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
+            ensure!(
+                !<Attestors<T>>::contains_key(&who),
+                Error::<T>::AlreadyRegistered
+            );
             let limit = <AttStakeMin<T>>::get();
             T::Currency::reserve(&who, limit)?;
 
@@ -119,31 +141,14 @@ pub mod pallet {
                 geodes: BTreeSet::new(),
             };
             <Attestors<T>>::insert(&who, attestor);
-            Self::deposit_event(Event::AttestorRegister(who));
-            Ok(().into())
-        }
 
-        /// Remove self from attestors.
-        ///
-        ///  #note
-        ///
-        /// Currently, we use reliable attestor which would not do misconducts.
-        /// This function should be called when the attestor is not serving for any geode.
-        #[pallet::weight(0)]
-        pub fn attestor_remove(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-            let who = ensure_signed(origin)?;
-            ensure!(
-                <Attestors<T>>::contains_key(&who),
-                Error::<T>::InvalidAttestor
-            );
-            let attestor = <Attestors<T>>::get(&who);
-            for geode in attestor.geodes.into_iter() {
-                let mut attestors = <GeodeAttestors<T>>::get(&geode);
-                attestors.remove(&who);
-                <GeodeAttestors<T>>::insert(&geode, attestors);
-            }
-            <Attestors<T>>::remove(&who);
-            Self::deposit_event(Event::AttestorRemove(who));
+            let block_number =
+                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            <AttestorLastNotify<T>>::insert(&who, block_number);
+
+            <AttestorNum<T>>::put(<AttestorNum<T>>::get() + 1);
+
+            Self::deposit_event(Event::AttestorRegister(who));
             Ok(().into())
         }
 
@@ -155,6 +160,20 @@ pub mod pallet {
             attestor.url = url;
             <Attestors<T>>::insert(&who, attestor);
             Self::deposit_event(Event::AttestorUpdate(who));
+            Ok(().into())
+        }
+
+        #[pallet::weight(0)]
+        pub fn attestor_notify_chain(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            // check attestor existance
+            ensure!(
+                <Attestors::<T>>::contains_key(&who),
+                Error::<T>::InvalidAttestor
+            );
+            let block_number =
+                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            <AttestorLastNotify<T>>::insert(&who, block_number);
             Ok(().into())
         }
 
@@ -172,11 +191,15 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         /// Return attestors' url and pubkey list for rpc.
-        pub fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>)> {
-            let mut res = Vec::new();
+        pub fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>, u32)> {
+            let mut res = Vec::<(Vec<u8>, Vec<u8>, u32)>::new();
             <Attestors<T>>::iter()
                 .map(|(_, attestor)| {
-                    res.push((attestor.url.clone(), attestor.pubkey));
+                    res.push((
+                        attestor.url.clone(),
+                        attestor.pubkey,
+                        attestor.geodes.len() as u32,
+                    ));
                 })
                 .all(|_| true);
             res
@@ -193,6 +216,72 @@ pub mod pallet {
                 })
                 .all(|_| true);
             res
+        }
+
+        /// remove attestor, return degraded geodes
+        pub fn attestor_remove(attestor: T::AccountId) -> Vec<T::AccountId> {
+            let attestor_record = <Attestors<T>>::get(&attestor);
+
+            let mut ret = Vec::new();
+
+            for geode in attestor_record.geodes.into_iter() {
+                ret.push(geode)
+            }
+
+            // change storage
+            <AttestorNum<T>>::put(<AttestorNum<T>>::get() - 1);
+            <AttestorLastNotify<T>>::remove(&attestor);
+            <Attestors<T>>::remove(&attestor);
+
+            // deposit event
+            Self::deposit_event(Event::AttestorRemove(attestor));
+
+            ret
+        }
+
+        /// clean all the storage, USE WITH CARE!
+        pub fn clean_storage() {
+            // clean Attestors
+            {
+                let mut attestors = Vec::new();
+                <Attestors<T>>::iter()
+                    .map(|(key, _)| {
+                        attestors.push(key);
+                    })
+                    .all(|_| true);
+                for attestor in attestors.iter() {
+                    <Attestors<T>>::remove(attestor);
+                }
+            }
+
+            // clean GeodeAttestors
+            {
+                let mut geode_attestors = Vec::new();
+                <GeodeAttestors<T>>::iter()
+                    .map(|(key, _)| {
+                        geode_attestors.push(key);
+                    })
+                    .all(|_| true);
+                for geode_attestor in geode_attestors.iter() {
+                    <GeodeAttestors<T>>::remove(geode_attestor);
+                }
+            }
+
+            // clean AttestorLastNotify
+            {
+                let mut attestor_last_notifys = Vec::new();
+                <AttestorLastNotify<T>>::iter()
+                    .map(|(key, _)| {
+                        attestor_last_notifys.push(key);
+                    })
+                    .all(|_| true);
+                for attestor_last_notify in attestor_last_notifys.iter() {
+                    <AttestorLastNotify<T>>::remove(attestor_last_notify);
+                }
+            }
+
+            // reset AttestorNum
+            <AttestorNum<T>>::put(0);
         }
     }
 }
