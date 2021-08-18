@@ -372,6 +372,8 @@ pub mod pallet {
                 );
             }
 
+            pallet_geode::GeodeUpdateCounters::<T>::insert(&geode, pallet_geode::GeodeUpdateCounters::<T>::get(&geode) + 1);
+
             Self::deposit_event(Event::AttestFor(who, geode));
             Ok(().into())
         }
@@ -432,6 +434,7 @@ pub mod pallet {
                 }
             }
             geode.state = pallet_geode::GeodeState::Unknown;
+            pallet_geode::GeodeUpdateCounters::<T>::insert(&key.0, pallet_geode::GeodeUpdateCounters::<T>::get(&key.0) + 1);
             pallet_geode::Geodes::<T>::insert(&key.0, geode);
             // TODO... Service related logic
         }
