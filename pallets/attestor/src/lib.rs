@@ -218,6 +218,27 @@ pub mod pallet {
             res
         }
 
+        /// remove attestor, return degraded geodes
+        pub fn attestor_remove(attestor: T::AccountId) -> Vec<T::AccountId> {
+            let attestor_record = <Attestors<T>>::get(&attestor);
+
+            let mut ret = Vec::new();
+
+            for geode in attestor_record.geodes.into_iter() {
+                ret.push(geode)
+            }
+
+            // change storage
+            <AttestorNum<T>>::put(<AttestorNum<T>>::get() - 1);
+            <AttestorLastNotify<T>>::remove(&attestor);
+            <Attestors<T>>::remove(&attestor);
+
+            // deposit event
+            Self::deposit_event(Event::AttestorRemove(attestor));
+
+            ret
+        }
+
         /// clean all the storage, USE WITH CARE!
         pub fn clean_storage() {
             // clean Attestors

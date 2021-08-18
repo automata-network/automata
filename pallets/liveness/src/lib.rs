@@ -242,7 +242,7 @@ pub mod pallet {
                     .all(|_| true);
 
                 for key in expired_attestors {
-                    Self::remove_attestor(&key);
+                    Self::do_attestor_exit(&key);
                 }
             }
             0
@@ -384,7 +384,7 @@ pub mod pallet {
                 pallet_attestor::Attestors::<T>::contains_key(&who),
                 pallet_attestor::Error::<T>::InvalidAttestor
             );
-            Self::remove_attestor(&who);
+            Self::do_attestor_exit(&who);
             Ok(().into())
         }
 
@@ -437,37 +437,23 @@ pub mod pallet {
         }
 
         /// Remove attestors while unlink the related geodes.
-        pub fn remove_attestor(key: &T::AccountId) {
-            let attestor = pallet_attestor::Attestors::<T>::get(&key);
+        pub fn do_attestor_exit(key: &T::AccountId) {
+            let related_geodes = <pallet_attestor::Module<T>>::attestor_remove(key.to_owned());
 
-            // process changes to geodes
-            for geode in attestor.geodes.into_iter() {
+            for geode in related_geodes.iter() {
                 let mut attestors = pallet_attestor::GeodeAttestors::<T>::get(&geode);
                 attestors.remove(&key);
 
-                if <MinAttestorNum<T>>::get() > attestors.len() as u32 {
-                    <pallet_geode::Module<T>>::degrade_geode(&geode);
-                }
-
                 if attestors.is_empty() {
-                    pallet_attestor::GeodeAttestors::<T>::insert(&geode, attestors);
+                    pallet_attestor::GeodeAttestors::<T>::insert(&geode, &attestors);
                 } else {
                     pallet_attestor::GeodeAttestors::<T>::remove(&geode);
                 }
+
+                if <MinAttestorNum<T>>::get() > attestors.len() as u32 {
+                    <pallet_geode::Module<T>>::degrade_geode(geode);
+                }
             }
-
-            // change storage
-            pallet_attestor::AttestorNum::<T>::put(pallet_attestor::AttestorNum::<T>::get() - 1);
-            pallet_attestor::AttestorLastNotify::<T>::remove(&key);
-            pallet_attestor::Attestors::<T>::remove(&key);
-
-            // check degrade mode
-            if <MinAttestorNum<T>>::get() > pallet_attestor::AttestorNum::<T>::get() {
-                <DegradeMode<T>>::put(true);
-            }
-
-            // deposit event
-            Self::deposit_event(Event::AttestorExited(key.to_owned()));
         }
 
         /// clean all the storage, USE WITH CARE!
