@@ -2,19 +2,20 @@ pub use automata_primitives::{AccountId, Balance, Signature};
 use automata_runtime::constants::currency::*;
 use automata_runtime::Block;
 use automata_runtime::{
-    AuraConfig, BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig, GrandpaConfig,
-    IndicesConfig, SudoConfig, SystemConfig, WASM_BINARY,
+    BabeConfig, BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig, GrandpaConfig,
+    IndicesConfig, SudoConfig, SystemConfig, SessionConfig,  StakingConfig, StakerStatus,
+    opaque::SessionKeys, WASM_BINARY,
 };
 use hex_literal::hex;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::{ChainType, Properties};
 use sc_telemetry::TelemetryEndpoints;
 use serde::{Deserialize, Serialize};
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{
     crypto::{Ss58Codec, UncheckedInto},
     sr25519, Pair, Public, H160, U256,
 };
+use sp_consensus_babe::AuthorityId as BabeId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
@@ -44,6 +45,13 @@ fn get_properties() -> Option<Properties> {
     Some(properties)
 }
 
+fn get_session_keys(
+	grandpa: GrandpaId,
+	babe: BabeId,
+	) -> SessionKeys {
+	SessionKeys { babe, grandpa }
+}
+
 /// Generate a crypto pair from seed.
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
     TPublic::Pair::from_string(&format!("//{}", seed), None)
@@ -61,13 +69,13 @@ where
     AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-/// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AccountId, AccountId, GrandpaId, AuraId) {
+/// Generate an authority key.
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, AccountId, GrandpaId, BabeId) {
     (
         get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", s)),
         get_account_id_from_seed::<sr25519::Public>(s),
         get_from_seed::<GrandpaId>(s),
-        get_from_seed::<AuraId>(s),
+        get_from_seed::<BabeId>(s),
     )
 }
 
@@ -153,7 +161,7 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
 
     let boot_nodes = vec![];
 
-    let initial_authorities: Vec<(AccountId, AccountId, GrandpaId, AuraId)> = vec![
+    let initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId)> = vec![
         (
             // 5EpoJPebo3FWWahy6i9dcNzjzyTNe1J5zwsQu5NEmg4Yr9PQ
             hex!["7a1996d0fc27b5a0b8c8292ab10e3311045f3bb9ee52353ba93060d0fe433076"].into(),
@@ -249,12 +257,15 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
     wasm_binary: &[u8],
-    initial_authorities: Vec<(AccountId, AccountId, GrandpaId, AuraId)>,
+    initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId)>,
     root_key: AccountId,
     endowed_accounts: Option<Vec<AccountId>>,
     ethereum_accounts: Option<Vec<AccountId>>,
     _enable_println: bool,
 ) -> GenesisConfig {
+	const INITIAL_STAKING: u128 =   1_000_000 * DOLLARS;
+    const ENDOWMENT: Balance = 100_000_000 * DOLLARS;
+
     let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(|| {
         vec![
             get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -286,8 +297,6 @@ fn testnet_genesis(
         });
     }
 
-    const ENDOWMENT: Balance = 100_000_000 * DOLLARS;
-
     GenesisConfig {
         frame_system: Some(SystemConfig {
             // Add Wasm runtime to storage.
@@ -303,15 +312,37 @@ fn testnet_genesis(
                 .collect(),
         }),
         pallet_indices: Some(IndicesConfig { indices: vec![] }),
-        pallet_aura: Some(AuraConfig {
-            authorities: initial_authorities.iter().map(|x| (x.3.clone())).collect(),
-        }),
-        pallet_grandpa: Some(GrandpaConfig {
-            authorities: initial_authorities
-                .iter()
-                .map(|x| (x.2.clone(), 1))
-                .collect(),
-        }),
+        pallet_session: Some(SessionConfig {
+			keys: initial_authorities
+				.iter()
+				.map(|x| (
+						x.0.clone(), // stash
+						x.0.clone(), // stash
+						get_session_keys(
+							x.2.clone(), // grandpa
+							x.3.clone(), // babe
+						)))
+				.collect::<Vec<_>>(),
+		}),
+        pallet_staking: Some(StakingConfig {
+			validator_count: initial_authorities.len() as u32 * 2,
+			minimum_validator_count: initial_authorities.len() as u32,
+			stakers: initial_authorities
+				.iter()
+				.map(|x| (x.0.clone(), x.1.clone(), INITIAL_STAKING, StakerStatus::Validator))
+				.collect(),
+			invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+			slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
+			..Default::default()
+		}),
+		pallet_babe: Some(BabeConfig { authorities: vec![] }),
+        pallet_grandpa: Some(GrandpaConfig { authorities: vec![] }),
+        // pallet_grandpa: Some(GrandpaConfig {
+        //     authorities: initial_authorities
+        //         .iter()
+        //         .map(|x| (x.2.clone(), 1))
+        //         .collect(),
+        // }),
         pallet_sudo: Some(SudoConfig {
             // Assign network admin rights.
             key: root_key,
