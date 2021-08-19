@@ -301,7 +301,7 @@ pub mod pallet {
                 // slash the geode
                 Self::slash_geode(&key.0);
                 <Reports<T>>::remove(&key);
-                Self::deposit_event(Event::SlashGeode(key.0.clone()))
+                Self::deposit_event(Event::SlashGeode(key.0.clone()));
             } else {
                 // update report storage
                 <Reports<T>>::insert(&key, report);

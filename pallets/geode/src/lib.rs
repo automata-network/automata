@@ -425,6 +425,8 @@ pub mod pallet {
                     ensure!(geode_use.provider == who, Error::<T>::NoRight)
                 }
 
+                let prev_state = geode_use.state.clone();
+
                 match option {
                     DetachOption::Remove => {
                         ensure!(
@@ -477,7 +479,7 @@ pub mod pallet {
                     }
                 }
 
-                match geode_use.state {
+                match prev_state {
                     GeodeState::Registered => {
                         <RegisteredGeodes<T>>::remove(&geode);
                     }
@@ -486,6 +488,15 @@ pub mod pallet {
                     }
                     GeodeState::Unknown => {
                         <UnknownGeodes<T>>::remove(&geode);
+                    }
+                    GeodeState::Instantiated => {
+                        <InstantiatedGeodes<T>>::remove(&geode);
+                    }
+                    GeodeState::DegradedInstantiated => {
+                        <DegradedInstantiatedGeodes<T>>::remove(&geode);
+                    }
+                    GeodeState::Offline => {
+                        <OfflineGeodes<T>>::remove(&geode);
                     }
                     _ => {
                         // shouldn't happen
