@@ -537,7 +537,7 @@ pub mod pallet {
                     })
                     .all(|_| true);
                 for attested_geode in attested_geodes.iter() {
-                    <RegisteredGeodes<T>>::remove(attested_geode);
+                    <AttestedGeodes<T>>::remove(attested_geode);
                 }
             }
 

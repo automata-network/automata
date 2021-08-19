@@ -438,9 +438,9 @@ pub mod pallet {
                 attestors.remove(&key);
 
                 if attestors.is_empty() {
-                    pallet_attestor::GeodeAttestors::<T>::insert(&geode, &attestors);
-                } else {
                     pallet_attestor::GeodeAttestors::<T>::remove(&geode);
+                } else {
+                    pallet_attestor::GeodeAttestors::<T>::insert(&geode, &attestors);
                 }
 
                 if <MinAttestorNum<T>>::get() > attestors.len() as u32 {
