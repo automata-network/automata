@@ -475,6 +475,10 @@ pub mod pallet {
 
             // reset DegradeMode
             <DegradeMode<T>>::put(true);
+
+            <pallet_geode::Module<T>>::clean_storage();
+
+            <pallet_attestor::Module<T>>::clean_storage();
         }
     }
 }
