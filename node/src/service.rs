@@ -9,10 +9,10 @@ use sc_cli::SubstrateCli;
 use sc_client_api::{BlockchainEvents, ExecutorProvider, RemoteBackend};
 use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
+use sc_finality_grandpa::FinalityProofProvider;
 use sc_finality_grandpa::SharedVoterState;
 use sc_keystore::LocalKeystore;
 use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskManager};
-use sc_finality_grandpa::FinalityProofProvider;
 use sp_inherents::InherentDataProviders;
 use std::time::Duration;
 use std::{
@@ -39,10 +39,10 @@ pub type ConsensusResult = (
         FrontierBlockImport<
             Block,
             sc_finality_grandpa::GrandpaBlockImport<
-                FullBackend, 
-                Block, 
-                FullClient, 
-                FullSelectChain
+                FullBackend,
+                Block,
+                FullClient,
+                FullSelectChain,
             >,
             FullClient,
         >,
@@ -129,22 +129,22 @@ pub fn new_partial(
     );
 
     let (babe_block_import, babe_link) = sc_consensus_babe::block_import(
-		sc_consensus_babe::Config::get_or_compute(&*client)?,
-		frontier_block_import,
-		client.clone(),
-	)?;
+        sc_consensus_babe::Config::get_or_compute(&*client)?,
+        frontier_block_import,
+        client.clone(),
+    )?;
 
     let import_queue = sc_consensus_babe::import_queue(
-			babe_link.clone(),
-			babe_block_import.clone(),
-			Some(Box::new(grandpa_block_import)),
-			client.clone(),
-			select_chain.clone(),
-			inherent_data_providers.clone(),
-			&task_manager.spawn_handle(),
-			config.prometheus_registry(),
-			sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
-		)?;
+        babe_link.clone(),
+        babe_block_import.clone(),
+        Some(Box::new(grandpa_block_import)),
+        client.clone(),
+        select_chain.clone(),
+        inherent_data_providers.clone(),
+        &task_manager.spawn_handle(),
+        config.prometheus_registry(),
+        sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
+    )?;
 
     Ok(sc_service::PartialComponents {
         client,
@@ -181,7 +181,8 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
         select_chain,
         transaction_pool,
         inherent_data_providers,
-        other: ((babe_block_import, grandpa_link, babe_link), _pending_transactions, frontier_backend),
+        other:
+            ((babe_block_import, grandpa_link, babe_link), _pending_transactions, frontier_backend),
     } = new_partial(&config)?;
 
     if let Some(url) = &config.keystore_remote {
@@ -236,9 +237,10 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
     let babe_config = babe_link.config().clone();
     let shared_epoch_changes = babe_link.epoch_changes().clone();
     let justification_stream = grandpa_link.justification_stream();
-	let shared_authority_set = grandpa_link.shared_authority_set().clone();
-	let shared_voter_state = sc_finality_grandpa::SharedVoterState::empty();
-    let finality_proof_provider = FinalityProofProvider::new_for_service(backend.clone(), Some(shared_authority_set.clone()));
+    let shared_authority_set = grandpa_link.shared_authority_set().clone();
+    let shared_voter_state = sc_finality_grandpa::SharedVoterState::empty();
+    let finality_proof_provider =
+        FinalityProofProvider::new_for_service(backend.clone(), Some(shared_authority_set.clone()));
 
     let rpc_extensions_builder = {
         let client = client.clone();
@@ -261,17 +263,17 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
                 is_authority,
                 select_chain: select_chain.clone(),
                 babe: automata_rpc::BabeDeps {
-					babe_config: babe_config.clone(),
-					shared_epoch_changes: shared_epoch_changes.clone(),
-					keystore: keystore.clone(),
-				},
+                    babe_config: babe_config.clone(),
+                    shared_epoch_changes: shared_epoch_changes.clone(),
+                    keystore: keystore.clone(),
+                },
                 grandpa: automata_rpc::GrandpaDeps {
-					shared_voter_state: shared_voter_state.clone(),
-					shared_authority_set: shared_authority_set.clone(),
-					justification_stream: justification_stream.clone(),
-					subscription_executor,
-					finality_provider: finality_proof_provider.clone(),
-				},
+                    shared_voter_state: shared_voter_state.clone(),
+                    shared_authority_set: shared_authority_set.clone(),
+                    justification_stream: justification_stream.clone(),
+                    subscription_executor,
+                    finality_provider: finality_proof_provider.clone(),
+                },
             };
 
             automata_rpc::create_full(deps, subscription_task_executor.clone())
@@ -318,18 +320,18 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
             sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
 
         let babe_config = sc_consensus_babe::BabeParams {
-			keystore: keystore_container.sync_keystore(),
-			client,
-			select_chain,
-			env: proposer_factory,
-			block_import: babe_block_import,
-			sync_oracle: network.clone(),
-			inherent_data_providers,
-			force_authoring,
-			backoff_authoring_blocks,
-			babe_link,
-			can_author_with,
-		};
+            keystore: keystore_container.sync_keystore(),
+            client,
+            select_chain,
+            env: proposer_factory,
+            block_import: babe_block_import,
+            sync_oracle: network.clone(),
+            inherent_data_providers,
+            force_authoring,
+            backoff_authoring_blocks,
+            babe_link,
+            can_author_with,
+        };
 
         let babe = sc_consensus_babe::start_babe(babe_config)?;
 
@@ -413,23 +415,22 @@ pub fn new_light(mut config: Configuration) -> Result<TaskManager, ServiceError>
 
     let grandpa_block_import_clone = grandpa_block_import.clone();
     let (block_import, babe_link) = sc_consensus_babe::block_import(
-		sc_consensus_babe::Config::get_or_compute(&*client)?,
-		grandpa_block_import,
-		client.clone(),
-	)?;
+        sc_consensus_babe::Config::get_or_compute(&*client)?,
+        grandpa_block_import,
+        client.clone(),
+    )?;
 
-	let import_queue =
-		sc_consensus_babe::import_queue(
-			babe_link,
-			block_import,
-			Some(Box::new(grandpa_block_import_clone)),
-			client.clone(),
-			select_chain,
-			InherentDataProviders::new(),
-			&task_manager.spawn_handle(),
-			config.prometheus_registry(),
-			sp_consensus::NeverCanAuthor,
-		)?;
+    let import_queue = sc_consensus_babe::import_queue(
+        babe_link,
+        block_import,
+        Some(Box::new(grandpa_block_import_clone)),
+        client.clone(),
+        select_chain,
+        InherentDataProviders::new(),
+        &task_manager.spawn_handle(),
+        config.prometheus_registry(),
+        sp_consensus::NeverCanAuthor,
+    )?;
 
     let (network, network_status_sinks, system_rpc_tx, network_starter) =
         sc_service::build_network(sc_service::BuildNetworkParams {

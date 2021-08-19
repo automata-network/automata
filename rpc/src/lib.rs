@@ -3,7 +3,7 @@
 //! used by Substrate nodes. This file extends those RPC definitions with
 //! capabilities that are specific to this project's runtime configuration.
 
-use automata_primitives::{AccountId, Balance, Block, Hash, Index, BlockNumber};
+use automata_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 use automata_runtime::apis::AttestorApi as AttestorRuntimeApi;
 use automata_runtime::apis::GeodeApi as GeodeRuntimeApi;
 use fc_rpc::{SchemaV1Override, StorageOverride};
@@ -14,21 +14,18 @@ use sc_client_api::{
     backend::{Backend, StateBackend, StorageProvider},
     client::BlockchainEvents,
 };
+use sc_consensus_babe::{Config, Epoch};
+use sc_consensus_epochs::SharedEpochChanges;
+use sc_finality_grandpa::{
+    FinalityProofProvider, GrandpaJustificationStream, SharedAuthoritySet, SharedVoterState,
+};
 use sc_network::NetworkService;
 use sc_rpc::SubscriptionTaskExecutor;
-use sc_consensus_babe::{Config, Epoch};
-use sc_finality_grandpa::{
-	FinalityProofProvider,
-	GrandpaJustificationStream,
-	SharedAuthoritySet,
-	SharedVoterState
-};
-use sc_consensus_epochs::SharedEpochChanges;
-use sp_keystore::SyncCryptoStorePtr;
 pub use sc_rpc_api::DenyUnsafe;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::traits::BlakeTwo256;
 use sp_transaction_pool::TransactionPool;
 use std::collections::BTreeMap;
@@ -39,26 +36,26 @@ pub mod geode;
 
 /// Extra dependencies for BABE.
 pub struct BabeDeps {
-	/// BABE protocol config.
-	pub babe_config: Config,
-	/// BABE pending epoch changes.
-	pub shared_epoch_changes: SharedEpochChanges<Block, Epoch>,
-	/// The keystore that manages the keys of the node.
-	pub keystore: SyncCryptoStorePtr,
+    /// BABE protocol config.
+    pub babe_config: Config,
+    /// BABE pending epoch changes.
+    pub shared_epoch_changes: SharedEpochChanges<Block, Epoch>,
+    /// The keystore that manages the keys of the node.
+    pub keystore: SyncCryptoStorePtr,
 }
 
 /// Extra dependencies for GRANDPA
 pub struct GrandpaDeps<B> {
-	/// Voting round info.
-	pub shared_voter_state: SharedVoterState,
-	/// Authority set info.
-	pub shared_authority_set: SharedAuthoritySet<Hash, BlockNumber>,
-	/// Receives notifications about justification events from Grandpa.
-	pub justification_stream: GrandpaJustificationStream<Block>,
-	/// Subscription manager to keep track of pubsub subscribers.
-	pub subscription_executor: SubscriptionTaskExecutor,
-	/// Finality proof provider.
-	pub finality_provider: Arc<FinalityProofProvider<B, Block>>,
+    /// Voting round info.
+    pub shared_voter_state: SharedVoterState,
+    /// Authority set info.
+    pub shared_authority_set: SharedAuthoritySet<Hash, BlockNumber>,
+    /// Receives notifications about justification events from Grandpa.
+    pub justification_stream: GrandpaJustificationStream<Block>,
+    /// Subscription manager to keep track of pubsub subscribers.
+    pub subscription_executor: SubscriptionTaskExecutor,
+    /// Finality proof provider.
+    pub finality_provider: Arc<FinalityProofProvider<B, Block>>,
 }
 
 /// Full client dependencies.
@@ -82,9 +79,9 @@ pub struct FullDeps<C, P, B, SC> {
     /// The SelectChain Strategy
     pub select_chain: SC,
     /// BABE specific dependencies.
-	pub babe: BabeDeps,
-	/// GRANDPA specific dependencies.
-	pub grandpa: GrandpaDeps<B>,
+    pub babe: BabeDeps,
+    /// GRANDPA specific dependencies.
+    pub grandpa: GrandpaDeps<B>,
 }
 
 /// Instantiate all full RPC extensions.
@@ -108,7 +105,7 @@ where
     C::Api: GeodeRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
-	B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
+    B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
     SC: sp_consensus::SelectChain<Block> + 'static,
 {
     use fc_rpc::{
@@ -119,10 +116,9 @@ where
     use attestor::AttestorServer;
     use geode::GeodeServer;
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
-    use substrate_frame_rpc_system::{FullSystem, SystemApi};
     use sc_consensus_babe_rpc::BabeRpcHandler;
     use sc_finality_grandpa_rpc::GrandpaRpcHandler;
-
+    use substrate_frame_rpc_system::{FullSystem, SystemApi};
 
     let mut io = jsonrpc_core::IoHandler::default();
     let FullDeps {
@@ -140,18 +136,18 @@ where
     } = deps;
 
     let BabeDeps {
-		keystore,
-		babe_config,
-		shared_epoch_changes,
-	} = babe;
+        keystore,
+        babe_config,
+        shared_epoch_changes,
+    } = babe;
 
-	let GrandpaDeps {
-		shared_voter_state,
-		shared_authority_set,
-		justification_stream,
-		subscription_executor,
-		finality_provider,
-	} = grandpa;
+    let GrandpaDeps {
+        shared_voter_state,
+        shared_authority_set,
+        justification_stream,
+        subscription_executor,
+        finality_provider,
+    } = grandpa;
 
     io.extend_with(SystemApi::to_delegate(FullSystem::new(
         client.clone(),
@@ -199,22 +195,26 @@ where
 
     io.extend_with(Web3ApiServer::to_delegate(Web3Api::new(client.clone())));
 
-    io.extend_with(sc_consensus_babe_rpc::BabeApi::to_delegate(BabeRpcHandler::new(
-		client.clone(),
-		shared_epoch_changes,
-		keystore,
-		babe_config,
-		select_chain,
-		deny_unsafe,
-	)));
+    io.extend_with(sc_consensus_babe_rpc::BabeApi::to_delegate(
+        BabeRpcHandler::new(
+            client.clone(),
+            shared_epoch_changes,
+            keystore,
+            babe_config,
+            select_chain,
+            deny_unsafe,
+        ),
+    ));
 
-    io.extend_with(sc_finality_grandpa_rpc::GrandpaApi::to_delegate(GrandpaRpcHandler::new(
-		shared_authority_set,
-		shared_voter_state,
-		justification_stream,
-		subscription_executor,
-		finality_provider,
-	)));
+    io.extend_with(sc_finality_grandpa_rpc::GrandpaApi::to_delegate(
+        GrandpaRpcHandler::new(
+            shared_authority_set,
+            shared_voter_state,
+            justification_stream,
+            subscription_executor,
+            finality_provider,
+        ),
+    ));
 
     io.extend_with(EthPubSubApiServer::to_delegate(EthPubSubApi::new(
         pool.clone(),

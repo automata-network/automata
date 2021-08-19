@@ -2,20 +2,20 @@ pub use automata_primitives::{AccountId, Balance, Signature};
 use automata_runtime::constants::currency::*;
 use automata_runtime::Block;
 use automata_runtime::{
-    BabeConfig, BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig, GrandpaConfig,
-    IndicesConfig, SudoConfig, SystemConfig, SessionConfig,  StakingConfig, StakerStatus,
-    opaque::SessionKeys, WASM_BINARY,
+    opaque::SessionKeys, BabeConfig, BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig,
+    GrandpaConfig, IndicesConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig,
+    SystemConfig, WASM_BINARY,
 };
 use hex_literal::hex;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::{ChainType, Properties};
 use sc_telemetry::TelemetryEndpoints;
 use serde::{Deserialize, Serialize};
+use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{
     crypto::{Ss58Codec, UncheckedInto},
     sr25519, Pair, Public, H160, U256,
 };
-use sp_consensus_babe::AuthorityId as BabeId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
@@ -45,11 +45,8 @@ fn get_properties() -> Option<Properties> {
     Some(properties)
 }
 
-fn get_session_keys(
-	grandpa: GrandpaId,
-	babe: BabeId,
-	) -> SessionKeys {
-	SessionKeys { babe, grandpa }
+fn get_session_keys(grandpa: GrandpaId, babe: BabeId) -> SessionKeys {
+    SessionKeys { babe, grandpa }
 }
 
 /// Generate a crypto pair from seed.
@@ -263,7 +260,7 @@ fn testnet_genesis(
     ethereum_accounts: Option<Vec<AccountId>>,
     _enable_println: bool,
 ) -> GenesisConfig {
-	const INITIAL_STAKING: u128 =   1_000_000 * DOLLARS;
+    const INITIAL_STAKING: u128 = 1_000_000 * DOLLARS;
     const ENDOWMENT: Balance = 100_000_000 * DOLLARS;
 
     let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(|| {
@@ -313,30 +310,44 @@ fn testnet_genesis(
         }),
         pallet_indices: Some(IndicesConfig { indices: vec![] }),
         pallet_session: Some(SessionConfig {
-			keys: initial_authorities
-				.iter()
-				.map(|x| (
-						x.0.clone(), // stash
-						x.0.clone(), // stash
-						get_session_keys(
-							x.2.clone(), // grandpa
-							x.3.clone(), // babe
-						)))
-				.collect::<Vec<_>>(),
-		}),
+            keys: initial_authorities
+                .iter()
+                .map(|x| {
+                    (
+                        x.0.clone(), // stash
+                        x.0.clone(), // stash
+                        get_session_keys(
+                            x.2.clone(), // grandpa
+                            x.3.clone(), // babe
+                        ),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        }),
         pallet_staking: Some(StakingConfig {
-			validator_count: initial_authorities.len() as u32 * 2,
-			minimum_validator_count: initial_authorities.len() as u32,
-			stakers: initial_authorities
-				.iter()
-				.map(|x| (x.0.clone(), x.1.clone(), INITIAL_STAKING, StakerStatus::Validator))
-				.collect(),
-			invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
-			slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
-			..Default::default()
-		}),
-		pallet_babe: Some(BabeConfig { authorities: vec![] }),
-        pallet_grandpa: Some(GrandpaConfig { authorities: vec![] }),
+            validator_count: initial_authorities.len() as u32 * 2,
+            minimum_validator_count: initial_authorities.len() as u32,
+            stakers: initial_authorities
+                .iter()
+                .map(|x| {
+                    (
+                        x.0.clone(),
+                        x.1.clone(),
+                        INITIAL_STAKING,
+                        StakerStatus::Validator,
+                    )
+                })
+                .collect(),
+            invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+            slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
+            ..Default::default()
+        }),
+        pallet_babe: Some(BabeConfig {
+            authorities: vec![],
+        }),
+        pallet_grandpa: Some(GrandpaConfig {
+            authorities: vec![],
+        }),
         // pallet_grandpa: Some(GrandpaConfig {
         //     authorities: initial_authorities
         //         .iter()
