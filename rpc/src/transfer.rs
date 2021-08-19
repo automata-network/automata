@@ -180,6 +180,15 @@ where
                 })
             }
         };
+
+        if evm_addr_bytes.len() != 20 {
+            return Err(Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Address bytes length should be 20.".into(),
+                data: None,
+            });
+        }
+
         let mut address_bytes = [0u8; 20];
         address_bytes.copy_from_slice(&evm_addr_bytes[..]);
         let evm_address = address_bytes.into();
