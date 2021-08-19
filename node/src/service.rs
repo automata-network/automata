@@ -12,6 +12,7 @@ pub use sc_executor::NativeExecutor;
 use sc_finality_grandpa::SharedVoterState;
 use sc_keystore::LocalKeystore;
 use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskManager};
+use sc_finality_grandpa::FinalityProofProvider;
 use sp_inherents::InherentDataProviders;
 use std::time::Duration;
 use std::{
@@ -232,14 +233,22 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
     let is_authority = role.is_authority();
     let subscription_task_executor =
         sc_rpc::SubscriptionTaskExecutor::new(task_manager.spawn_handle());
+    let babe_config = babe_link.config().clone();
+    let shared_epoch_changes = babe_link.epoch_changes().clone();
+    let justification_stream = grandpa_link.justification_stream();
+	let shared_authority_set = grandpa_link.shared_authority_set().clone();
+	let shared_voter_state = sc_finality_grandpa::SharedVoterState::empty();
+    let finality_proof_provider = FinalityProofProvider::new_for_service(backend.clone(), Some(shared_authority_set.clone()));
 
     let rpc_extensions_builder = {
         let client = client.clone();
         let pool = transaction_pool.clone();
+        let keystore = keystore_container.sync_keystore();
+        let select_chain = select_chain.clone();
         let _pending = pending_transactions.clone();
         let frontier_backend = frontier_backend.clone();
 
-        Box::new(move |deny_unsafe, _| {
+        Box::new(move |deny_unsafe, subscription_executor| {
             let pending = pending_transactions.clone();
             let deps = automata_rpc::FullDeps {
                 client: client.clone(),
@@ -250,6 +259,19 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
                 pending_transactions: pending.clone(),
                 backend: frontier_backend.clone(),
                 is_authority,
+                select_chain: select_chain.clone(),
+                babe: automata_rpc::BabeDeps {
+					babe_config: babe_config.clone(),
+					shared_epoch_changes: shared_epoch_changes.clone(),
+					keystore: keystore.clone(),
+				},
+                grandpa: automata_rpc::GrandpaDeps {
+					shared_voter_state: shared_voter_state.clone(),
+					shared_authority_set: shared_authority_set.clone(),
+					justification_stream: justification_stream.clone(),
+					subscription_executor,
+					finality_provider: finality_proof_provider.clone(),
+				},
             };
 
             automata_rpc::create_full(deps, subscription_task_executor.clone())

@@ -128,7 +128,7 @@ pub const MILLISECS_PER_BLOCK: u64 = 15000;
 
 pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 
-pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 2 * MINUTES;
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {
     const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
 
@@ -272,7 +272,7 @@ pallet_staking_reward_curve::build! {
 }
 
 parameter_types! {
-	pub const SessionsPerEra: sp_staking::SessionIndex = 24; // 24 hours
+	pub const SessionsPerEra: sp_staking::SessionIndex = 3; // 24 hours
 	pub const BondingDuration: pallet_staking::EraIndex = 28; // 28 days
 	pub const SlashDeferDuration: pallet_staking::EraIndex = 27; // 27 days
 	pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
@@ -546,7 +546,7 @@ construct_runtime!(
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
         Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
-        Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event},
+        Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event, ValidateUnsigned},
         Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
         TransactionPayment: pallet_transaction_payment::{Module, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
@@ -559,7 +559,7 @@ construct_runtime!(
         AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
         GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
         LivenessModule: pallet_liveness::{Module, Call, Storage, Event<T>},
-        Staking: pallet_staking::{Module, Call, Storage, Config<T>, Event<T>},
+        Staking: pallet_staking::{Module, Call, Storage, Config<T>, Event<T>, ValidateUnsigned},
         Session: pallet_session::{Module, Call, Storage, Event, Config<T>},
         Historical: pallet_session_historical::{Module},
     }
