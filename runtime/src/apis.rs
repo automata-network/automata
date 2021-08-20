@@ -6,7 +6,7 @@ sp_api::decl_runtime_apis! {
     pub trait AttestorApi {
         fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>, u32)>;
         fn geode_attestors(geode: AccountId) -> Vec<(Vec<u8>, Vec<u8>)>;
-        fn unsigned_attestor_notify_chain(message: [u8; 32], signature_raw_bytes: [u8; 64]) -> Result<(), ()>;
+        fn unsigned_attestor_notify_chain(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> Result<(), ()>;
     }
 
     pub trait GeodeApi {
