@@ -26,6 +26,9 @@ pub trait GeodeServer<BlockHash> {
     /// Return list geode an attestor is attesting
     #[rpc(name = "attestor_attested_geodes")]
     fn attestor_attested_geodes(&self, attestor: [u8; 32]) -> Result<Vec<WrappedGeode<Hash>>>;
+    /// Return the current state of a geode
+    #[rpc(name = "geode_state")]
+    fn geode_state(&self, geode: [u8; 32]) -> Result<Option<GeodeState>>;
 }
 
 /// The geode struct shows its status
@@ -136,5 +139,19 @@ where
             res.push(geode.into())
         }
         Ok(res)
+    }
+
+    /// Return the current state of a geode
+    fn geode_state(&self, geode: [u8; 32]) -> Result<Option<GeodeState>> {
+        let api = self.client.runtime_api();
+        let best = self.client.info().best_hash;
+        let at = BlockId::hash(best);
+        let geode_state = api.geode_state(&at, geode.into()).map_err(|e| Error {
+            code: ErrorCode::ServerError(RUNTIME_ERROR),
+            message: "Runtime unable to get geode state.".into(),
+            data: Some(format!("{:?}", e).into()),
+        })?;
+
+        Ok(geode_state)
     }
 }

@@ -1,5 +1,6 @@
 use crate::{mock::*, Attestor};
 use frame_support::assert_ok;
+use frame_system::pallet_prelude::*;
 
 #[test]
 fn it_works_for_attestor_register() {
@@ -69,10 +70,8 @@ fn it_works_for_attestor_remove() {
         // remove old events
         events();
 
-        // successfully call remove
-        assert_ok!(AttestorModule::attestor_remove(Origin::signed(
-            attestor_account
-        )));
+        // call remove
+        AttestorModule::attestor_remove(ensure_signed(Origin::signed(attestor_account)).unwrap());
         let data = AttestorModule::attestors(&attestor_account);
 
         // check the data after remove

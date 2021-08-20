@@ -71,9 +71,18 @@ impl pallet_balances::Config for Test {
     type WeightInfo = ();
 }
 
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Test
+where
+    Call: From<C>,
+{
+    type Extrinsic = UncheckedExtrinsic;
+    type OverarchingCall = Call;
+}
+
 impl attestor::Config for Test {
     type Event = Event;
     type Currency = Balances;
+    type Call = Call;
 }
 
 // Build genesis storage according to the mock runtime.
