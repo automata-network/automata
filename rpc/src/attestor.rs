@@ -110,9 +110,9 @@ where
         }
 
         // validate inputs
-        let pubkey = Public::from_raw(attestor.clone());
+        let pubkey = Public::from_raw(attestor);
         let signature = Signature::from_raw(signature_raw_bytes_64.clone());
-        if !Sr25519Pair::verify(&signature, &attestor, &pubkey) {
+        if !Sr25519Pair::verify(&signature, &attestor_notify, &pubkey) {
             return Err(Error {
                 code: ErrorCode::ServerError(RUNTIME_ERROR),
                 message: "signature invalid.".into(),
