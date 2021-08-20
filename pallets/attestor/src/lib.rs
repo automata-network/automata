@@ -14,9 +14,19 @@ mod benchmarking;
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::traits::{Currency, ReservableCurrency};
-    use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
-    use frame_system::pallet_prelude::*;
+    use frame_support::{
+        dispatch::DispatchResultWithPostInfo, pallet_prelude::*, unsigned::ValidateUnsigned,
+    };
+    use frame_system::{
+        offchain::{SendTransactionTypes, SubmitTransaction},
+        pallet_prelude::*,
+    };
     use primitives::BlockNumber;
+    #[cfg(feature = "full_crypto")]
+    use sp_core::crypto::Pair;
+    #[cfg(feature = "full_crypto")]
+    use sp_core::sr25519::Pair as Sr25519Pair;
+    use sp_core::sr25519::{Public, Signature};
     use sp_runtime::{RuntimeDebug, SaturatedConversion};
     use sp_std::collections::btree_set::BTreeSet;
     use sp_std::prelude::*;
@@ -36,15 +46,17 @@ pub mod pallet {
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
     pub type AttestorOf<T> = Attestor<<T as frame_system::Config>::AccountId>;
 
+    pub const UNSIGNED_TXS_PRIORITY: u64 = 100;
     pub const DEFAULT_ATT_STAKE_MIN: primitives::Balance = 1000;
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: SendTransactionTypes<Call<Self>> + frame_system::Config {
         /// Because this pallet emits events, it depends on the runtime's definition of an event.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         /// The currency in which fees are paid and contract balances are held.
         type Currency: ReservableCurrency<Self::AccountId>;
+        type Call: From<Call<Self>>;
     }
 
     #[pallet::pallet]
@@ -101,6 +113,8 @@ pub mod pallet {
         /// Event documentation should end with an array that provides descriptive names for event
         /// parameters. [something, who]
         SomethingStored(u32, T::AccountId),
+        /// Attestor notified chain
+        Notified(T::AccountId),
     }
 
     // Errors inform users that something went wrong.
@@ -110,6 +124,42 @@ pub mod pallet {
         InvalidAttestor,
         /// Attestor already registered
         AlreadyRegistered,
+    }
+
+    #[pallet::validate_unsigned]
+    impl<T: Config> ValidateUnsigned for Pallet<T> {
+        type Call = Call<T>;
+
+        fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+            let valid_txn = |provide| {
+                ValidTransaction::with_tag_prefix("Automata/AttestorModule/attestor_notify_chain")
+                    .priority(UNSIGNED_TXS_PRIORITY)
+                    .and_provides([&provide])
+                    .longevity(3)
+                    .propagate(true)
+                    .build()
+            };
+
+            match call {
+                Call::attestor_notify_chain(_message, _signature_raw_bytes) => {
+                    // validate inputs
+                    let pubkey = Public::from_raw(_message.clone());
+                    let signature = Signature::from_raw(_signature_raw_bytes.clone());
+                    let mut valid = false;
+                    #[cfg(feature = "full_crypto")]
+                    if Sr25519Pair::verify(&signature, _message.clone(), &pubkey) {
+                        valid = true;
+                    }
+
+                    if valid {
+                        valid_txn(b"submit_number_unsigned".to_vec())
+                    } else {
+                        InvalidTransaction::Call.into()
+                    }
+                }
+                _ => InvalidTransaction::Call.into(),
+            }
+        }
     }
 
     #[pallet::hooks]
@@ -164,16 +214,32 @@ pub mod pallet {
         }
 
         #[pallet::weight(0)]
-        pub fn attestor_notify_chain(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-            let who = ensure_signed(origin)?;
-            // check attestor existance
+        pub fn attestor_notify_chain(
+            _origin: OriginFor<T>,
+            message: [u8; 32],
+            signature_raw_bytes: [u8; 64],
+        ) -> DispatchResultWithPostInfo {
+            // validate inputs
+            let pubkey = Public::from_raw(message);
+            let signature = Signature::from_raw(signature_raw_bytes);
+            #[cfg(feature = "full_crypto")]
             ensure!(
-                <Attestors::<T>>::contains_key(&who),
+                Sr25519Pair::verify(&signature, &message, &pubkey),
                 Error::<T>::InvalidAttestor
             );
+
+            let acc = T::AccountId::decode(&mut &message[..]).unwrap_or_default();
+
+            ensure!(
+                <Attestors<T>>::contains_key(&acc),
+                Error::<T>::InvalidAttestor
+            );
+
             let block_number =
                 <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
-            <AttestorLastNotify<T>>::insert(&who, block_number);
+            <AttestorLastNotify<T>>::insert(&acc, block_number);
+
+            Self::deposit_event(Event::Notified(acc));
             Ok(().into())
         }
 
@@ -190,6 +256,14 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        pub fn unsigned_attestor_notify_chain(
+            message: [u8; 32],
+            signature_raw_bytes: [u8; 64],
+        ) -> Result<(), ()> {
+            let call = Call::attestor_notify_chain(message, signature_raw_bytes);
+            SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
+        }
+
         /// Return attestors' url and pubkey list for rpc.
         pub fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>, u32)> {
             let mut res = Vec::<(Vec<u8>, Vec<u8>, u32)>::new();

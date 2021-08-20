@@ -29,6 +29,7 @@ pallet-transaction-payment-rpc = '3.0.0'
 sc-light = '3.0.0'
 hex = '0.4.3'
 sp-std = '3.0.0'
+sp-core = { features = ["full_crypto"], version = '3.0.0' }
 
 # local dependencies
 automata-primitives = { path = "../primitives" }

@@ -487,6 +487,7 @@ dependencies = [
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
+ "sp-core",
  "sp-runtime",
  "sp-std",
  "sp-transaction-pool",
