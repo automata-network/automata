@@ -22,7 +22,7 @@ pub mod pallet {
         pallet_prelude::*,
     };
     use primitives::*;
-    use sp_core::{ecdsa, H160};
+    use sp_core::{ecdsa, H160, U256};
     use sp_io::{crypto::secp256k1_ecdsa_recover, hashing::keccak_256};
     use sp_runtime::{traits::UniqueSaturatedInto, SaturatedConversion};
     use sp_std::str;
@@ -80,7 +80,53 @@ pub mod pallet {
             };
 
             match call {
-                Call::transfer_from_evm_account(_message, _signature_raw_bytes) => {
+                Call::transfer_from_evm_account(ref message, ref signature_raw_bytes) => {
+                    if message.len() != 72 {
+                        return InvalidTransaction::Custom(1u8).into();
+                    }
+                    if signature_raw_bytes.len() != 65 {
+                        return InvalidTransaction::Custom(2u8).into();
+                    }
+
+                    let signature = ecdsa::Signature::from_slice(signature_raw_bytes);
+
+                    let source_address = extract_source_address(message);
+                    let source_account_id = Self::evm_address_to_account_id(source_address);
+
+                    // let target_account_id_bytes = extract_target_account_id(message);
+                    // let target_account_id = T::AccountId::decode(&mut &target_account_id_bytes[..]).unwrap_or_default();
+
+                    let value = extract_transfer_amount(message);
+
+                    let nonce_bytes = extract_nonce(message);
+                    let nonce: T::Index = u32::from_be_bytes(nonce_bytes).into();
+
+                    let result = eth_recover(&signature, message, &[][..])
+                        .ok_or(Error::<T>::SignatureInvalid);
+                    let address = match result {
+                        Ok(address) => address,
+                        Err(_e) => {
+                            return InvalidTransaction::BadProof.into();
+                        }
+                    };
+
+                    if address != source_address {
+                        return InvalidTransaction::BadProof.into();
+                    }
+
+                    let real_nonce: T::Index =
+                        frame_system::Module::<T>::account_nonce(&source_account_id);
+                    if nonce != real_nonce {
+                        return InvalidTransaction::Custom(3u8).into();
+                    }
+
+                    let balance = T::Currency::free_balance(&source_account_id);
+                    let balance_u256 =
+                        U256::from(UniqueSaturatedInto::<u128>::unique_saturated_into(balance));
+                    if balance_u256 < U256::from(value) {
+                        return InvalidTransaction::Custom(4u8).into();
+                    }
+
                     valid_tx(b"submit_number_unsigned".to_vec())
                 }
                 _ => InvalidTransaction::Call.into(),
@@ -122,27 +168,18 @@ pub mod pallet {
             message: [u8; 72],
             signature_raw_bytes: [u8; 65],
         ) -> DispatchResultWithPostInfo {
-            let mut signature_bytes = [0u8; 65];
-            signature_bytes.copy_from_slice(&signature_raw_bytes);
-            let signature = ecdsa::Signature::from_slice(&signature_bytes);
+            let signature = ecdsa::Signature::from_slice(&signature_raw_bytes);
 
-            let mut source_address_bytes = [0u8; 20];
-            source_address_bytes.copy_from_slice(&message[0..20]);
-            let source_address = source_address_bytes.into();
+            let source_address = extract_source_address(&message);
             let source_account_id = Self::evm_address_to_account_id(source_address);
 
-            let mut target_account_id_bytes = [0u8; 32];
-            target_account_id_bytes.copy_from_slice(&message[20..52]);
+            let target_account_id_bytes = extract_target_account_id(&message);
             let target_account_id =
                 T::AccountId::decode(&mut &target_account_id_bytes[..]).unwrap_or_default();
 
-            let mut value_bytes = [0u8; 16];
-            value_bytes.copy_from_slice(&message[52..68]);
-            let value_128: u128 = u128::from_be_bytes(value_bytes);
-            let value = Balance::from(value_128);
+            let value = extract_transfer_amount(&message);
 
-            let mut nonce_bytes = [0u8; 4];
-            nonce_bytes.copy_from_slice(&message[68..72]);
+            let nonce_bytes = extract_nonce(&message);
             let nonce: T::Index = u32::from_be_bytes(nonce_bytes).into();
 
             let address =
@@ -184,6 +221,31 @@ pub mod pallet {
             let hash_bytes = evm_address_to_account_id_bytes(evm_address);
             T::AccountId::decode(&mut &hash_bytes[..]).unwrap_or_default()
         }
+    }
+
+    pub fn extract_source_address(message: &[u8; 72]) -> H160 {
+        let mut source_address_bytes = [0u8; 20];
+        source_address_bytes.copy_from_slice(&message[0..20]);
+        source_address_bytes.into()
+    }
+
+    pub fn extract_target_account_id(message: &[u8; 72]) -> [u8; 32] {
+        let mut target_account_id_bytes = [0u8; 32];
+        target_account_id_bytes.copy_from_slice(&message[20..52]);
+        target_account_id_bytes
+    }
+
+    pub fn extract_transfer_amount(message: &[u8; 72]) -> Balance {
+        let mut value_bytes = [0u8; 16];
+        value_bytes.copy_from_slice(&message[52..68]);
+        let value_128: u128 = u128::from_be_bytes(value_bytes);
+        Balance::from(value_128)
+    }
+
+    pub fn extract_nonce(message: &[u8; 72]) -> [u8; 4] {
+        let mut nonce_bytes = [0u8; 4];
+        nonce_bytes.copy_from_slice(&message[68..72]);
+        nonce_bytes
     }
 
     pub fn evm_address_to_account_id_bytes(evm_address: H160) -> [u8; 32] {
