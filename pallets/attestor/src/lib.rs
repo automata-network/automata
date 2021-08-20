@@ -245,7 +245,7 @@ pub mod pallet {
             let signature = Signature::from_raw(signature_raw_bytes.clone());
 
             #[cfg(feature = "full_crypto")]
-            ensure!(Sr25519Pair::verify(&signature, message.clone(), &pubkey), Error::<T>::InvalidNotification);
+            ensure!(Sr25519Pair::verify(&signature, message, &pubkey), Error::<T>::InvalidNotification);
 
             let acc = T::AccountId::decode(&mut &attestor[..]).unwrap_or_default();
             ensure!(
