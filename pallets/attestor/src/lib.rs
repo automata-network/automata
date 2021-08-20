@@ -146,19 +146,30 @@ pub mod pallet {
                     let pubkey = Public::from_raw(_message.clone());
                     let signature = Signature::from_raw(_signature_raw_bytes.clone());
                     let mut valid = false;
+
+                    #[cfg(feature = "full_crypto")]
+                    debug::info!("start validation!");
+
                     #[cfg(feature = "full_crypto")]
                     if Sr25519Pair::verify(&signature, _message.clone(), &pubkey) {
+                        debug::info!("signature valid!");
                         valid = true;
+                    } else {
+                        debug::info!("signature invalid!");
                     }
 
                     if valid {
                         let acc = T::AccountId::decode(&mut &_message[..]).unwrap_or_default();
-                        valid = <Attestors<T>>::contains_key(acc);
+                        if !<Attestors<T>>::contains_key(acc) {
+                            debug::info!("Not from attestor!");
+                            valid = false;
+                        }
                     }
 
                     if valid {
                         valid_txn(b"submit_number_unsigned".to_vec())
                     } else {
+                        debug::info!("invalid txn!");
                         InvalidTransaction::Call.into()
                     }
                 }
