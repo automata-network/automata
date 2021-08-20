@@ -107,7 +107,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 111,
+    spec_version: 112,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -388,6 +388,7 @@ impl pallet_template::Config for Runtime {
 impl pallet_attestor::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
+    type Call = Call;
 }
 
 impl pallet_geode::Config for Runtime {
@@ -443,7 +444,7 @@ construct_runtime!(
         TemplateModule: pallet_template::{Module, Call, Storage, Event<T>},
         Ethereum: pallet_ethereum::{Module, Call, Storage, Event, Config, ValidateUnsigned},
         Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
-        AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
+        AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>, ValidateUnsigned},
         GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
         LivenessModule: pallet_liveness::{Module, Call, Storage, Event<T>},
     }
@@ -621,6 +622,10 @@ impl_runtime_apis! {
 
         fn geode_attestors(geode: AccountId) -> Vec<(Vec<u8>, Vec<u8>)> {
             AttestorModule::attestors_of_geode(geode)
+        }
+
+        fn unsigned_attestor_notify_chain(message: [u8; 32], signature_raw_bytes: [u8; 64]) -> Result<(), ()> {
+            AttestorModule::unsigned_attestor_notify_chain(message, signature_raw_bytes)
         }
     }
 
