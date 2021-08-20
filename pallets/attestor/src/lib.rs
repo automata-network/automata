@@ -152,6 +152,11 @@ pub mod pallet {
                     }
 
                     if valid {
+                        let acc = T::AccountId::decode(&mut &_message[..]).unwrap_or_default();
+                        valid = <Attestors<T>>::contains_key(acc);
+                    }
+
+                    if valid {
                         valid_txn(b"submit_number_unsigned".to_vec())
                     } else {
                         InvalidTransaction::Call.into()
