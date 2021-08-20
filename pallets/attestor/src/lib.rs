@@ -122,8 +122,10 @@ pub mod pallet {
     pub enum Error<T> {
         /// Use an invalid attestor id.
         InvalidAttestor,
-        /// Attestor already registered
+        /// Attestor already registered.
         AlreadyRegistered,
+        /// Invalid notification input.
+        InvalidNotification,
     }
 
     #[pallet::validate_unsigned]
@@ -141,26 +143,32 @@ pub mod pallet {
             };
 
             match call {
-                Call::attestor_notify_chain(_message, _signature_raw_bytes) => {
+                Call::attestor_notify_chain(message, signature_raw_bytes) => {
                     // validate inputs
-                    let pubkey = Public::from_raw(_message.clone());
-                    let signature = Signature::from_raw(_signature_raw_bytes.clone());
-                    let mut valid = false;
+                    if message.len() < 32 {
+                        debug::info!("message invalid!");
+                        return InvalidTransaction::Call.into();
+                    }
+            
+                    let mut attestor = [0u8; 32];
+                    attestor.copy_from_slice(&message[0..32]); 
+
+                    let pubkey = Public::from_raw(attestor.clone());
+                    let signature = Signature::from_raw(signature_raw_bytes.clone());
+
                     #[cfg(feature = "full_crypto")]
-                    if Sr25519Pair::verify(&signature, _message.clone(), &pubkey) {
-                        valid = true;
+                    if !Sr25519Pair::verify(&signature, message.clone(), &pubkey) {
+                        debug::info!("signature valid!");
+                        return InvalidTransaction::Call.into();
                     }
 
-                    if valid {
-                        let acc = T::AccountId::decode(&mut &_message[..]).unwrap_or_default();
-                        valid = <Attestors<T>>::contains_key(acc);
+                    let acc = T::AccountId::decode(&mut &attestor[..]).unwrap_or_default();
+                    if !<Attestors<T>>::contains_key(acc) {
+                        debug::info!("Not from attestor!");
+                        return InvalidTransaction::Call.into();
                     }
 
-                    if valid {
-                        valid_txn(b"submit_number_unsigned".to_vec())
-                    } else {
-                        InvalidTransaction::Call.into()
-                    }
+                    valid_txn(b"submit_number_unsigned".to_vec())
                 }
                 _ => InvalidTransaction::Call.into(),
             }
@@ -221,20 +229,25 @@ pub mod pallet {
         #[pallet::weight(0)]
         pub fn attestor_notify_chain(
             _origin: OriginFor<T>,
-            message: [u8; 32],
+            message: Vec<u8>,
             signature_raw_bytes: [u8; 64],
         ) -> DispatchResultWithPostInfo {
             // validate inputs
-            let pubkey = Public::from_raw(message);
-            let signature = Signature::from_raw(signature_raw_bytes);
-            #[cfg(feature = "full_crypto")]
             ensure!(
-                Sr25519Pair::verify(&signature, &message, &pubkey),
-                Error::<T>::InvalidAttestor
+                message.len() >= 32,
+                Error::<T>::InvalidNotification
             );
 
-            let acc = T::AccountId::decode(&mut &message[..]).unwrap_or_default();
+            let mut attestor = [0u8; 32];
+            attestor.copy_from_slice(&message[0..32]); 
 
+            let pubkey = Public::from_raw(attestor.clone());
+            let signature = Signature::from_raw(signature_raw_bytes.clone());
+
+            #[cfg(feature = "full_crypto")]
+            ensure!(Sr25519Pair::verify(&signature, message.clone(), &pubkey), Error::<T>::InvalidNotification);
+
+            let acc = T::AccountId::decode(&mut &attestor[..]).unwrap_or_default();
             ensure!(
                 <Attestors<T>>::contains_key(&acc),
                 Error::<T>::InvalidAttestor
@@ -262,7 +275,7 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         pub fn unsigned_attestor_notify_chain(
-            message: [u8; 32],
+            message: Vec<u8>,
             signature_raw_bytes: [u8; 64],
         ) -> Result<(), ()> {
             let call = Call::attestor_notify_chain(message, signature_raw_bytes);

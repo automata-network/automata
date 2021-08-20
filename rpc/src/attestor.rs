@@ -25,7 +25,7 @@ pub trait AttestorServer<BlockHash> {
     #[rpc(name = "attestor_notify_chain")]
     fn attestor_notify_chain(
         &self,
-        attestor: [u8; 32],
+        attestor_notify: Vec<u8>,
         signature_raw_bytes: Vec<u8>,
     ) -> Result<bool>;
 }
@@ -79,12 +79,23 @@ where
     /// attestor notify chain for liveness update
     fn attestor_notify_chain(
         &self,
-        attestor: [u8; 32],
+        attestor_notify: Vec<u8>,
         signature_raw_bytes: Vec<u8>,
     ) -> Result<bool> {
         let api = self.client.runtime_api();
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
+
+        if attestor_notify.len() < 32 {
+            return Err(Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "message size incorrect.".into(),
+                data: None,
+            });
+        }
+
+        let mut attestor = [0u8; 32];
+        attestor.copy_from_slice(&attestor_notify[0..32]); 
 
         let signature_raw_bytes_64;
         if signature_raw_bytes.len() == 64 {
@@ -111,7 +122,7 @@ where
 
         //submit a unsigned extrinsics into transaction pool
         let _ = api
-            .unsigned_attestor_notify_chain(&at, attestor, signature_raw_bytes_64)
+            .unsigned_attestor_notify_chain(&at, attestor_notify, signature_raw_bytes_64)
             .map_err(|e| Error {
                 code: ErrorCode::ServerError(RUNTIME_ERROR),
                 message: "Failed to submit unsigned extrinsics.".into(),

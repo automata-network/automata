@@ -107,7 +107,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 113,
+    spec_version: 116,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -624,7 +624,7 @@ impl_runtime_apis! {
             AttestorModule::attestors_of_geode(geode)
         }
 
-        fn unsigned_attestor_notify_chain(message: [u8; 32], signature_raw_bytes: [u8; 64]) -> Result<(), ()> {
+        fn unsigned_attestor_notify_chain(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> Result<(), ()> {
             AttestorModule::unsigned_attestor_notify_chain(message, signature_raw_bytes)
         }
     }
