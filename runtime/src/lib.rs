@@ -18,7 +18,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 
 use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
-use pallet_geode::Geode;
+use pallet_geode::{Geode, GeodeState};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use sp_api::impl_runtime_apis;
@@ -107,7 +107,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 107,
+    spec_version: 119,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -388,6 +388,7 @@ impl pallet_template::Config for Runtime {
 impl pallet_attestor::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
+    type Call = Call;
 }
 
 impl pallet_geode::Config for Runtime {
@@ -443,7 +444,7 @@ construct_runtime!(
         TemplateModule: pallet_template::{Module, Call, Storage, Event<T>},
         Ethereum: pallet_ethereum::{Module, Call, Storage, Event, Config, ValidateUnsigned},
         Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
-        AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
+        AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>, ValidateUnsigned},
         GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
         LivenessModule: pallet_liveness::{Module, Call, Storage, Event<T>},
     }
@@ -615,8 +616,16 @@ impl_runtime_apis! {
     }
 
     impl apis::AttestorApi<Block> for Runtime {
-        fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>)> {
+        fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>, u32)> {
             AttestorModule::attestor_list()
+        }
+
+        fn geode_attestors(geode: AccountId) -> Vec<(Vec<u8>, Vec<u8>)> {
+            AttestorModule::attestors_of_geode(geode)
+        }
+
+        fn unsigned_attestor_notify_chain(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> Result<(), ()> {
+            AttestorModule::unsigned_attestor_notify_chain(message, signature_raw_bytes)
         }
     }
 
@@ -631,6 +640,10 @@ impl_runtime_apis! {
 
         fn attestor_attested_geodes(attestor: AccountId) -> Vec<Geode<AccountId, Hash>> {
             GeodeModule::attestor_attested_geodes(attestor)
+        }
+
+        fn geode_state(geode: AccountId) -> Option<GeodeState> {
+            GeodeModule::geode_state(geode)
         }
     }
 

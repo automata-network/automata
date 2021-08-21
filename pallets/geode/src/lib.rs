@@ -36,6 +36,10 @@ pub mod pallet {
         Unknown,
         /// When the geode is offline
         Offline,
+        /// When a geode is instantiated but lacking of attestor attesting it
+        DegradedInstantiated,
+        /// Not available
+        Null,
     }
 
     #[derive(PartialEq, Eq, Clone, RuntimeDebug)]
@@ -50,7 +54,7 @@ pub mod pallet {
 
     impl Default for GeodeState {
         fn default() -> Self {
-            GeodeState::Registered
+            GeodeState::Null
         }
     }
 
@@ -124,7 +128,7 @@ pub mod pallet {
         /// parameters. [something, who]
         SomethingStored(u32, T::AccountId),
         /// Geode's state updated
-        GeodeStateUpdate(T::AccountId),
+        GeodeStateUpdate(T::AccountId, GeodeState),
         /// Geode's promise updated
         GeodePromiseUpdate(T::AccountId),
     }
@@ -174,6 +178,16 @@ pub mod pallet {
         StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
 
     #[pallet::storage]
+    #[pallet::getter(fn instantiated_geodes_ids)]
+    pub type InstantiatedGeodes<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn degraded_instantiated_geodes_ids)]
+    pub type DegradedInstantiatedGeodes<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
+
+    #[pallet::storage]
     #[pallet::getter(fn offline_geodes_ids)]
     pub type OfflineGeodes<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
@@ -182,6 +196,11 @@ pub mod pallet {
     #[pallet::getter(fn unknown_geodes_ids)]
     pub type UnknownGeodes<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn geode_update_counters)]
+    pub type GeodeUpdateCounters<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, u32, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -202,7 +221,8 @@ pub mod pallet {
             geode_record.provider = who.clone();
 
             <Geodes<T>>::insert(&geode, &geode_record);
-            <RegisteredGeodes<T>>::insert(&geode, block_number);
+            <RegisteredGeodes<T>>::insert(&geode, &block_number);
+            <GeodeUpdateCounters<T>>::insert(&geode, 0);
 
             ensure!(
                 geode_record.promise == 0 || geode_record.promise > block_number,
@@ -240,6 +260,7 @@ pub mod pallet {
             ensure!(geode_use.provider == who, Error::<T>::NoRight);
             geode_use.props.insert(prop_name, prop_value);
             <Geodes<T>>::insert(&geode, geode_use);
+            <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
             Self::deposit_event(Event::PropsUpdate(geode));
             Ok(().into())
         }
@@ -256,6 +277,7 @@ pub mod pallet {
             ensure!(geode_use.provider == who, Error::<T>::NoRight);
             geode_use.dns = dns;
             <Geodes<T>>::insert(&geode, geode_use);
+            <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
             Self::deposit_event(Event::DnsUpdate(geode));
             Ok(().into())
         }
@@ -306,7 +328,9 @@ pub mod pallet {
             }
 
             geode_use.promise = promise;
-            <Geodes<T>>::insert(&geode, &geode_use);
+
+            <Geodes<T>>::insert(&geode, geode_use);
+            <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
 
             Self::deposit_event(Event::GeodePromiseUpdate(geode));
 
@@ -348,7 +372,9 @@ pub mod pallet {
 
             <OfflineGeodes<T>>::remove(&geode);
 
-            Self::deposit_event(Event::GeodeStateUpdate(geode));
+            <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
+
+            Self::deposit_event(Event::GeodeStateUpdate(geode, GeodeState::Registered));
             Ok(().into())
         }
     }
@@ -387,6 +413,71 @@ pub mod pallet {
             res
         }
 
+        pub fn geode_state(geode: T::AccountId) -> Option<GeodeState> {
+            if <Geodes<T>>::contains_key(&geode) {
+                Some(<Geodes<T>>::get(&geode).state)
+            } else {
+                None
+            }
+        }
+
+        pub fn degrade_geode(geode: &T::AccountId) {
+            let mut geode_record = <Geodes<T>>::get(&geode);
+            let to_state;
+            match geode_record.state {
+                GeodeState::Attested => {
+                    to_state = GeodeState::Registered;
+                    <AttestedGeodes<T>>::remove(&geode);
+                }
+                GeodeState::Instantiated => {
+                    to_state = GeodeState::DegradedInstantiated;
+                    <InstantiatedGeodes<T>>::remove(&geode);
+                }
+                _ => {
+                    return;
+                }
+            }
+            geode_record.state = to_state.clone();
+            <Geodes<T>>::insert(&geode, geode_record);
+            <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
+            let block_number =
+                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            match to_state {
+                GeodeState::Registered => {
+                    <RegisteredGeodes<T>>::insert(&geode, block_number);
+                }
+                GeodeState::DegradedInstantiated => {
+                    <DegradedInstantiatedGeodes<T>>::insert(&geode, block_number);
+                }
+                _ => {}
+            }
+        }
+
+        pub fn reset_degraded_block_num() {
+            let block_number =
+                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            // reset Registered
+            let mut registered_geodes = Vec::new();
+            <RegisteredGeodes<T>>::iter()
+                .map(|(id, _)| {
+                    registered_geodes.push(id);
+                })
+                .all(|_| true);
+            for id in registered_geodes {
+                <RegisteredGeodes<T>>::insert(id, block_number);
+            }
+            // reset DeprecatedInstantiated
+            let mut degraded_instantiated_geodes = Vec::new();
+            <DegradedInstantiatedGeodes<T>>::iter()
+                .map(|(id, _)| {
+                    degraded_instantiated_geodes.push(id);
+                })
+                .all(|_| true);
+            for id in degraded_instantiated_geodes {
+                <DegradedInstantiatedGeodes<T>>::insert(id, block_number);
+            }
+        }
+
         pub fn detach_geode(
             option: DetachOption,
             geode: T::AccountId,
@@ -394,23 +485,32 @@ pub mod pallet {
         ) -> Result<(), Error<T>> {
             if <Geodes<T>>::contains_key(&geode) {
                 let mut geode_use = <Geodes<T>>::get(&geode);
+
                 if let Some(who) = who {
                     ensure!(geode_use.provider == who, Error::<T>::NoRight)
                 }
-                ensure!(
-                    geode_use.state == GeodeState::Registered
-                        || geode_use.state == GeodeState::Attested
-                        || geode_use.state == GeodeState::Unknown,
-                    Error::<T>::InvalidGeodeState
-                );
+
+                let prev_state = geode_use.state.clone();
 
                 let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
 
                 match option {
                     DetachOption::Remove => {
+                        ensure!(
+                            geode_use.state == GeodeState::Registered
+                                || geode_use.state == GeodeState::Attested
+                                || geode_use.state == GeodeState::Unknown,
+                            Error::<T>::InvalidGeodeState
+                        );
                         <Geodes<T>>::remove(&geode);
+                        Self::deposit_event(Event::GeodeRemove(geode.clone()));
                     }
                     DetachOption::Offline => {
+                        ensure!(
+                            geode_use.state == GeodeState::Registered
+                                || geode_use.state == GeodeState::Attested,
+                            Error::<T>::InvalidGeodeState
+                        );
                         geode_use.state = GeodeState::Offline;
                         <Geodes<T>>::insert(&geode, &geode_use);
                         
@@ -418,6 +518,14 @@ pub mod pallet {
                             &geode,
                             &block_number,
                         );
+                        <GeodeUpdateCounters<T>>::insert(
+                            &geode,
+                            <GeodeUpdateCounters<T>>::get(&geode) + 1,
+                        );
+                        Self::deposit_event(Event::GeodeStateUpdate(
+                            geode.clone(),
+                            GeodeState::Offline,
+                        ));
                     }
                     DetachOption::Unknown => {
                         geode_use.state = GeodeState::Unknown;
@@ -426,10 +534,18 @@ pub mod pallet {
                             &geode,
                             &block_number.saturated_into::<BlockNumber>(),
                         );
+                        <GeodeUpdateCounters<T>>::insert(
+                            &geode,
+                            <GeodeUpdateCounters<T>>::get(&geode) + 1,
+                        );
+                        Self::deposit_event(Event::GeodeStateUpdate(
+                            geode.clone(),
+                            GeodeState::Unknown,
+                        ));
                     }
                 }
 
-                match geode_use.state {
+                match prev_state {
                     GeodeState::Registered => {
                         <RegisteredGeodes<T>>::remove(&geode);
                     }
@@ -452,33 +568,134 @@ pub mod pallet {
                     GeodeState::Unknown => {
                         <UnknownGeodes<T>>::remove(&geode);
                     }
+                    GeodeState::Instantiated => {
+                        <InstantiatedGeodes<T>>::remove(&geode);
+                    }
+                    GeodeState::DegradedInstantiated => {
+                        <DegradedInstantiatedGeodes<T>>::remove(&geode);
+                    }
+                    GeodeState::Offline => {
+                        <OfflineGeodes<T>>::remove(&geode);
+                    }
                     _ => {
                         // shouldn't happen
                     }
                 }
 
                 // clean record on attestors
-                if pallet_attestor::GeodeAttestors::<T>::contains_key(&geode) {
-                    for id in pallet_attestor::GeodeAttestors::<T>::get(&geode) {
-                        let mut attestor = pallet_attestor::Attestors::<T>::get(&id);
-                        attestor.geodes.remove(&geode);
-                        pallet_attestor::Attestors::<T>::insert(&id, attestor);
-                    }
-                    pallet_attestor::GeodeAttestors::<T>::remove(&geode);
-                }
+                pallet_attestor::Module::<T>::detach_geode_from_attestors(&geode);
             } else {
                 return Err(Error::<T>::InvalidGeode);
             }
 
-            match option {
-                DetachOption::Remove => {
-                    Self::deposit_event(Event::GeodeRemove(geode));
-                }
-                _ => {
-                    Self::deposit_event(Event::GeodeStateUpdate(geode));
+            Ok(())
+        }
+
+        /// clean all the storage, USE WITH CARE!
+        pub fn clean_storage() {
+            // clean Geodes
+            {
+                let mut geodes = Vec::new();
+                <Geodes<T>>::iter()
+                    .map(|(key, _)| {
+                        geodes.push(key);
+                    })
+                    .all(|_| true);
+                for geode in geodes.iter() {
+                    <Geodes<T>>::remove(geode);
                 }
             }
-            Ok(())
+
+            // clean RegisteredGeodes
+            {
+                let mut registered_geodes = Vec::new();
+                <RegisteredGeodes<T>>::iter()
+                    .map(|(key, _)| {
+                        registered_geodes.push(key);
+                    })
+                    .all(|_| true);
+                for registered_geode in registered_geodes.iter() {
+                    <RegisteredGeodes<T>>::remove(registered_geode);
+                }
+            }
+
+            // clean AttestedGeodes
+            {
+                let mut attested_geodes = Vec::new();
+                <AttestedGeodes<T>>::iter()
+                    .map(|(key, _)| {
+                        attested_geodes.push(key);
+                    })
+                    .all(|_| true);
+                for attested_geode in attested_geodes.iter() {
+                    <AttestedGeodes<T>>::remove(attested_geode);
+                }
+            }
+
+            // clean InstantiatedGeodes
+            {
+                let mut instantiated_geodes = Vec::new();
+                <InstantiatedGeodes<T>>::iter()
+                    .map(|(key, _)| {
+                        instantiated_geodes.push(key);
+                    })
+                    .all(|_| true);
+                for instantiated_geode in instantiated_geodes.iter() {
+                    <InstantiatedGeodes<T>>::remove(instantiated_geode);
+                }
+            }
+
+            // clean DegradedInstantiatedGeodes
+            {
+                let mut degraded_instantiated_geodes = Vec::new();
+                <DegradedInstantiatedGeodes<T>>::iter()
+                    .map(|(key, _)| {
+                        degraded_instantiated_geodes.push(key);
+                    })
+                    .all(|_| true);
+                for degraded_instantiated_geode in degraded_instantiated_geodes.iter() {
+                    <DegradedInstantiatedGeodes<T>>::remove(degraded_instantiated_geode);
+                }
+            }
+
+            // clean OfflineGeodes
+            {
+                let mut offline_geodes = Vec::new();
+                <OfflineGeodes<T>>::iter()
+                    .map(|(key, _)| {
+                        offline_geodes.push(key);
+                    })
+                    .all(|_| true);
+                for offline_geode in offline_geodes.iter() {
+                    <OfflineGeodes<T>>::remove(offline_geode);
+                }
+            }
+
+            // clean UnknownGeodes
+            {
+                let mut unknown_geodes = Vec::new();
+                <UnknownGeodes<T>>::iter()
+                    .map(|(key, _)| {
+                        unknown_geodes.push(key);
+                    })
+                    .all(|_| true);
+                for unknown_geode in unknown_geodes.iter() {
+                    <UnknownGeodes<T>>::remove(unknown_geode);
+                }
+            }
+
+            // clean GeodeUpdateCounters
+            {
+                let mut geode_update_counters = Vec::new();
+                <GeodeUpdateCounters<T>>::iter()
+                    .map(|(key, _)| {
+                        geode_update_counters.push(key);
+                    })
+                    .all(|_| true);
+                for geode_update_counter in geode_update_counters.iter() {
+                    <GeodeUpdateCounters<T>>::remove(geode_update_counter);
+                }
+            }
         }
     }
 }
