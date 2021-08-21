@@ -113,8 +113,6 @@ pub mod pallet {
         /// Event documentation should end with an array that provides descriptive names for event
         /// parameters. [something, who]
         SomethingStored(u32, T::AccountId),
-        /// Attestor notified chain
-        Notified(T::AccountId),
     }
 
     // Errors inform users that something went wrong.
@@ -257,7 +255,6 @@ pub mod pallet {
                 <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
             <AttestorLastNotify<T>>::insert(&acc, block_number);
 
-            Self::deposit_event(Event::Notified(acc));
             Ok(().into())
         }
 
