@@ -113,8 +113,6 @@ pub mod pallet {
         /// Event documentation should end with an array that provides descriptive names for event
         /// parameters. [something, who]
         SomethingStored(u32, T::AccountId),
-        /// Attestor notified chain
-        Notified(T::AccountId),
     }
 
     // Errors inform users that something went wrong.
@@ -137,7 +135,6 @@ pub mod pallet {
                 Call::attestor_notify_chain(message, signature_raw_bytes) => {
                     // validate inputs
                     if message.len() < 32 {
-                        debug::info!("message invalid!");
                         return InvalidTransaction::Call.into();
                     }
 
@@ -149,13 +146,11 @@ pub mod pallet {
 
                     #[cfg(feature = "full_crypto")]
                     if !Sr25519Pair::verify(&signature, message, &pubkey) {
-                        debug::info!("signature valid!");
                         return InvalidTransaction::Call.into();
                     }
 
                     let acc = T::AccountId::decode(&mut &attestor[..]).unwrap_or_default();
                     if !<Attestors<T>>::contains_key(acc) {
-                        debug::info!("Not from attestor!");
                         return InvalidTransaction::Call.into();
                     }
 
@@ -257,7 +252,6 @@ pub mod pallet {
                 <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
             <AttestorLastNotify<T>>::insert(&acc, block_number);
 
-            Self::deposit_event(Event::Notified(acc));
             Ok(().into())
         }
 
