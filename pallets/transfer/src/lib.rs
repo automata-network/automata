@@ -70,15 +70,6 @@ pub mod pallet {
         type Call = Call<T>;
 
         fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-            let valid_tx = |provide| {
-                ValidTransaction::with_tag_prefix("Automata/evm/transfer")
-                    .priority(UNSIGNED_TXS_PRIORITY)
-                    .and_provides([&provide])
-                    .longevity(3)
-                    .propagate(true)
-                    .build()
-            };
-
             match call {
                 Call::transfer_from_evm_account(ref message, ref signature_raw_bytes) => {
                     if message.len() != 72 {
@@ -127,7 +118,12 @@ pub mod pallet {
                         return InvalidTransaction::Custom(4u8).into();
                     }
 
-                    valid_tx(b"submit_number_unsigned".to_vec())
+                    ValidTransaction::with_tag_prefix("Automata/evm/substrate/transfer")
+                        .priority(UNSIGNED_TXS_PRIORITY)
+                        .and_provides((source_address, nonce))
+                        .longevity(3)
+                        .propagate(true)
+                        .build()
                 }
                 _ => InvalidTransaction::Call.into(),
             }
