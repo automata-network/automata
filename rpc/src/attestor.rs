@@ -95,7 +95,7 @@ where
         }
 
         let mut attestor = [0u8; 32];
-        attestor.copy_from_slice(&attestor_notify[0..32]); 
+        attestor.copy_from_slice(&attestor_notify[0..32]);
 
         let signature_raw_bytes_64;
         if signature_raw_bytes.len() == 64 {
