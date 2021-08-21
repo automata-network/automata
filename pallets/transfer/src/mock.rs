@@ -71,6 +71,14 @@ impl pallet_balances::Config for Test {
     type WeightInfo = ();
 }
 
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Test
+where
+    Call: From<C>,
+{
+    type Extrinsic = UncheckedExtrinsic;
+    type OverarchingCall = Call;
+}
+
 impl transfer::Config for Test {
     type Event = Event;
     type Currency = Balances;
