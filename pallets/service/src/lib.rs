@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![feature(map_first_last)]
 
 pub use pallet::*;
 
@@ -11,9 +12,13 @@ pub mod pallet {
     use primitives::{BlockNumber, OrderNumber};
     use sp_core::H256;
     use sp_runtime::{RuntimeDebug, SaturatedConversion};
-    use sp_std::{collections::btree_map::BTreeMap, prelude::*};
+
+    use sp_std::{prelude::*};
     use sha2::{Sha256, Digest};
     use frame_support::ensure;
+
+    // #![map_first_last]
+    use sp_std::collections::btree_map::BTreeMap;
 
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
@@ -95,17 +100,39 @@ pub mod pallet {
         // /// 1. At every block, check if there is any pending service order and dispatch a geode for it
         fn on_initialize(block_number: T::BlockNumber) -> Weight {
             if let Ok(_now) = TryInto::<BlockNumber>::try_into(block_number) {
+                // load all the promised geodes into memory
+                let mut avail_geodes = BTreeMap::<T::BlockNumber, Vec<T::AccountId>>::new();
+                // let mut avail_promises = Vec::<T::BlockNumber>::new();
+                let mut updated_geodes = BTreeMap::<T::BlockNumber, Vec<T::AccountId>>::new();
+                pallet_geode::PromisedGeodes::<T>::iter().map(|(promise, geodes)| {
+                    avail_geodes.insert(promise.clone().into(), geodes);
+                }).all(|_| true);
+
                 <PendingServicesQueue<T>>::iter()
-                    .map(|(count, order_id)| {
+                    .map(|(_count, order_id)| {
                         let order = <Orders<T>>::get(order_id);
+                        
                         match order.duration {
                             Some(d) => {
-
+                                
                             },
                             None => {
-                                let geodes = pallet_geode::PromisedGeodes::<T>::get(0);
-                                // querying geode for dispatching
+                                let mut geode = T::AccountId::default();
+                                if avail_geodes.contains_key(&0u32.into()) {
+                                    geode = avail_geodes.get_mut(&0u32.into()).unwrap().remove(0);
 
+                                    updated_geodes.insert(0u32.into(), avail_geodes.get(&0u32.into()).unwrap().clone());
+
+                                    if avail_geodes.get(&0u32.into()).unwrap().is_empty() {
+                                        avail_geodes.remove(&0u32.into());
+                                    }
+                                } else {
+                                    if let Some(mut entry) = avail_geodes.last_key_value() {
+
+                                    }
+                                }
+
+                                Self::deposit_event(Event::ServiceQueriedGeode(geode, order_id));
                             }
                         };
                     })
@@ -134,7 +161,7 @@ pub mod pallet {
         /// Service gets completed. \[service_hash\]
         ServiceCompleted(T::Hash),
         /// Service query geode for dispatching. \[geode_id, service_hash\]
-        ServiceQueriedGeode(T::AccountId, T::Hash)
+        ServiceQueriedGeode(T::AccountId, T::Hash),
     }
 
     #[pallet::error]
@@ -174,6 +201,11 @@ pub mod pallet {
     #[pallet::getter(fn services)]
     pub type Services<T: Config> =
         StorageMap<_, Blake2_128Concat, T::Hash, ServiceOf<T>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn pending_dispatch)]
+    pub type PendingDispatches<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, T::Hash, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn pending_services_queue)]

@@ -1,5 +1,7 @@
 use crate::{mock::*, Attestor};
 use frame_support::assert_ok;
+use hex_literal::hex;
+use primitives::AccountId;
 
 #[test]
 fn it_works_for_attestor_register() {
@@ -45,6 +47,15 @@ fn it_works_for_attestor_register() {
         // check the balance
         let attestor_balance = Balances::free_balance(attestor_account);
         assert_eq!(attestor_balance, INIT_BALANCE - min_stake);
+    });
+}
+
+#[test]
+fn get_ss58_address_from_pubkey() {
+    new_test_ext().execute_with(|| {
+        let binary: [u8; 32] = hex!["be7604b40c9eabbfdf62f2041a8b40e160799919e06c6395cda43083c9453b7b"].into();
+        let addr: AccountId = binary.into();
+        println!("{:?}", addr);
     });
 }
 

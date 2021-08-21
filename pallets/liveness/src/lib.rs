@@ -281,8 +281,7 @@ pub mod pallet {
 
             // first attestor attesting this geode
             if geode_record.state == pallet_geode::GeodeState::Registered
-                && attestors.len() >= ATTESTOR_REQUIRE
-            {
+                && attestors.len() >= ATTESTOR_REQUIRE {
                 // update pallet_geode::Geodes
                 geode_record.state = pallet_geode::GeodeState::Attested;
                 pallet_geode::Geodes::<T>::insert(&geode, &geode_record);

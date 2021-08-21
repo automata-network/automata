@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![feature(map_first_last)]
 
 pub use pallet::*;
 
