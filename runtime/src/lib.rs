@@ -128,6 +128,9 @@ pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
+pub const YEARS: BlockNumber = DAYS * 365;
+pub const FIVE_YEARS: BlockNumber = YEARS * 5;
+pub const ConstSlotLength: BlockNumber = 10;
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -390,6 +393,9 @@ parameter_types! {
     pub const AttestorStakingAmount: Balance = 1 * CENTS;
     pub const AttestorTotalReward: Balance = 1 * CENTS;
     pub const BasicRewardRatio: u8 = 20_u8;
+    pub const SlotLength: BlockNumber = ConstSlotLength;
+    /// Reward attestor for 5 years
+    pub const RewardEachSlot: Balance = 500_000_000 * DOLLARS * (ConstSlotLength as u128) / (FIVE_YEARS as u128);
 }
 
 impl pallet_accounting::Config for Runtime {
@@ -398,6 +404,8 @@ impl pallet_accounting::Config for Runtime {
     type AttestorStakingAmount = AttestorStakingAmount;
     type AttestorTotalReward =  AttestorTotalReward;
     type BasicRewardRatio = BasicRewardRatio;
+    type SlotLength = SlotLength;
+    type RewardEachSlot = RewardEachSlot;
 }
 
 impl pallet_attestor::Config for Runtime {

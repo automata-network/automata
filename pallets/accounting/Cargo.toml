@@ -19,6 +19,7 @@ frame-benchmarking = { default-features = false, optional = true, version = '3.1
 sp-std = {version  = "3.0.0", default-features = false }
 
 automata-runtime-traits = { path = "../../runtime/traits", default-features = false}
+pallet-attestor = { path = "../attestor", default-features = false}
 
 [dev-dependencies]
 serde = { version = "1.0.119" }
@@ -36,4 +37,5 @@ std = [
 	'frame-benchmarking/std',
 	'sp-std/std',
 	'automata-runtime-traits/std',
+	'pallet-attestor/std',
 ]

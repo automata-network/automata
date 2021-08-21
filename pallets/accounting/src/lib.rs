@@ -17,13 +17,14 @@ pub mod pallet {
     use sp_std::prelude::*;
 
     use automata_runtime_traits::AttestorAccounting;
+    use pallet_attestor;
 
     type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: frame_system::Config + pallet_attestor::Config {
         /// Because this pallet emits events, it depends on the runtime's definition of an event.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         /// The currency in which fees are paid and contract balances are held.
@@ -37,11 +38,23 @@ pub mod pallet {
 
         /// The percentage as basic reward, (100 - BasicRewardRatio) as commission
         type BasicRewardRatio: Get<u8>;
+
+        /// The slot length
+        type SlotLength: Get<Self::BlockNumber>;
+
+        /// The reward for each slot
+        type RewardEachSlot: Get<BalanceOf<Self>>;
+
     }
 
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);
+
+    #[pallet::storage]
+    #[pallet::getter(fn total_distributed_reward)]
+    pub type TotalDistributedReward<T: Config> =
+        StorageValue<_, BalanceOf<T>>;
 
     // The pallet's runtime storage items.
     #[pallet::storage]
@@ -63,7 +76,12 @@ pub mod pallet {
     }
 
     #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(block_number: T::BlockNumber) -> Weight {
+            let attestors = <pallet_attestor::Pallet<T>>::get_all_attestors();
+			1000
+		}
+    }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -88,7 +106,7 @@ pub mod pallet {
         type AccountId = <T as frame_system::Config>::AccountId;
         // type Currency = T::Currency;
         fn attestor_staking(who: T::AccountId) -> DispatchResultWithPostInfo {
-            T::Currency::reserve(&who, T::AttestorStakingAmount::get())?;
+            <T as Config>::Currency::reserve(&who, T::AttestorStakingAmount::get())?;
             Ok(().into())
         }
     }
