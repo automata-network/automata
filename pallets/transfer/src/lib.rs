@@ -118,6 +118,7 @@ pub mod pallet {
                         return InvalidTransaction::Custom(4u8).into();
                     }
 
+                    //do not need `and_requires` because we have already checked nonce
                     ValidTransaction::with_tag_prefix("Automata/evm/substrate/transfer")
                         .priority(UNSIGNED_TXS_PRIORITY)
                         .and_provides((source_address, nonce))
