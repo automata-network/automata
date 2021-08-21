@@ -153,7 +153,7 @@ pub mod pallet {
         fn on_initialize(block_number: T::BlockNumber) -> Weight {
             if let Ok(now) = TryInto::<BlockNumber>::try_into(block_number) {
                 // check is there a need to cancel degrade mode
-                if !<DegradeMode<T>>::get()
+                if <DegradeMode<T>>::get()
                     && pallet_attestor::AttestorNum::<T>::get() >= <MinAttestorNum<T>>::get()
                 {
                     // reset all the start block num for degraded geode
