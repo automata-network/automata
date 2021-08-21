@@ -133,15 +133,6 @@ pub mod pallet {
         type Call = Call<T>;
 
         fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-            let valid_txn = |provide| {
-                ValidTransaction::with_tag_prefix("Automata/AttestorModule/attestor_notify_chain")
-                    .priority(UNSIGNED_TXS_PRIORITY)
-                    .and_provides([&provide])
-                    .longevity(3)
-                    .propagate(true)
-                    .build()
-            };
-
             match call {
                 Call::attestor_notify_chain(message, signature_raw_bytes) => {
                     // validate inputs
@@ -149,15 +140,15 @@ pub mod pallet {
                         debug::info!("message invalid!");
                         return InvalidTransaction::Call.into();
                     }
-            
+
                     let mut attestor = [0u8; 32];
-                    attestor.copy_from_slice(&message[0..32]); 
+                    attestor.copy_from_slice(&message[0..32]);
 
                     let pubkey = Public::from_raw(attestor.clone());
                     let signature = Signature::from_raw(signature_raw_bytes.clone());
 
                     #[cfg(feature = "full_crypto")]
-                    if !Sr25519Pair::verify(&signature, message.clone(), &pubkey) {
+                    if !Sr25519Pair::verify(&signature, message, &pubkey) {
                         debug::info!("signature valid!");
                         return InvalidTransaction::Call.into();
                     }
@@ -168,7 +159,16 @@ pub mod pallet {
                         return InvalidTransaction::Call.into();
                     }
 
-                    valid_txn(b"submit_number_unsigned".to_vec())
+                    ValidTransaction::with_tag_prefix("Automata/attestor/notify")
+                        .priority(UNSIGNED_TXS_PRIORITY)
+                        .and_provides((
+                            attestor,
+                            <frame_system::Module<T>>::block_number()
+                                .saturated_into::<BlockNumber>(),
+                        ))
+                        .longevity(3)
+                        .propagate(true)
+                        .build()
                 }
                 _ => InvalidTransaction::Call.into(),
             }
@@ -233,19 +233,19 @@ pub mod pallet {
             signature_raw_bytes: [u8; 64],
         ) -> DispatchResultWithPostInfo {
             // validate inputs
-            ensure!(
-                message.len() >= 32,
-                Error::<T>::InvalidNotification
-            );
+            ensure!(message.len() >= 32, Error::<T>::InvalidNotification);
 
             let mut attestor = [0u8; 32];
-            attestor.copy_from_slice(&message[0..32]); 
+            attestor.copy_from_slice(&message[0..32]);
 
             let pubkey = Public::from_raw(attestor.clone());
             let signature = Signature::from_raw(signature_raw_bytes.clone());
 
             #[cfg(feature = "full_crypto")]
-            ensure!(Sr25519Pair::verify(&signature, message.clone(), &pubkey), Error::<T>::InvalidNotification);
+            ensure!(
+                Sr25519Pair::verify(&signature, message, &pubkey),
+                Error::<T>::InvalidNotification
+            );
 
             let acc = T::AccountId::decode(&mut &attestor[..]).unwrap_or_default();
             ensure!(

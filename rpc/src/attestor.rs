@@ -95,7 +95,7 @@ where
         }
 
         let mut attestor = [0u8; 32];
-        attestor.copy_from_slice(&attestor_notify[0..32]); 
+        attestor.copy_from_slice(&attestor_notify[0..32]);
 
         let signature_raw_bytes_64;
         if signature_raw_bytes.len() == 64 {
@@ -110,9 +110,9 @@ where
         }
 
         // validate inputs
-        let pubkey = Public::from_raw(attestor.clone());
+        let pubkey = Public::from_raw(attestor);
         let signature = Signature::from_raw(signature_raw_bytes_64.clone());
-        if !Sr25519Pair::verify(&signature, &attestor, &pubkey) {
+        if !Sr25519Pair::verify(&signature, &attestor_notify, &pubkey) {
             return Err(Error {
                 code: ErrorCode::ServerError(RUNTIME_ERROR),
                 message: "signature invalid.".into(),
