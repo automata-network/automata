@@ -153,74 +153,56 @@ pub mod pallet {
         fn on_initialize(block_number: T::BlockNumber) -> Weight {
             if let Ok(now) = TryInto::<BlockNumber>::try_into(block_number) {
                 // check is there a need to cancel degrade mode
-                if <DegradeMode<T>>::get()
-                    && pallet_attestor::AttestorNum::<T>::get() >= <MinAttestorNum<T>>::get()
                 {
-                    // reset all the start block num for degraded geode
-                    <pallet_geode::Module<T>>::reset_degraded_block_num();
-                    <DegradeMode<T>>::put(false);
+                    if <DegradeMode<T>>::get()
+                        && pallet_attestor::AttestorNum::<T>::get() >= <MinAttestorNum<T>>::get()
+                    {
+                        // reset all the start block num for degraded geode
+                        <pallet_geode::Module<T>>::reset_degraded_block_num();
+                        <DegradeMode<T>>::put(false);
+                    }
                 }
 
                 // clean expired reports
-                let mut expired = Vec::<(T::AccountId, u8)>::new();
-                <Reports<T>>::iter()
-                    .map(|(key, report)| {
-                        if report.start + REPORT_EXPIRY_BLOCK_NUMBER < now {
-                            expired.push(key);
-                        }
-                    })
-                    .all(|_| true);
-                for key in expired {
-                    <Reports<T>>::remove(key);
+                {
+                    let mut expired = Vec::<(T::AccountId, u8)>::new();
+                    <Reports<T>>::iter()
+                        .map(|(key, report)| {
+                            if report.start + REPORT_EXPIRY_BLOCK_NUMBER < now {
+                                expired.push(key);
+                            }
+                        })
+                        .all(|_| true);
+                    for key in expired {
+                        <Reports<T>>::remove(key);
+                    }
                 }
 
                 // clean expired geodes
-                let mut expired_geodes = Vec::<T::AccountId>::new();
-                if !<DegradeMode<T>>::get() {
-                    pallet_geode::RegisteredGeodes::<T>::iter()
+                {
+                    let mut expired_geodes = Vec::<T::AccountId>::new();
+                    if !<DegradeMode<T>>::get() {
+                        pallet_geode::RegisteredGeodes::<T>::iter()
+                            .map(|(key, start)| {
+                                if start + ATTESTATION_EXPIRY_BLOCK_NUMBER < now {
+                                    expired_geodes.push(key);
+                                }
+                            })
+                            .all(|_| true);
+                    }
+
+                    // clean expired unknown geode
+                    pallet_geode::UnknownGeodes::<T>::iter()
                         .map(|(key, start)| {
-                            if start + ATTESTATION_EXPIRY_BLOCK_NUMBER < now {
+                            if start + UNKNOWN_EXPIRY_BLOCK_NUMBER < now {
                                 expired_geodes.push(key);
                             }
                         })
                         .all(|_| true);
-                }
 
-                // clean expired unknown geode
-                pallet_geode::UnknownGeodes::<T>::iter()
-                    .map(|(key, start)| {
-                        if start + UNKNOWN_EXPIRY_BLOCK_NUMBER < now {
-                            expired_geodes.push(key);
-                        }
-                    })
-                    .all(|_| true);
-
-                for key in expired_geodes {
-                    <pallet_geode::Module<T>>::detach_geode(
-                        pallet_geode::DetachOption::Remove,
-                        key,
-                        None,
-                    )
-                    .map_err(|e| {
-                        debug!("{:?}", e);
-                    })
-                    .ok();
-                }
-
-                // detach DegradedInstantiated geodes
-                if !<DegradeMode<T>>::get() {
-                    let mut expired_degraded_geodes = Vec::<T::AccountId>::new();
-                    pallet_geode::DegradedInstantiatedGeodes::<T>::iter()
-                        .map(|(key, start)| {
-                            if start + DEGRADED_INSTANTIATED_EXPIRY_BLOCK_NUMBER < now {
-                                expired_degraded_geodes.push(key);
-                            }
-                        })
-                        .all(|_| true);
-
-                    for key in expired_degraded_geodes {
+                    for key in expired_geodes {
                         <pallet_geode::Module<T>>::detach_geode(
-                            pallet_geode::DetachOption::Unknown,
+                            pallet_geode::DetachOption::Remove,
                             key,
                             None,
                         )
@@ -231,18 +213,46 @@ pub mod pallet {
                     }
                 }
 
-                // clean expired attestors
-                let mut expired_attestors = Vec::<T::AccountId>::new();
-                pallet_attestor::AttestorLastNotify::<T>::iter()
-                    .map(|(key, notify)| {
-                        if notify + ATTESTOR_NOTIFY_TIMEOUT_BLOCK_NUMBER < now {
-                            expired_attestors.push(key);
-                        }
-                    })
-                    .all(|_| true);
+                // detach DegradedInstantiated geodes
+                {
+                    if !<DegradeMode<T>>::get() {
+                        let mut expired_degraded_geodes = Vec::<T::AccountId>::new();
+                        pallet_geode::DegradedInstantiatedGeodes::<T>::iter()
+                            .map(|(key, start)| {
+                                if start + DEGRADED_INSTANTIATED_EXPIRY_BLOCK_NUMBER < now {
+                                    expired_degraded_geodes.push(key);
+                                }
+                            })
+                            .all(|_| true);
 
-                for key in expired_attestors {
-                    Self::do_attestor_exit(&key);
+                        for key in expired_degraded_geodes {
+                            <pallet_geode::Module<T>>::detach_geode(
+                                pallet_geode::DetachOption::Unknown,
+                                key,
+                                None,
+                            )
+                            .map_err(|e| {
+                                debug!("{:?}", e);
+                            })
+                            .ok();
+                        }
+                    }
+                }
+
+                // clean expired attestors
+                {
+                    let mut expired_attestors = Vec::<T::AccountId>::new();
+                    pallet_attestor::AttestorLastNotify::<T>::iter()
+                        .map(|(key, notify)| {
+                            if notify + ATTESTOR_NOTIFY_TIMEOUT_BLOCK_NUMBER < now {
+                                expired_attestors.push(key);
+                            }
+                        })
+                        .all(|_| true);
+
+                    for key in expired_attestors {
+                        Self::do_attestor_exit(&key);
+                    }
                 }
             }
             0
@@ -288,7 +298,8 @@ pub mod pallet {
                 report.attestors.insert(who.clone());
             } else {
                 report.attestors.insert(who.clone());
-                let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+                let block_number =
+                    <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
                 report.start = block_number;
             }
 
@@ -365,14 +376,13 @@ pub mod pallet {
                 pallet_geode::RegisteredGeodes::<T>::remove(&geode);
 
                 // move into pallet_geode::AttestedGeodes
-                let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
-                pallet_geode::AttestedGeodes::<T>::insert(
-                    &geode,
-                    block_number,
-                );
+                let block_number =
+                    <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+                pallet_geode::AttestedGeodes::<T>::insert(&geode, block_number);
 
                 // move into the PromisedGeodes for queueing for job
-                let mut promised_geodes = pallet_geode::PromisedGeodes::<T>::get(&geode_record.promise);
+                let mut promised_geodes =
+                    pallet_geode::PromisedGeodes::<T>::get(&geode_record.promise);
                 promised_geodes.push(geode.clone());
                 pallet_geode::PromisedGeodes::<T>::insert(geode_record.promise, &promised_geodes);
             }

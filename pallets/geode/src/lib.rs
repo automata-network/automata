@@ -10,8 +10,8 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use core::convert::{TryInto};
     use codec::{Decode, Encode};
+    use core::convert::TryInto;
     use frame_support::ensure;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
@@ -216,7 +216,8 @@ pub mod pallet {
             let geode = geode_record.id.clone();
             ensure!(!<Geodes<T>>::contains_key(&geode), Error::<T>::AlreadyGeode);
 
-            let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            let block_number =
+                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
             geode_record.state = GeodeState::Registered;
             geode_record.provider = who.clone();
 
@@ -291,15 +292,19 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let mut geode_use = <Geodes<T>>::get(&geode);
-            ensure!(geode_use.provider == who, Error::<T>::NoRight); 
-            let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            ensure!(geode_use.provider == who, Error::<T>::NoRight);
+            let block_number =
+                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
             ensure!(
                 promise == 0 || promise > block_number,
                 Error::<T>::InvalidPromise
             );
             // if the geode is instantiated, only extension is allowed
             if geode_use.state == GeodeState::Instantiated {
-                ensure!((geode_use.promise != 0 && promise > geode_use.promise) || promise == 0, Error::<T>::InvalidPromise);
+                ensure!(
+                    (geode_use.promise != 0 && promise > geode_use.promise) || promise == 0,
+                    Error::<T>::InvalidPromise
+                );
             }
 
             // change PromisedGeodes record if there is
@@ -310,7 +315,7 @@ pub mod pallet {
                     if let Some(pos) = geodes.iter().position(|x| *x == geode) {
                         geodes.remove(pos);
                     }
-                    
+
                     if geodes.is_empty() {
                         <PromisedGeodes<T>>::remove(&geode_use.promise);
                     } else {
@@ -367,7 +372,8 @@ pub mod pallet {
             geode_use.state = GeodeState::Registered;
             <Geodes<T>>::insert(&geode, &geode_use);
 
-            let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            let block_number =
+                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
             <RegisteredGeodes<T>>::insert(&geode, block_number);
 
             <OfflineGeodes<T>>::remove(&geode);
@@ -492,7 +498,8 @@ pub mod pallet {
 
                 let prev_state = geode_use.state.clone();
 
-                let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+                let block_number =
+                    <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
 
                 match option {
                     DetachOption::Remove => {
@@ -513,11 +520,8 @@ pub mod pallet {
                         );
                         geode_use.state = GeodeState::Offline;
                         <Geodes<T>>::insert(&geode, &geode_use);
-                        
-                        <OfflineGeodes<T>>::insert(
-                            &geode,
-                            &block_number,
-                        );
+
+                        <OfflineGeodes<T>>::insert(&geode, &block_number);
                         <GeodeUpdateCounters<T>>::insert(
                             &geode,
                             <GeodeUpdateCounters<T>>::get(&geode) + 1,
@@ -557,7 +561,7 @@ pub mod pallet {
                             if let Some(pos) = geodes.iter().position(|x| *x == geode) {
                                 geodes.remove(pos);
                             }
-                            
+
                             if geodes.is_empty() {
                                 <PromisedGeodes<T>>::remove(&geode_use.promise);
                             } else {

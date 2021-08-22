@@ -5,17 +5,17 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use core::convert::{TryInto};
     use codec::{Decode, Encode};
+    use core::convert::TryInto;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use primitives::{BlockNumber, OrderNumber};
     use sp_core::H256;
     use sp_runtime::{RuntimeDebug, SaturatedConversion};
 
-    use sp_std::{prelude::*};
-    use sha2::{Sha256, Digest};
-    use frame_support::ensure;
+    use frame_support::{debug::native::debug, ensure};
+    use sha2::{Digest, Sha256};
+    use sp_std::prelude::*;
 
     // #![map_first_last]
     use sp_std::collections::btree_map::BTreeMap;
@@ -24,6 +24,7 @@ pub mod pallet {
     use serde::{Deserialize, Serialize};
 
     pub const SLOT_LENGTH: BlockNumber = 40;
+    pub const DISPATCH_CONFIRMATION_TIMEOUT: BlockNumber = 12;
 
     /// The service order struct proposed by the user
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -47,7 +48,7 @@ pub mod pallet {
     pub enum ServiceState {
         /// The init state when a service is created.
         Pending,
-        /// When the service get dispatched with a geode.
+        /// When the service get confirmed of dispatching with a geode.
         Dispatched,
         /// When the service is being serviced by the geode.
         Online,
@@ -97,46 +98,137 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        // /// 1. At every block, check if there is any pending service order and dispatch a geode for it
         fn on_initialize(block_number: T::BlockNumber) -> Weight {
-            if let Ok(_now) = TryInto::<BlockNumber>::try_into(block_number) {
-                // load all the promised geodes into memory
-                let mut avail_geodes = BTreeMap::<T::BlockNumber, Vec<T::AccountId>>::new();
-                // let mut avail_promises = Vec::<T::BlockNumber>::new();
-                let mut updated_geodes = BTreeMap::<T::BlockNumber, Vec<T::AccountId>>::new();
-                pallet_geode::PromisedGeodes::<T>::iter().map(|(promise, geodes)| {
-                    avail_geodes.insert(promise.clone().into(), geodes);
-                }).all(|_| true);
+            if let Ok(now) = TryInto::<BlockNumber>::try_into(block_number) {
+                // process pending service orders
+                {
+                    // load all the promised geodes into memory
+                    let mut avail_geodes = BTreeMap::<BlockNumber, Vec<T::AccountId>>::new();
+                    // let mut avail_promises = Vec::<T::BlockNumber>::new();
+                    let mut updated_geodes = BTreeMap::<BlockNumber, Vec<T::AccountId>>::new();
+                    pallet_geode::PromisedGeodes::<T>::iter()
+                        .map(|(promise, geodes)| {
+                            avail_geodes.insert(promise.clone().into(), geodes);
+                        })
+                        .all(|_| true);
 
-                <PendingServicesQueue<T>>::iter()
-                    .map(|(_count, order_id)| {
+                    let mut processed_services = Vec::<u32>::new();
+                    for (count, order_id) in <PendingServicesQueue<T>>::iter() {
+                        if avail_geodes.is_empty() {
+                            break;
+                        }
+
                         let order = <Orders<T>>::get(order_id);
-                        
+
+                        let geode;
+                        // select a geode
                         match order.duration {
                             Some(d) => {
-                                
-                            },
+                                let promise;
+                                if let Some(entry) = avail_geodes.range(d..).next() {
+                                    // try to find the smallest larger geode
+                                    promise = entry.0.to_owned();
+                                } else if let Some(entry) = avail_geodes.range(..d).last() {
+                                    // else find the largest smaller geode
+                                    promise = entry.0.to_owned();
+                                } else {
+                                    break;
+                                }
+
+                                geode = avail_geodes.get_mut(&promise).unwrap().remove(0);
+                                updated_geodes.insert(
+                                    promise.clone(),
+                                    avail_geodes.get(&promise).unwrap().clone(),
+                                );
+
+                                if avail_geodes.get(&promise).unwrap().is_empty() {
+                                    avail_geodes.remove(&promise);
+                                }
+                            }
                             None => {
-                                let mut geode = T::AccountId::default();
+                                // try to find an unlimited geode
+                                // otherwise find one from the largest promise
                                 if avail_geodes.contains_key(&0u32.into()) {
                                     geode = avail_geodes.get_mut(&0u32.into()).unwrap().remove(0);
 
-                                    updated_geodes.insert(0u32.into(), avail_geodes.get(&0u32.into()).unwrap().clone());
+                                    updated_geodes.insert(
+                                        0u32.into(),
+                                        avail_geodes.get(&0u32.into()).unwrap().clone(),
+                                    );
 
                                     if avail_geodes.get(&0u32.into()).unwrap().is_empty() {
                                         avail_geodes.remove(&0u32.into());
                                     }
                                 } else {
-                                    if let Some(mut entry) = avail_geodes.last_key_value() {
+                                    let promise;
+                                    if let Some(entry) = avail_geodes.last_key_value() {
+                                        promise = entry.0.to_owned();
+                                    } else {
+                                        break;
+                                    }
 
+                                    geode = avail_geodes.get_mut(&promise).unwrap().remove(0);
+                                    updated_geodes.insert(
+                                        promise.clone(),
+                                        avail_geodes.get(&promise).unwrap().clone(),
+                                    );
+
+                                    if avail_geodes.get(&promise).unwrap().is_empty() {
+                                        avail_geodes.remove(&promise);
                                     }
                                 }
-
-                                Self::deposit_event(Event::ServiceQueriedGeode(geode, order_id));
                             }
-                        };
-                    })
-                    .all(|_| true);
+                        }
+
+                        // add to PendingDispatches
+                        <PendingDispatches<T>>::insert(&geode, (&order_id, &now, &count));
+                        // remove from PendingServicesQueue
+                        processed_services.push(count);
+
+                        Self::deposit_event(Event::ServiceQueriedGeode(geode, order_id));
+                    }
+                    // handling the updated geode maps
+                    for (p, v) in updated_geodes.iter() {
+                        if v.is_empty() {
+                            pallet_geode::PromisedGeodes::<T>::remove(p);
+                        } else {
+                            pallet_geode::PromisedGeodes::<T>::insert(p, v);
+                        }
+                    }
+                    // remove processed services from PendingServicesQueue
+                    for p in processed_services.iter() {
+                        <PendingServicesQueue<T>>::remove(p);
+                    }
+                }
+
+                // process expired pending dispatches
+                {
+                    let mut expired = Vec::<T::AccountId>::new();
+                    for (geode, (order_id, block_num, count)) in <PendingDispatches<T>>::iter() {
+                        if block_num + DISPATCH_CONFIRMATION_TIMEOUT < now {
+                            // put the order back to PendingServicesQueue
+                            <PendingServicesQueue<T>>::insert(count, &order_id);
+                            // slash geode to unknown state
+                            <pallet_geode::Module<T>>::detach_geode(
+                                pallet_geode::DetachOption::Unknown,
+                                geode.clone(),
+                                None,
+                            )
+                            .map_err(|e| {
+                                debug!("{:?}", e);
+                            })
+                            .ok();
+                            // clean from PendingDispatches
+                            expired.push(geode);
+
+                            Self::deposit_event(Event::ServiceStartPending(order_id));
+                        }
+                    }
+                    // process expired
+                    for p in expired.iter() {
+                        <PendingDispatches<T>>::remove(p);
+                    }
+                }
             }
             0
         }
@@ -148,10 +240,12 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// User created service. \[user_id, service_hash\]
         ServiceCreated(T::AccountId, T::Hash),
+        /// Service added to pending list
+        ServiceStartPending(T::Hash),
         /// Service removed. \[service_hash\]
         ServiceRemoved(T::Hash),
         /// Service dispatched to geode. \[service_hash, geode_id\]
-        ServiceDispatched(T::Hash, T::AccountId),
+        ServiceConfirmedDispatched(T::Hash, T::AccountId),
         /// Service turns online. \[service_hash\]
         ServiceOnline(T::Hash),
         /// Service gets degraded. \[service_hash\]
@@ -184,8 +278,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn orders)]
-    pub type Orders<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::Hash, Order, ValueQuery>;
+    pub type Orders<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Order, ValueQuery>;
 
     #[pallet::type_value]
     pub fn DefaultOrderNum<T: Config>() -> OrderNumber {
@@ -194,8 +287,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn order_count)]
-    pub type OrderCount<T: Config> =
-        StorageValue<_, OrderNumber, ValueQuery, DefaultOrderNum<T>>;
+    pub type OrderCount<T: Config> = StorageValue<_, OrderNumber, ValueQuery, DefaultOrderNum<T>>;
 
     #[pallet::storage]
     #[pallet::getter(fn services)]
@@ -204,8 +296,13 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn pending_dispatch)]
-    pub type PendingDispatches<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, T::Hash, ValueQuery>;
+    pub type PendingDispatches<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        (T::Hash, BlockNumber, OrderNumber),
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn pending_services_queue)]
@@ -241,7 +338,10 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Called by user to create a service order.
         #[pallet::weight(0)]
-        pub fn new_service(origin: OriginFor<T>, service_order: Order) -> DispatchResultWithPostInfo {
+        pub fn new_service(
+            origin: OriginFor<T>,
+            service_order: Order,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let nonce = <frame_system::Module<T>>::account_nonce(&who);
 
@@ -268,30 +368,41 @@ pub mod pallet {
                 uptime: 0,
                 backup_flag: false,
                 backup_map: BTreeMap::new(),
-                state: ServiceState::Pending
+                state: ServiceState::Pending,
             };
 
             <Orders<T>>::insert(&order_id, service_order);
             <Services<T>>::insert(&order_id, service);
 
-            let block_number = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            let block_number =
+                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
             <PendingServices<T>>::insert(&order_id, block_number);
 
             <PendingServicesQueue<T>>::insert(&counter, &order_id);
             <OrderCount<T>>::put(counter);
 
-            Self::deposit_event(Event::ServiceCreated(who, order_id));
+            Self::deposit_event(Event::ServiceCreated(who, order_id.clone()));
+            Self::deposit_event(Event::ServiceStartPending(order_id));
 
             Ok(().into())
         }
 
-        /// Called by user to remove a service order. 
+        /// Called by user to remove a service order.
         #[pallet::weight(0)]
-        pub fn remove_service(origin: OriginFor<T>, service_id: T::Hash) -> DispatchResultWithPostInfo {
+        pub fn remove_service(
+            origin: OriginFor<T>,
+            service_id: T::Hash,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            ensure!(<Orders<T>>::contains_key(&service_id), Error::<T>::InvalidService);
+            ensure!(
+                <Orders<T>>::contains_key(&service_id),
+                Error::<T>::InvalidService
+            );
             // TODO: Currently only when the order is in pending state, implement for other state
-            ensure!(<PendingServices<T>>::contains_key(&service_id), Error::<T>::InvalidServiceState);
+            ensure!(
+                <PendingServices<T>>::contains_key(&service_id),
+                Error::<T>::InvalidServiceState
+            );
             let service = <Services<T>>::get(&service_id);
             ensure!(service.owner == who, Error::<T>::NoRight);
 
@@ -306,7 +417,11 @@ pub mod pallet {
 
         /// Called by user to increase the duration of a service order, extended BlockNumber will be rounded up by SLOT_LENGTH
         #[pallet::weight(0)]
-        pub fn extend_duration(origin: OriginFor<T>, service_id: T::Hash, extend: BlockNumber) -> DispatchResultWithPostInfo{
+        pub fn extend_duration(
+            origin: OriginFor<T>,
+            service_id: T::Hash,
+            extend: BlockNumber,
+        ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let service = <Services<T>>::get(&service_id);
             ensure!(service.owner == who, Error::<T>::NoRight);
@@ -314,7 +429,7 @@ pub mod pallet {
             ensure!(order.duration != None, Error::<T>::InvalidDurationType);
             let corrected_extend = match extend % SLOT_LENGTH {
                 0 => extend,
-                v => extend - v + SLOT_LENGTH
+                v => extend - v + SLOT_LENGTH,
             };
             // TODO: calculate fee
 
