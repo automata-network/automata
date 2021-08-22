@@ -25,7 +25,6 @@ pub mod pallet {
 
     pub const REPORT_APPROVAL_RATIO: Percent = Percent::from_percent(50);
     pub const REPORT_EXPIRY_BLOCK_NUMBER: BlockNumber = 10;
-    pub const ATTESTATION_EXPIRY_BLOCK_NUMBER: BlockNumber = 30;
     pub const UNKNOWN_EXPIRY_BLOCK_NUMBER: BlockNumber = 5760;
     pub const DEGRADED_INSTANTIATED_EXPIRY_BLOCK_NUMBER: BlockNumber = 30;
     pub const ATTESTOR_NOTIFY_TIMEOUT_BLOCK_NUMBER: BlockNumber = 12;
@@ -184,7 +183,7 @@ pub mod pallet {
                     if !<DegradeMode<T>>::get() {
                         pallet_geode::RegisteredGeodes::<T>::iter()
                             .map(|(key, start)| {
-                                if start + ATTESTATION_EXPIRY_BLOCK_NUMBER < now {
+                                if start + pallet_geode::ATTESTATION_EXPIRY_BLOCK_NUMBER < now {
                                     expired_geodes.push(key);
                                 }
                             })
@@ -381,10 +380,20 @@ pub mod pallet {
                 pallet_geode::AttestedGeodes::<T>::insert(&geode, block_number);
 
                 // move into the PromisedGeodes for queueing for job
-                let mut promised_geodes =
-                    pallet_geode::PromisedGeodes::<T>::get(&geode_record.promise);
-                promised_geodes.push(geode.clone());
-                pallet_geode::PromisedGeodes::<T>::insert(geode_record.promise, &promised_geodes);
+                if geode_record.promise
+                    > block_number
+                        + pallet_geode::DISPATCH_CONFIRMATION_TIMEOUT
+                        + pallet_geode::PUT_ONLINE_TIMEOUT
+                    || geode_record.promise == 0
+                {
+                    let mut promised_geodes =
+                        pallet_geode::PromisedGeodes::<T>::get(&geode_record.promise);
+                    promised_geodes.push(geode.clone());
+                    pallet_geode::PromisedGeodes::<T>::insert(
+                        geode_record.promise,
+                        &promised_geodes,
+                    );
+                }
             }
 
             pallet_geode::GeodeUpdateCounters::<T>::insert(

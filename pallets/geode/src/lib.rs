@@ -22,6 +22,10 @@ pub mod pallet {
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
 
+    pub const DISPATCH_CONFIRMATION_TIMEOUT: BlockNumber = 12;
+    pub const PUT_ONLINE_TIMEOUT: BlockNumber = 40;
+    pub const ATTESTATION_EXPIRY_BLOCK_NUMBER: BlockNumber = 30;
+
     /// Geode state
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
@@ -97,7 +101,9 @@ pub mod pallet {
                 let mut expired = Vec::<BlockNumber>::new();
                 <PromisedGeodes<T>>::iter()
                     .map(|(promise, _geodes)| {
-                        if promise != 0 && promise <= now {
+                        if promise != 0
+                            && promise <= now + DISPATCH_CONFIRMATION_TIMEOUT + PUT_ONLINE_TIMEOUT
+                        {
                             expired.push(promise);
                         }
                     })
@@ -221,14 +227,19 @@ pub mod pallet {
             geode_record.state = GeodeState::Registered;
             geode_record.provider = who.clone();
 
+            ensure!(
+                geode_record.promise == 0
+                    || geode_record.promise
+                        > block_number
+                            + DISPATCH_CONFIRMATION_TIMEOUT
+                            + PUT_ONLINE_TIMEOUT
+                            + ATTESTATION_EXPIRY_BLOCK_NUMBER,
+                Error::<T>::InvalidPromise
+            );
+
             <Geodes<T>>::insert(&geode, &geode_record);
             <RegisteredGeodes<T>>::insert(&geode, &block_number);
             <GeodeUpdateCounters<T>>::insert(&geode, 0);
-
-            ensure!(
-                geode_record.promise == 0 || geode_record.promise > block_number,
-                Error::<T>::InvalidInput
-            );
 
             Self::deposit_event(Event::GeodeRegister(who, geode));
             Ok(().into())
@@ -296,7 +307,12 @@ pub mod pallet {
             let block_number =
                 <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
             ensure!(
-                promise == 0 || promise > block_number,
+                promise == 0
+                    || promise
+                        > block_number
+                            + DISPATCH_CONFIRMATION_TIMEOUT
+                            + PUT_ONLINE_TIMEOUT
+                            + ATTESTATION_EXPIRY_BLOCK_NUMBER,
                 Error::<T>::InvalidPromise
             );
             // if the geode is instantiated, only extension is allowed
