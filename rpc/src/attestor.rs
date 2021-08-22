@@ -86,7 +86,7 @@ where
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
 
-        if attestor_notify.len() < 32 {
+        if attestor_notify.len() != 40 {
             return Err(Error {
                 code: ErrorCode::ServerError(RUNTIME_ERROR),
                 message: "message size incorrect.".into(),
