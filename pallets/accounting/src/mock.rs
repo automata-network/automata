@@ -1,4 +1,4 @@
-use crate as attestor;
+use crate as accounting;
 use frame_support::parameter_types;
 use frame_system as system;
 use sp_core::H256;
@@ -21,7 +21,8 @@ frame_support::construct_runtime!(
     {
         System: frame_system::{Module, Call, Config, Storage, Event<T>},
         Balances: pallet_balances::{Module, Call, Storage, Event<T>},
-        AttestorModule: attestor::{Module, Call, Storage, Event<T>},
+        AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
+        AccountingModule: accounting::{Module, Call, Storage, Event<T>},
     }
 );
 
@@ -71,9 +72,28 @@ impl pallet_balances::Config for Test {
     type WeightInfo = ();
 }
 
-impl attestor::Config for Test {
+parameter_types! {
+    pub const AttestorStakingAmount: u64 = 1;
+    pub const AttestorTotalReward: u64 = 1;
+    pub const BasicRewardRatio: u8 = 20_u8;
+    pub const SlotLength: u64 = 10;
+    pub const RewardEachSlot: u64 = 100;
+}
+
+impl accounting::Config for Test {
     type Event = Event;
     type Currency = Balances;
+    type AttestorStakingAmount = AttestorStakingAmount;
+    type AttestorTotalReward =  AttestorTotalReward;
+    type BasicRewardRatio = BasicRewardRatio;
+    type SlotLength = SlotLength;
+    type RewardEachSlot = RewardEachSlot;
+}
+
+impl pallet_attestor::Config for Test {
+    type Event = Event;
+    type Currency = Balances;
+    type AttestorAccounting = AccountingModule;
 }
 
 // Build genesis storage according to the mock runtime.

@@ -2,8 +2,8 @@
 
 pub use pallet::*;
 
-// #[cfg(test)]
-// mod mock;
+#[cfg(test)]
+mod mock;
 
 // #[cfg(test)]
 // mod tests;
@@ -64,11 +64,13 @@ pub mod pallet {
         StorageMap<_, Blake2_128Concat, T::AccountId, T::AccountId, ValueQuery>;
 
     #[pallet::event]
-    #[pallet::metadata(T::AccountId = "AccountId")]
+    #[pallet::metadata(T::BlockNumber = "BlockNumber")]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// Attestor registered. \[attestor_id\]
-        AttestorRegister(T::AccountId),
+        /// Attestor rewarded. \[attestor_id\]
+        AttestorRewarded(T::BlockNumber),
+        /// No reward left for attestor
+        AttestorRewardRanOut(),
     }
 
     #[pallet::error]
@@ -79,30 +81,20 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(block_number: T::BlockNumber) -> Weight {
+            if let Some(value) = Self::total_distributed_reward() {
+                if value >= T::AttestorTotalReward::get() {
+                    Self::deposit_event(Event::AttestorRewardRanOut());
+                    return 0;
+                }
+            }
 
 			let slot_length= T::SlotLength::get();
             let index_in_slot = block_number % slot_length;
 
             /// Reward at the begin of each slot
             if index_in_slot == T::BlockNumber::from(0_u32) {
-                /// Get all attestors and its verified geodes number
-                let attestors = <pallet_attestor::Pallet<T>>::get_all_attestors();
-
-                let attestors_length = attestors.len();
-                let geodes_length: usize = attestors.iter().map(|(_, geodes)| geodes).sum();
-                let reward_each_slot = T::RewardEachSlot::get();
-                
-                /// Compute basic reward and commission reward
-                let basic_reward = reward_each_slot * BalanceOf::<T>::from(T::BasicRewardRatio::get()) / BalanceOf::<T>::from(100_u32);
-                let basic_reward_per_attestor = basic_reward / BalanceOf::<T>::from(attestors_length as u32);
-                let commission_reward = reward_each_slot - basic_reward;
-                let commission_reward_per_geode = commission_reward / BalanceOf::<T>::from(geodes_length as u32);
-
-                /// Reward each attestor
-                attestors.iter().map(|(accountId, geodes)| {
-                    let reward = basic_reward_per_attestor + commission_reward_per_geode * BalanceOf::<T>::from(*geodes as u32);
-                    <T as Config>::Currency::deposit_into_existing(accountId, reward);
-                });
+                Self::reward_attestors();
+                Self::deposit_event(Event::AttestorRewarded(block_number));
             }
 
 			1000
@@ -123,8 +115,31 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        /// Return attestors' url and pubkey list for rpc.
-        pub fn attestor_list() {
+        /// Reward attestors
+        pub fn reward_attestors() {
+            /// Get all attestors and its verified geodes number
+            let attestors = <pallet_attestor::Pallet<T>>::get_all_attestors();
+
+            let attestors_length = attestors.len();
+            let geodes_length: usize = attestors.iter().map(|(_, geodes)| geodes).sum();
+            let reward_each_slot = T::RewardEachSlot::get();
+            
+            /// Compute basic reward and commission reward
+            let basic_reward = reward_each_slot * BalanceOf::<T>::from(T::BasicRewardRatio::get()) / BalanceOf::<T>::from(100_u32);
+            let basic_reward_per_attestor = basic_reward / BalanceOf::<T>::from(attestors_length as u32);
+            let commission_reward = reward_each_slot - basic_reward;
+            let commission_reward_per_geode = commission_reward / BalanceOf::<T>::from(geodes_length as u32);
+
+            /// Reward each attestor
+            attestors.iter().map(|(accountId, geodes)| {
+                let reward = basic_reward_per_attestor + commission_reward_per_geode * BalanceOf::<T>::from(*geodes as u32);
+                <T as Config>::Currency::deposit_into_existing(accountId, reward);
+            });
+
+            match Self::total_distributed_reward() {
+                Some(value) => TotalDistributedReward::<T>::put(value + reward_each_slot),
+                None => TotalDistributedReward::<T>::put(reward_each_slot),
+            }
         }
     }
 

@@ -28,6 +28,7 @@ pallet-attestor = { version = "0.1.0", default-features = false, path = '../atte
 sp-core = { default-features = false, version = '3.0.0' }
 sp-io = { default-features = false, version = '3.0.0' }
 pallet-balances = { version = '3.0.0' }
+pallet-accounting = { path = "../accounting"}
 
 [features]
 default = ['std']

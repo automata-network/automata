@@ -120,10 +120,6 @@ pub fn register_attestor(_attestor_account: <Test as system::Config>::AccountId)
     let min_stake = 100;
     let attestor_account = 1;
 
-    // set the min stake balance
-    AttestorModule::set_att_stake_min(Origin::root(), min_stake)
-        .map_err(|err| println!("{:?}", err));
-
     // successfully call register
     AttestorModule::attestor_register(
         Origin::signed(attestor_account),

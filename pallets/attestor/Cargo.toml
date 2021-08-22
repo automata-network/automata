@@ -30,6 +30,8 @@ sp-io = { default-features = false, version = '3.0.0' }
 sp-runtime = { default-features = false, version = '3.0.0' }
 pallet-balances = { version = '3.0.0' }
 
+pallet-accounting = { path = "../accounting"}
+
 [features]
 default = ['std']
 std = [

@@ -21,7 +21,8 @@ frame_support::construct_runtime!(
 		System: frame_system::{Module, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Module, Call, Storage, Event<T>},
         AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
-        GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
+		GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
+		AccountingModule: pallet_accounting::{Module, Call, Storage, Event<T>},
 	}
 );
 
@@ -74,6 +75,25 @@ impl pallet_balances::Config for Test {
 impl pallet_attestor::Config for Test {
 	type Event = Event;
 	type Currency = Balances;
+	type AttestorAccounting = AccountingModule;
+}
+
+parameter_types! {
+    pub const AttestorStakingAmount: Balance = 1;
+    pub const AttestorTotalReward: Balance = 1;
+    pub const BasicRewardRatio: u8 = 20_u8;
+    pub const SlotLength: BlockNumber = 10;
+    pub const RewardEachSlot: Balance = 100;
+}
+
+impl pallet_accounting::Config for Runtime {
+    type Event = Event;
+    type Currency = Balances;
+    type AttestorStakingAmount = AttestorStakingAmount;
+    type AttestorTotalReward =  AttestorTotalReward;
+    type BasicRewardRatio = BasicRewardRatio;
+    type SlotLength = SlotLength;
+    type RewardEachSlot = RewardEachSlot;
 }
 
 impl pallet_geode::Config for Test {
@@ -110,9 +130,6 @@ pub fn register_attestor(attestor_account: <Test as system::Config>::AccountId) 
     let pubkey = vec![2];
     let min_stake = 100;
     let attestor_account = 1;
-
-    // set the min stake balance
-    AttestorModule::set_att_stake_min(Origin::root(), min_stake);
 
     // successfully call register 
     AttestorModule::attestor_register(Origin::signed(attestor_account), url.clone(), pubkey.clone());
