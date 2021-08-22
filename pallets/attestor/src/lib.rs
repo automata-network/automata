@@ -134,7 +134,7 @@ pub mod pallet {
             match call {
                 Call::attestor_notify_chain(message, signature_raw_bytes) => {
                     // validate inputs
-                    if message.len() < 32 {
+                    if message.len() != 40 {
                         return InvalidTransaction::Call.into();
                     }
 
@@ -228,7 +228,7 @@ pub mod pallet {
             signature_raw_bytes: [u8; 64],
         ) -> DispatchResultWithPostInfo {
             // validate inputs
-            ensure!(message.len() >= 32, Error::<T>::InvalidNotification);
+            ensure!(message.len() == 40, Error::<T>::InvalidNotification);
 
             let mut attestor = [0u8; 32];
             attestor.copy_from_slice(&message[0..32]);
