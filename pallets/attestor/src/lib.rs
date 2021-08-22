@@ -16,7 +16,7 @@ pub mod pallet {
     use frame_support::traits::{Currency, ReservableCurrency};
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
     use frame_system::pallet_prelude::*;
-    use sp_std::collections::btree_set::BTreeSet;
+    use sp_std::collections::{btree_set::BTreeSet, btree_map::BTreeMap};
     use sp_std::prelude::*;
     use automata_runtime_traits::AttestorAccounting;
 
@@ -154,8 +154,14 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        pub fn get_all_attestors() -> u32 {
-            0
+        pub fn get_all_attestors() -> BTreeMap::<T::AccountId, usize> {
+            let mut result = BTreeMap::new();
+            let iterator = <Attestors<T>>::iter()
+            .map(|(accountId, attestor)| {
+                    result.insert(accountId, attestor.geodes.len());
+                }
+            );
+            result
         }
 
         /// Return attestors' url and pubkey list for rpc.
