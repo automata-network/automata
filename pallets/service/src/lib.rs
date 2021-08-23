@@ -123,79 +123,34 @@ pub mod pallet {
 
                         let geode;
 
-                        // let d = order.duration;
-                        // select a geode
-                        // match order.duration {
-                        //     Some(d) => {
-                                let expected_promise = order.duration
-                                    + now
-                                    + pallet_geode::PUT_ONLINE_TIMEOUT
-                                    + pallet_geode::DISPATCH_CONFIRMATION_TIMEOUT;
-                                let promise;
-                                if let Some(entry) = avail_geodes.range(expected_promise..).next() {
-                                    // try to find the smallest larger geode
-                                    promise = entry.0.to_owned();
-                                } else if avail_geodes.contains_key(&0) {
-                                    promise = 0;
-                                } else if ALLOW_DEGRADED_DISPATCH {
-                                    if let Some(entry) =
-                                        avail_geodes.range(..expected_promise).last()
-                                    {
-                                        // else find the largest smaller geode
-                                        promise = entry.0.to_owned();
-                                    } else {
-                                        break;
-                                    }
-                                } else {
-                                    continue;
-                                }
+                        let expected_promise = order.duration
+                            + now
+                            + pallet_geode::PUT_ONLINE_TIMEOUT
+                            + pallet_geode::DISPATCH_CONFIRMATION_TIMEOUT;
+                        let promise;
+                        if let Some(entry) = avail_geodes.range(expected_promise..).next() {
+                            // try to find the smallest larger geode
+                            promise = entry.0.to_owned();
+                        } else if avail_geodes.contains_key(&0) {
+                            promise = 0;
+                        } else if ALLOW_DEGRADED_DISPATCH {
+                            if let Some(entry) = avail_geodes.range(..expected_promise).last() {
+                                // else find the largest smaller geode
+                                promise = entry.0.to_owned();
+                            } else {
+                                break;
+                            }
+                        } else {
+                            continue;
+                        }
 
-                                geode = avail_geodes.get_mut(&promise).unwrap().remove(0);
-                                updated_geodes.insert(
-                                    promise.clone(),
-                                    avail_geodes.get(&promise).unwrap().clone(),
-                                );
+                        geode = avail_geodes.get_mut(&promise).unwrap().remove(0);
+                        updated_geodes
+                            .insert(promise.clone(), avail_geodes.get(&promise).unwrap().clone());
 
-                                if avail_geodes.get(&promise).unwrap().is_empty() {
-                                    avail_geodes.remove(&promise);
-                                }
-                            // }
-                            // None => {
-                            //     // try to find an unlimited geode
-                            //     // otherwise find one from the largest promise
-                            //     if avail_geodes.contains_key(&0u32.into()) {
-                            //         geode = avail_geodes.get_mut(&0u32.into()).unwrap().remove(0);
-
-                            //         updated_geodes.insert(
-                            //             0u32.into(),
-                            //             avail_geodes.get(&0u32.into()).unwrap().clone(),
-                            //         );
-
-                            //         if avail_geodes.get(&0u32.into()).unwrap().is_empty() {
-                            //             avail_geodes.remove(&0u32.into());
-                            //         }
-                            //     } else if ALLOW_DEGRADED_DISPATCH {
-                            //         let promise;
-                            //         if let Some(entry) = avail_geodes.last_key_value() {
-                            //             promise = entry.0.to_owned();
-                            //         } else {
-                            //             break;
-                            //         }
-
-                            //         geode = avail_geodes.get_mut(&promise).unwrap().remove(0);
-                            //         updated_geodes.insert(
-                            //             promise.clone(),
-                            //             avail_geodes.get(&promise).unwrap().clone(),
-                            //         );
-
-                            //         if avail_geodes.get(&promise).unwrap().is_empty() {
-                            //             avail_geodes.remove(&promise);
-                            //         }
-                            //     } else {
-                            //         continue;
-                            //     }
-                            // }
-                        // }
+                        if avail_geodes.get(&promise).unwrap().is_empty() {
+                            avail_geodes.remove(&promise);
+                        }
 
                         // add to AwaitingDispatches
                         <AwaitingDispatches<T>>::insert(&geode, (&order_id, &now, &dispatch));
@@ -221,7 +176,8 @@ pub mod pallet {
                 // process expired dispatches awaiting for confirmation - no penalty for geode
                 {
                     let mut expired = Vec::<T::AccountId>::new();
-                    for (geode, (order_id, block_num, dispatch)) in <AwaitingDispatches<T>>::iter() {
+                    for (geode, (order_id, block_num, dispatch)) in <AwaitingDispatches<T>>::iter()
+                    {
                         if block_num + pallet_geode::DISPATCH_CONFIRMATION_TIMEOUT < now {
                             // put the order back to PendingDispatches
                             <PendingDispatches<T>>::insert(dispatch, &order_id);
@@ -404,13 +360,8 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn expected_endings)]
-    pub type ExpectedEndings<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        BlockNumber,
-        BTreeSet<T::Hash>,
-        ValueQuery,
-    >;
+    pub type ExpectedEndings<T: Config> =
+        StorageMap<_, Blake2_128Concat, BlockNumber, BTreeSet<T::Hash>, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -422,8 +373,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             ensure!(service_order.geode_num >= 1, Error::<T>::InvalidService);
             ensure!(
-                // service_order.duration == None || 
-                    service_order.duration/* .unwrap()*/ >= MIN_ORDER_DURATION,
+                service_order.duration >= MIN_ORDER_DURATION,
                 Error::<T>::InvalidService
             );
 
@@ -518,9 +468,11 @@ pub mod pallet {
             let who = ensure_signed(origin)?;
             let mut service = <Services<T>>::get(&service_id);
             ensure!(service.owner == who, Error::<T>::NoRight);
-            ensure!(service.state != ServiceState::Terminating, Error::<T>::InvalidServiceState);
+            ensure!(
+                service.state != ServiceState::Terminating,
+                Error::<T>::InvalidServiceState
+            );
             let mut order = <Orders<T>>::get(&service_id);
-            // ensure!(order.duration != None, Error::<T>::InvalidDurationType);
             // TODO: calculate fee
 
             order.duration = match order.duration.checked_add(extend) {
@@ -533,7 +485,12 @@ pub mod pallet {
             // TODO: update expected ending
             match service.expected_ending {
                 Some(v) => {
-                    let new_expected_ending = Self::get_expected_ending(order.geode_num, order.duration, service.weighted_uptime, service.geodes.len() as u32);
+                    let new_expected_ending = Self::get_expected_ending(
+                        order.geode_num,
+                        order.duration,
+                        service.weighted_uptime,
+                        service.geodes.len() as u32,
+                    );
                     Self::update_expected_ending(service_id, Some(v), new_expected_ending);
                     service.expected_ending = Some(new_expected_ending);
                     <Services<T>>::insert(service_id, service);
@@ -606,7 +563,11 @@ pub mod pallet {
                 ServiceState::Online => {
                     // update weighted_uptime
                     let last_update = <OnlineServices<T>>::get(order_hash);
-                    let updated_weighted_uptime = Self::get_updated_weighted_uptime(service_record.weighted_uptime, last_update, service_record.geodes.len() as u32);
+                    let updated_weighted_uptime = Self::get_updated_weighted_uptime(
+                        service_record.weighted_uptime,
+                        last_update,
+                        service_record.geodes.len() as u32,
+                    );
                     service_record.weighted_uptime = updated_weighted_uptime;
                     <OnlineServices<T>>::insert(order_hash, now);
                 }
@@ -615,8 +576,17 @@ pub mod pallet {
 
             service_record.geodes.insert(who.clone());
 
-            let new_expected_ending = Self::get_expected_ending(order_record.geode_num, order_record.duration, service_record.weighted_uptime, service_record.geodes.len() as u32);
-            Self::update_expected_ending(order_hash, service_record.expected_ending, new_expected_ending);
+            let new_expected_ending = Self::get_expected_ending(
+                order_record.geode_num,
+                order_record.duration,
+                service_record.weighted_uptime,
+                service_record.geodes.len() as u32,
+            );
+            Self::update_expected_ending(
+                order_hash,
+                service_record.expected_ending,
+                new_expected_ending,
+            );
             service_record.expected_ending = Some(new_expected_ending);
 
             <Services<T>>::insert(order_hash, service_record);
@@ -638,7 +608,11 @@ pub mod pallet {
             r
         }
 
-        fn update_expected_ending(order_id: T::Hash, cur_expected_ending: Option<BlockNumber>, new_expected_ending: BlockNumber) {
+        fn update_expected_ending(
+            order_id: T::Hash,
+            cur_expected_ending: Option<BlockNumber>,
+            new_expected_ending: BlockNumber,
+        ) {
             match cur_expected_ending {
                 Some(v) => {
                     let mut ending_orders = <ExpectedEndings<T>>::get(v);
@@ -648,7 +622,7 @@ pub mod pallet {
                     } else {
                         <ExpectedEndings<T>>::insert(v, ending_orders);
                     }
-                },
+                }
                 None => {}
             }
             let mut ending_orders = <ExpectedEndings<T>>::get(new_expected_ending);
@@ -656,14 +630,27 @@ pub mod pallet {
             <ExpectedEndings<T>>::insert(new_expected_ending, ending_orders);
         }
 
-        fn get_updated_weighted_uptime(prev_weighted_uptime: u64, last_update: BlockNumber, prev_serving_geode_num: u32) -> u64 {
-            prev_weighted_uptime.checked_add(last_update as u64 * prev_serving_geode_num as u64).unwrap()
+        fn get_updated_weighted_uptime(
+            prev_weighted_uptime: u64,
+            last_update: BlockNumber,
+            prev_serving_geode_num: u32,
+        ) -> u64 {
+            prev_weighted_uptime
+                .checked_add(last_update as u64 * prev_serving_geode_num as u64)
+                .unwrap()
         }
 
-        fn get_expected_ending(geode_req: u32, duration: BlockNumber, weighted_uptime: u64, geode_num: u32) -> BlockNumber {
+        fn get_expected_ending(
+            geode_req: u32,
+            duration: BlockNumber,
+            weighted_uptime: u64,
+            geode_num: u32,
+        ) -> BlockNumber {
             let total_weighted_duration: u64 = geode_req as u64 * duration as u64;
             let left_weighted_duration = total_weighted_duration - weighted_uptime;
-            left_weighted_duration.checked_div(geode_num as u64).unwrap() as BlockNumber
+            left_weighted_duration
+                .checked_div(geode_num as u64)
+                .unwrap() as BlockNumber
         }
     }
 }
