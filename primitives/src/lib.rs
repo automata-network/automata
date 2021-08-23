@@ -12,7 +12,7 @@ use sp_runtime::{
 pub type BlockNumber = u32;
 
 /// An index to a order.
-pub type DispatchCounter = u32;
+pub type DispatchId = u32;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = MultiSignature;

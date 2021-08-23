@@ -78,6 +78,8 @@ pub mod pallet {
     {
         /// Because this pallet emits events, it depends on the runtime's definition of an event.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+        type ReportExpiryBlockNumber: Get<BlockNumber>;
     }
 
     #[pallet::pallet]
@@ -167,7 +169,7 @@ pub mod pallet {
                     let mut expired = Vec::<(T::AccountId, u8)>::new();
                     <Reports<T>>::iter()
                         .map(|(key, report)| {
-                            if report.start + REPORT_EXPIRY_BLOCK_NUMBER < now {
+                            if (report.start + T::ReportExpiryBlockNumber::get()) < now {
                                 expired.push(key);
                             }
                         })

@@ -395,8 +395,13 @@ impl pallet_geode::Config for Runtime {
     type Event = Event;
 }
 
+parameter_types! {
+    pub const ReportExpiryBlockNumber: BlockNumber = 10;
+}
+
 impl pallet_liveness::Config for Runtime {
     type Event = Event;
+    type ReportExpiryBlockNumber = ReportExpiryBlockNumber;
 }
 
 pub struct TransactionConverter;
