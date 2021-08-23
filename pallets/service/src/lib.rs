@@ -53,10 +53,8 @@ pub mod pallet {
         // Degraded,
         /// When the service turns offline.
         Offline,
-        // /// When the service is finished
-        // Completed,
-        /// When the service is terminating
-        Terminating,
+        /// When the service is finished
+        Terminated,
     }
 
     impl Default for ServiceState {
@@ -236,6 +234,18 @@ pub mod pallet {
                 }
 
                 // check expected_endings and end services
+                {
+                    if <ExpectedEndings<T>>::contains_key(now) {
+                        let terminated_services = <ExpectedEndings<T>>::get(now);
+                        for service in terminated_services.iter() {
+                            Self::terminate_service(service.to_owned(), now, true);
+                        }
+                        <TerminatedBatch<T>>::insert(now, terminated_services);
+                        <ExpectedEndings<T>>::remove(now);
+                    }
+                }
+
+                // clean past terminated history
             }
             0
         }
@@ -259,8 +269,8 @@ pub mod pallet {
         ServiceDegraded(T::Hash),
         /// Service turns offline. \[service_hash\]
         ServiceOffline(T::Hash),
-        /// Service gets completed. \[service_hash\]
-        ServiceCompleted(T::Hash),
+        /// Service gets terminated. \[service_hash\]
+        ServiceTerminated(T::Hash),
         /// Dispatch queried geode for dispatching. \[dispatch_id, geode_id\]
         DispatchQueriedGeode(DispatchId, T::AccountId),
         /// Dispatched geode put service online \[dispatch_id, geode_id\]
@@ -316,9 +326,14 @@ pub mod pallet {
         StorageMap<_, Blake2_128Concat, T::Hash, BlockNumber, ValueQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn terminating_services)]
-    pub type TerminatingServices<T: Config> =
+    #[pallet::getter(fn terminated_services)]
+    pub type TerminatedServices<T: Config> =
         StorageMap<_, Blake2_128Concat, T::Hash, BlockNumber, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn teminated_batch)]
+    pub type TerminatedBatch<T: Config> =
+        StorageMap<_, Blake2_128Concat, BlockNumber, BTreeSet<T::Hash>, ValueQuery>;
 
     #[pallet::type_value]
     pub fn DefaultDispatchId<T: Config>() -> DispatchId {
@@ -439,13 +454,13 @@ pub mod pallet {
                 <Orders<T>>::contains_key(&service_id),
                 Error::<T>::InvalidService
             );
-            // TODO: Currently only when the order is in pending state, implement for other state
-            ensure!(
-                <PendingServices<T>>::contains_key(&service_id),
-                Error::<T>::InvalidServiceState
-            );
             let service = <Services<T>>::get(&service_id);
             ensure!(service.owner == who, Error::<T>::NoRight);
+            // TODO: Currently only when the order is in pending state, implement for other state
+            ensure!(
+                service.state == ServiceState::Pending,
+                Error::<T>::InvalidServiceState
+            );
 
             for dispatch in service.dispatches.iter() {
                 <PendingDispatches<T>>::remove(dispatch);
@@ -469,7 +484,7 @@ pub mod pallet {
             let mut service = <Services<T>>::get(&service_id);
             ensure!(service.owner == who, Error::<T>::NoRight);
             ensure!(
-                service.state != ServiceState::Terminating,
+                service.state != ServiceState::Terminated,
                 Error::<T>::InvalidServiceState
             );
             let mut order = <Orders<T>>::get(&service_id);
@@ -591,6 +606,10 @@ pub mod pallet {
 
             <Services<T>>::insert(order_hash, service_record);
 
+            // update geode struct
+            let mut geode = pallet_geode::Geodes::<T>::get(&who);
+            geode.order = Some((order_hash, now));
+
             Self::deposit_event(Event::DispatchPutOnline(dispatch, who));
 
             Ok(().into())
@@ -651,6 +670,22 @@ pub mod pallet {
             left_weighted_duration
                 .checked_div(geode_num as u64)
                 .unwrap() as BlockNumber
+        }
+
+        /// Only for Online service
+        fn terminate_service(service: T::Hash, when: BlockNumber, _completed: bool) {
+            let mut service_record = <Services<T>>::get(service);
+            <OnlineServices<T>>::remove(service);
+            service_record.state = ServiceState::Terminated;
+            <TerminatedServices<T>>::insert(service, &when);
+            for geode in service_record.geodes.iter() {
+                <pallet_geode::Module<T>>::dismiss_geode_from_service(
+                    geode.to_owned(),
+                    when.clone(),
+                );
+            }
+
+            // TODO: how to distribute reward and let user claim back left staking?
         }
     }
 }

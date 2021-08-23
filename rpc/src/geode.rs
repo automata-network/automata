@@ -39,8 +39,8 @@ pub struct WrappedGeode<Hash> {
     pub id: [u8; 32],
     /// Provider id
     pub provider: [u8; 32],
-    /// Assigned order hash
-    pub order: Option<Hash>,
+    /// Assigned order hash and starting block
+    pub order: Option<(Hash, BlockNumber)>,
     /// Geode's public ip.
     pub ip: Vec<u8>,
     /// Geode's dns.

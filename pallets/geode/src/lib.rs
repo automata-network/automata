@@ -71,7 +71,7 @@ pub mod pallet {
         /// Provider id
         pub provider: AccountId,
         /// Assigned order hash
-        pub order: Option<Hash>,
+        pub order: Option<(Hash, BlockNumber)>,
         /// Geode's public ip.
         pub ip: Vec<u8>,
         /// Geode's dns.
@@ -396,7 +396,7 @@ pub mod pallet {
 
             <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
 
-            Self::deposit_event(Event::GeodeStateUpdate(geode, GeodeState::Registered));
+            Self::deposit_event(Event::GeodeStateUpdate(geode, GeodeState::Offline));
             Ok(().into())
         }
     }
@@ -498,6 +498,23 @@ pub mod pallet {
             for id in degraded_instantiated_geodes {
                 <DegradedInstantiatedGeodes<T>>::insert(id, block_number);
             }
+        }
+
+        pub fn dismiss_geode_from_service(geode: T::AccountId, when: BlockNumber) {
+            // reset geode order
+            let mut geode_record = <Geodes<T>>::get(&geode);
+            match geode_record.state {
+                GeodeState::DegradedInstantiated => {
+                    <DegradedInstantiatedGeodes<T>>::remove(&geode);
+                }
+                GeodeState::Instantiated => {
+                    <InstantiatedGeodes<T>>::remove(&geode);
+                }
+                _ => {}
+            }
+            geode_record.state = GeodeState::Offline;
+            geode_record.order = None;
+            <OfflineGeodes<T>>::insert(geode, when);
         }
 
         pub fn detach_geode(
