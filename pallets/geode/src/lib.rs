@@ -46,16 +46,6 @@ pub mod pallet {
         Null,
     }
 
-    #[derive(PartialEq, Eq, Clone, RuntimeDebug)]
-    pub enum DetachOption {
-        /// Remove the geode
-        Remove,
-        /// Turn the geode into Offline state
-        Offline,
-        /// Turn the geode into Unknown state
-        Unknown,
-    }
-
     impl Default for GeodeState {
         fn default() -> Self {
             GeodeState::Null
@@ -71,7 +61,7 @@ pub mod pallet {
         /// Provider id
         pub provider: AccountId,
         /// Assigned order hash
-        pub order: Option<(Hash, BlockNumber)>,
+        pub order: Option<(Hash, Option<BlockNumber>)>,
         /// Geode's public ip.
         pub ip: Vec<u8>,
         /// Geode's dns.
@@ -99,15 +89,13 @@ pub mod pallet {
             if let Ok(now) = TryInto::<BlockNumber>::try_into(block_number) {
                 // clean expired promised geodes
                 let mut expired = Vec::<BlockNumber>::new();
-                <PromisedGeodes<T>>::iter()
-                    .map(|(promise, _geodes)| {
-                        if promise != 0
-                            && promise <= now + DISPATCH_CONFIRMATION_TIMEOUT + PUT_ONLINE_TIMEOUT
-                        {
-                            expired.push(promise);
-                        }
-                    })
-                    .all(|_| true);
+                for (promise, _geodes) in <PromisedGeodes<T>>::iter() {
+                    if promise != 0 && promise <= now + DISPATCH_CONFIRMATION_TIMEOUT + PUT_ONLINE_TIMEOUT {
+                        expired.push(promise);
+                    } else {
+                        break;
+                    }
+                }
                 for promise in expired {
                     <PromisedGeodes<T>>::remove(promise);
                 }
@@ -136,7 +124,7 @@ pub mod pallet {
         /// Geode's state updated
         GeodeStateUpdate(T::AccountId, GeodeState),
         /// Geode's promise updated
-        GeodePromiseUpdate(T::AccountId),
+        GeodePromiseUpdate(T::AccountId, BlockNumber),
     }
 
     #[pallet::error]
@@ -157,6 +145,8 @@ pub mod pallet {
         InvalidInput,
         /// Invalid promise
         InvalidPromise,
+        /// Invalid state transition
+        InvalidTransition
     }
 
     #[pallet::pallet]
@@ -203,11 +193,6 @@ pub mod pallet {
     pub type UnknownGeodes<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumber, ValueQuery>;
 
-    #[pallet::storage]
-    #[pallet::getter(fn geode_update_counters)]
-    pub type GeodeUpdateCounters<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, u32, ValueQuery>;
-
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// Called by provider to register a geode. The user/attestors/state/provider will be
@@ -227,19 +212,8 @@ pub mod pallet {
             geode_record.state = GeodeState::Registered;
             geode_record.provider = who.clone();
 
-            ensure!(
-                geode_record.promise == 0
-                    || geode_record.promise
-                        > block_number
-                            + DISPATCH_CONFIRMATION_TIMEOUT
-                            + PUT_ONLINE_TIMEOUT
-                            + ATTESTATION_EXPIRY_BLOCK_NUMBER,
-                Error::<T>::InvalidPromise
-            );
-
             <Geodes<T>>::insert(&geode, &geode_record);
             <RegisteredGeodes<T>>::insert(&geode, &block_number);
-            <GeodeUpdateCounters<T>>::insert(&geode, 0);
 
             Self::deposit_event(Event::GeodeRegister(who, geode));
             Ok(().into())
@@ -253,9 +227,13 @@ pub mod pallet {
             geode: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            match Self::detach_geode(DetachOption::Remove, geode, Some(who)) {
-                Ok(_) => Ok(().into()),
-                Err(e) => Err(e.into()),
+            ensure!(<Geodes<T>>::contains_key(&geode), Error::<T>::InvalidGeode);
+            let geode = <Geodes<T>>::get(geode);
+            ensure!(geode.provider == who, Error::<T>::NoRight);
+
+            match Self::transit_state(&geode, GeodeState::Null) {
+                true => Ok(().into()),
+                false => Err(Error::<T>::InvalidTransition.into()),
             }
         }
 
@@ -272,7 +250,6 @@ pub mod pallet {
             ensure!(geode_use.provider == who, Error::<T>::NoRight);
             geode_use.props.insert(prop_name, prop_value);
             <Geodes<T>>::insert(&geode, geode_use);
-            <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
             Self::deposit_event(Event::PropsUpdate(geode));
             Ok(().into())
         }
@@ -289,7 +266,6 @@ pub mod pallet {
             ensure!(geode_use.provider == who, Error::<T>::NoRight);
             geode_use.dns = dns;
             <Geodes<T>>::insert(&geode, geode_use);
-            <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
             Self::deposit_event(Event::DnsUpdate(geode));
             Ok(().into())
         }
@@ -311,12 +287,11 @@ pub mod pallet {
                     || promise
                         > block_number
                             + DISPATCH_CONFIRMATION_TIMEOUT
-                            + PUT_ONLINE_TIMEOUT
-                            + ATTESTATION_EXPIRY_BLOCK_NUMBER,
+                            + PUT_ONLINE_TIMEOUT,
                 Error::<T>::InvalidPromise
             );
-            // if the geode is instantiated, only extension is allowed
-            if geode_use.state == GeodeState::Instantiated {
+            // if the geode is instantiated, promise can only be extended
+            if geode_use.state == GeodeState::Instantiated || geode_use.state == GeodeState::DegradedInstantiated {
                 ensure!(
                     (geode_use.promise != 0 && promise > geode_use.promise) || promise == 0,
                     Error::<T>::InvalidPromise
@@ -326,7 +301,7 @@ pub mod pallet {
             // change PromisedGeodes record if there is
             if geode_use.state == GeodeState::Attested {
                 // remove old record if there is
-                if geode_use.promise > block_number || geode_use.promise == 0 {
+                if geode_use.promise > block_number + DISPATCH_CONFIRMATION_TIMEOUT + PUT_ONLINE_TIMEOUT || geode_use.promise == 0 {
                     let mut geodes = <PromisedGeodes<T>>::get(&geode_use.promise);
                     if let Some(pos) = geodes.iter().position(|x| *x == geode) {
                         geodes.remove(pos);
@@ -339,7 +314,6 @@ pub mod pallet {
                     }
                 }
 
-                // adding new record
                 let mut geodes = Vec::default();
                 if <PromisedGeodes<T>>::contains_key(&promise) {
                     geodes = <PromisedGeodes<T>>::get(&promise);
@@ -351,9 +325,8 @@ pub mod pallet {
             geode_use.promise = promise;
 
             <Geodes<T>>::insert(&geode, geode_use);
-            <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
 
-            Self::deposit_event(Event::GeodePromiseUpdate(geode));
+            Self::deposit_event(Event::GeodePromiseUpdate(geode, promise));
 
             Ok(().into())
         }
@@ -365,9 +338,12 @@ pub mod pallet {
             geode: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            match Self::detach_geode(DetachOption::Offline, geode, Some(who)) {
-                Ok(_) => Ok(().into()),
-                Err(e) => Err(e.into()),
+            ensure!(<Geodes<T>>::contains_key(&geode), Error::<T>::InvalidGeode);
+            let geode = <Geodes<T>>::get(geode);
+            ensure!(geode.provider == who, Error::<T>::NoRight);
+            match Self::transit_state(&geode, GeodeState::Offline) {
+                true => Ok(().into()),
+                false => Err(Error::<T>::InvalidTransition.into()),
             }
         }
 
@@ -378,26 +354,13 @@ pub mod pallet {
             geode: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            ensure!(
-                !<OfflineGeodes<T>>::contains_key(&geode),
-                Error::<T>::InvalidGeodeState
-            );
-            let mut geode_use = <Geodes<T>>::get(&geode);
-            ensure!(geode_use.provider == who, Error::<T>::NoRight);
-
-            geode_use.state = GeodeState::Registered;
-            <Geodes<T>>::insert(&geode, &geode_use);
-
-            let block_number =
-                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
-            <RegisteredGeodes<T>>::insert(&geode, block_number);
-
-            <OfflineGeodes<T>>::remove(&geode);
-
-            <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
-
-            Self::deposit_event(Event::GeodeStateUpdate(geode, GeodeState::Offline));
-            Ok(().into())
+            ensure!(<Geodes<T>>::contains_key(&geode), Error::<T>::InvalidGeode);
+            let geode = <Geodes<T>>::get(geode);
+            ensure!(geode.provider == who, Error::<T>::NoRight);
+            match Self::transit_state(&geode, GeodeState::Registered) {
+                true => Ok(().into()),
+                false => Err(Error::<T>::InvalidTransition.into()),
+            }
         }
     }
 
@@ -443,38 +406,6 @@ pub mod pallet {
             }
         }
 
-        pub fn degrade_geode(geode: &T::AccountId) {
-            let mut geode_record = <Geodes<T>>::get(&geode);
-            let to_state;
-            match geode_record.state {
-                GeodeState::Attested => {
-                    to_state = GeodeState::Registered;
-                    <AttestedGeodes<T>>::remove(&geode);
-                }
-                GeodeState::Instantiated => {
-                    to_state = GeodeState::DegradedInstantiated;
-                    <InstantiatedGeodes<T>>::remove(&geode);
-                }
-                _ => {
-                    return;
-                }
-            }
-            geode_record.state = to_state.clone();
-            <Geodes<T>>::insert(&geode, geode_record);
-            <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
-            let block_number =
-                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
-            match to_state {
-                GeodeState::Registered => {
-                    <RegisteredGeodes<T>>::insert(&geode, block_number);
-                }
-                GeodeState::DegradedInstantiated => {
-                    <DegradedInstantiatedGeodes<T>>::insert(&geode, block_number);
-                }
-                _ => {}
-            }
-        }
-
         pub fn reset_degraded_block_num() {
             let block_number =
                 <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
@@ -500,6 +431,7 @@ pub mod pallet {
             }
         }
 
+        // called by geode provider
         pub fn dismiss_geode_from_service(geode: T::AccountId, when: BlockNumber) {
             // reset geode order
             let mut geode_record = <Geodes<T>>::get(&geode);
@@ -517,115 +449,191 @@ pub mod pallet {
             <OfflineGeodes<T>>::insert(geode, when);
         }
 
-        pub fn detach_geode(
-            option: DetachOption,
-            geode: T::AccountId,
-            who: Option<T::AccountId>,
-        ) -> Result<(), Error<T>> {
-            if <Geodes<T>>::contains_key(&geode) {
-                let mut geode_use = <Geodes<T>>::get(&geode);
-
-                if let Some(who) = who {
-                    ensure!(geode_use.provider == who, Error::<T>::NoRight)
+        fn clean_from_promises(geode: &GeodeOf<T>, when: &BlockNumber) {
+            // remove PromisedGeode record if there is
+            if geode.promise > when + DISPATCH_CONFIRMATION_TIMEOUT + PUT_ONLINE_TIMEOUT || geode.promise == 0 {
+                let mut geodes = <PromisedGeodes<T>>::get(&geode.promise);
+                if let Some(pos) = geodes.iter().position(|x| *x == geode.id) {
+                    geodes.remove(pos);
                 }
 
-                let prev_state = geode_use.state.clone();
-
-                let block_number =
-                    <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
-
-                match option {
-                    DetachOption::Remove => {
-                        ensure!(
-                            geode_use.state == GeodeState::Registered
-                                || geode_use.state == GeodeState::Attested
-                                || geode_use.state == GeodeState::Unknown,
-                            Error::<T>::InvalidGeodeState
-                        );
-                        <Geodes<T>>::remove(&geode);
-                        Self::deposit_event(Event::GeodeRemove(geode.clone()));
-                    }
-                    DetachOption::Offline => {
-                        ensure!(
-                            geode_use.state == GeodeState::Registered
-                                || geode_use.state == GeodeState::Attested,
-                            Error::<T>::InvalidGeodeState
-                        );
-                        geode_use.state = GeodeState::Offline;
-                        <Geodes<T>>::insert(&geode, &geode_use);
-
-                        <OfflineGeodes<T>>::insert(&geode, &block_number);
-                        <GeodeUpdateCounters<T>>::insert(
-                            &geode,
-                            <GeodeUpdateCounters<T>>::get(&geode) + 1,
-                        );
-                        Self::deposit_event(Event::GeodeStateUpdate(
-                            geode.clone(),
-                            GeodeState::Offline,
-                        ));
-                    }
-                    DetachOption::Unknown => {
-                        geode_use.state = GeodeState::Unknown;
-                        <Geodes<T>>::insert(&geode, &geode_use);
-                        <UnknownGeodes<T>>::insert(
-                            &geode,
-                            &block_number.saturated_into::<BlockNumber>(),
-                        );
-                        <GeodeUpdateCounters<T>>::insert(
-                            &geode,
-                            <GeodeUpdateCounters<T>>::get(&geode) + 1,
-                        );
-                        Self::deposit_event(Event::GeodeStateUpdate(
-                            geode.clone(),
-                            GeodeState::Unknown,
-                        ));
-                    }
+                if geodes.is_empty() {
+                    <PromisedGeodes<T>>::remove(&geode.promise);
+                } else {
+                    <PromisedGeodes<T>>::insert(&geode.promise, geodes);
                 }
+            }
+        }
 
-                match prev_state {
-                    GeodeState::Registered => {
-                        <RegisteredGeodes<T>>::remove(&geode);
-                    }
-                    GeodeState::Attested => {
-                        <AttestedGeodes<T>>::remove(&geode);
-                        // remove PromisedGeode record if there is
-                        if geode_use.promise > block_number || geode_use.promise == 0 {
-                            let mut geodes = <PromisedGeodes<T>>::get(&geode_use.promise);
-                            if let Some(pos) = geodes.iter().position(|x| *x == geode) {
-                                geodes.remove(pos);
-                            }
+        pub fn add_to_promises(geode: &GeodeOf<T>, when: &BlockNumber) {
+            // move into the PromisedGeodes for queueing for job
+            if geode.promise
+            > when
+                + DISPATCH_CONFIRMATION_TIMEOUT
+                + PUT_ONLINE_TIMEOUT
+            || geode.promise == 0
+            {
+                let mut promised_geodes =
+                    PromisedGeodes::<T>::get(&geode.promise);
+                promised_geodes.push(geode.id.clone());
+                PromisedGeodes::<T>::insert(
+                    geode.promise,
+                    &promised_geodes,
+                );
+            }
+        }
 
-                            if geodes.is_empty() {
-                                <PromisedGeodes<T>>::remove(&geode_use.promise);
-                            } else {
-                                <PromisedGeodes<T>>::insert(&geode_use.promise, geodes);
-                            }
+        pub fn transit_state(geode: &GeodeOf<T>, to: GeodeState) -> bool {
+            let when = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            match geode.state {
+                GeodeState::Registered => {
+                    match to {
+                        GeodeState::Attested => {
+                            Self::add_to_promises(&geode, &when);
+                        },
+                        GeodeState::Unknown => {
+
+                        }
+                        GeodeState::Offline => {
+
+                        },
+                        GeodeState::Null => {
+
+                        }
+                        _ => {
+                            return false;
                         }
                     }
-                    GeodeState::Unknown => {
-                        <UnknownGeodes<T>>::remove(&geode);
-                    }
-                    GeodeState::Instantiated => {
-                        <InstantiatedGeodes<T>>::remove(&geode);
-                    }
-                    GeodeState::DegradedInstantiated => {
-                        <DegradedInstantiatedGeodes<T>>::remove(&geode);
-                    }
-                    GeodeState::Offline => {
-                        <OfflineGeodes<T>>::remove(&geode);
-                    }
-                    _ => {
-                        // shouldn't happen
-                    }
+                    <RegisteredGeodes<T>>::remove(&geode.id);
                 }
+                GeodeState::Attested => {
+                    match to {
+                        GeodeState::Instantiated => {
 
-                // clean record on attestors
-                pallet_attestor::Module::<T>::detach_geode_from_attestors(&geode);
-            } else {
-                return Err(Error::<T>::InvalidGeode);
+                        }
+                        GeodeState::Registered => {
+                            Self::clean_from_promises(&geode, &when);
+                        }
+                        GeodeState::Unknown => {
+                            Self::clean_from_promises(&geode, &when);
+                            pallet_attestor::Module::<T>::detach_geode_from_attestors(&geode.id);
+                        }
+                        GeodeState::Offline => {
+                            Self::clean_from_promises(&geode, &when);
+                            pallet_attestor::Module::<T>::detach_geode_from_attestors(&geode.id);
+                        }
+                        GeodeState::Null => {
+                            Self::clean_from_promises(&geode, &when);
+                            pallet_attestor::Module::<T>::detach_geode_from_attestors(&geode.id);
+                        }
+                        _ => {
+                            return false;
+                        }
+                    }
+                    <AttestedGeodes<T>>::remove(&geode.id);
+                }
+                GeodeState::Unknown => {
+                    match to {
+                        GeodeState::Null => {
+
+                        }
+                        _ => {
+                            return false;
+                        }
+                    }
+                    <UnknownGeodes<T>>::remove(&geode.id);
+                }
+                GeodeState::Instantiated => {
+                    match to {
+                        GeodeState::DegradedInstantiated => {
+
+                        }
+                        GeodeState::Attested => {
+
+                        }
+                        GeodeState::Unknown => {
+                            pallet_attestor::Module::<T>::detach_geode_from_attestors(&geode.id);
+                        }
+                        _ => {
+                            return false;
+                        }
+                    }
+                    <InstantiatedGeodes<T>>::remove(&geode.id);
+                }
+                GeodeState::DegradedInstantiated => {
+                    match to {
+                        GeodeState::Instantiated => {
+
+                        }
+                        GeodeState::Attested => {
+                            
+                        }
+                        GeodeState::Unknown => {
+                            pallet_attestor::Module::<T>::detach_geode_from_attestors(&geode.id);
+                        }
+                        _ => {
+                            return false;
+                        }
+                    }
+                    <DegradedInstantiatedGeodes<T>>::remove(&geode.id);
+                }
+                GeodeState::Offline => {
+                    match to {
+                        GeodeState::Registered => {
+
+                        },
+                        GeodeState::Null => {
+
+                        },
+                        _ => {
+                            return false;
+                        }
+                    }
+                    <OfflineGeodes<T>>::remove(&geode.id);
+                }
+                GeodeState::Null => {
+                    // shouldn't happen
+                }
             }
 
-            Ok(())
+            // change geode state and deposit event
+            if to != GeodeState::Null {
+                let mut geode = geode.clone();
+                geode.state = to.clone();
+                <Geodes<T>>::insert(&geode.id, &geode);
+                Self::deposit_event(Event::GeodeStateUpdate(
+                    geode.id,
+                    to.clone(),
+                ));
+            } else {
+                <Geodes<T>>::remove(&geode.id);
+                Self::deposit_event(Event::GeodeRemove(geode.id.clone()));
+            }
+
+            // populate new state map
+            match to {
+                GeodeState::Registered => {
+                    <RegisteredGeodes<T>>::insert(&geode.id, &when);
+                }
+                GeodeState::Attested => {
+                    <AttestedGeodes<T>>::insert(&geode.id, &when);
+                }
+                GeodeState::Unknown => {
+                    <UnknownGeodes<T>>::insert(&geode.id, &when);
+                }
+                GeodeState::Instantiated => {
+                    <InstantiatedGeodes<T>>::insert(&geode.id, &when);
+                }
+                GeodeState::DegradedInstantiated => {
+                    <DegradedInstantiatedGeodes<T>>::insert(&geode.id, &when);
+                }
+                GeodeState::Offline => {
+                    <OfflineGeodes<T>>::insert(&geode.id, &when);
+                }
+                _ => {}
+            }
+
+            true
         }
 
         /// clean all the storage, USE WITH CARE!
@@ -718,19 +726,6 @@ pub mod pallet {
                     .all(|_| true);
                 for unknown_geode in unknown_geodes.iter() {
                     <UnknownGeodes<T>>::remove(unknown_geode);
-                }
-            }
-
-            // clean GeodeUpdateCounters
-            {
-                let mut geode_update_counters = Vec::new();
-                <GeodeUpdateCounters<T>>::iter()
-                    .map(|(key, _)| {
-                        geode_update_counters.push(key);
-                    })
-                    .all(|_| true);
-                for geode_update_counter in geode_update_counters.iter() {
-                    <GeodeUpdateCounters<T>>::remove(geode_update_counter);
                 }
             }
         }

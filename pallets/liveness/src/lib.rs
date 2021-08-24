@@ -11,7 +11,7 @@ mod tests;
 #[frame_support::pallet]
 pub mod pallet {
     use core::convert::{TryFrom, TryInto};
-    use frame_support::{debug::native::debug, ensure};
+    use frame_support::{ensure};
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
     use frame_system::pallet_prelude::*;
     use primitives::BlockNumber;
@@ -202,15 +202,10 @@ pub mod pallet {
                         .all(|_| true);
 
                     for key in expired_geodes {
-                        <pallet_geode::Module<T>>::detach_geode(
-                            pallet_geode::DetachOption::Remove,
-                            key,
-                            None,
-                        )
-                        .map_err(|e| {
-                            debug!("{:?}", e);
-                        })
-                        .ok();
+                        let geode = pallet_geode::Geodes::<T>::get(key);
+                        <pallet_geode::Module<T>>::transit_state(
+                            &geode, pallet_geode::GeodeState::Null
+                        );
                     }
                 }
 
@@ -227,15 +222,10 @@ pub mod pallet {
                             .all(|_| true);
 
                         for key in expired_degraded_geodes {
-                            <pallet_geode::Module<T>>::detach_geode(
-                                pallet_geode::DetachOption::Unknown,
-                                key,
-                                None,
-                            )
-                            .map_err(|e| {
-                                debug!("{:?}", e);
-                            })
-                            .ok();
+                            let geode = pallet_geode::Geodes::<T>::get(key);
+                            <pallet_geode::Module<T>>::transit_state(
+                                &geode, pallet_geode::GeodeState::Unknown
+                            );
                         }
                     }
                 }
@@ -346,7 +336,7 @@ pub mod pallet {
                 pallet_geode::Geodes::<T>::contains_key(&geode),
                 pallet_geode::Error::<T>::InvalidGeode
             );
-            let mut geode_record = pallet_geode::Geodes::<T>::get(&geode);
+            let geode_record = pallet_geode::Geodes::<T>::get(&geode);
             ensure!(
                 geode_record.state != pallet_geode::GeodeState::Unknown
                     && geode_record.state != pallet_geode::GeodeState::Offline,
@@ -365,43 +355,22 @@ pub mod pallet {
             attestors.insert(who.clone());
             pallet_attestor::GeodeAttestors::<T>::insert(&geode, &attestors);
 
-            // first attestor attesting this geode
-            if geode_record.state == pallet_geode::GeodeState::Registered
-                && attestors.len() as u32 >= <MinAttestorNum<T>>::get()
-            {
-                // update pallet_geode::Geodes
-                geode_record.state = pallet_geode::GeodeState::Attested;
-                pallet_geode::Geodes::<T>::insert(&geode, &geode_record);
-
-                // remove from pallet_geode::RegisteredGeodes
-                pallet_geode::RegisteredGeodes::<T>::remove(&geode);
-
-                // move into pallet_geode::AttestedGeodes
-                let block_number =
-                    <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
-                pallet_geode::AttestedGeodes::<T>::insert(&geode, block_number);
-
-                // move into the PromisedGeodes for queueing for job
-                if geode_record.promise
-                    > block_number
-                        + pallet_geode::DISPATCH_CONFIRMATION_TIMEOUT
-                        + pallet_geode::PUT_ONLINE_TIMEOUT
-                    || geode_record.promise == 0
-                {
-                    let mut promised_geodes =
-                        pallet_geode::PromisedGeodes::<T>::get(&geode_record.promise);
-                    promised_geodes.push(geode.clone());
-                    pallet_geode::PromisedGeodes::<T>::insert(
-                        geode_record.promise,
-                        &promised_geodes,
-                    );
+            // posisble state change
+            if attestors.len() as u32 >= <MinAttestorNum<T>>::get() {
+                match geode_record.state {
+                    pallet_geode::GeodeState::Registered => {
+                        <pallet_geode::Module<T>>::transit_state(
+                            &geode_record, pallet_geode::GeodeState::Attested
+                        );
+                    },
+                    pallet_geode::GeodeState::DegradedInstantiated => {
+                        <pallet_geode::Module<T>>::transit_state(
+                            &geode_record, pallet_geode::GeodeState::Instantiated
+                        );
+                    },
+                    _ => {}
                 }
             }
-
-            pallet_geode::GeodeUpdateCounters::<T>::insert(
-                &geode,
-                pallet_geode::GeodeUpdateCounters::<T>::get(&geode) + 1,
-            );
 
             Self::deposit_event(Event::AttestFor(who, geode));
             Ok(().into())
@@ -441,15 +410,10 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Slash geode including update storage and penalty related logics
         fn slash_geode(key: &T::AccountId) {
-            <pallet_geode::Module<T>>::detach_geode(
-                pallet_geode::DetachOption::Unknown,
-                key.to_owned(),
-                None,
-            )
-            .map_err(|e| {
-                debug!("{:?}", e);
-            })
-            .ok();
+            let geode = pallet_geode::Geodes::<T>::get(key);
+            <pallet_geode::Module<T>>::transit_state(
+                &geode, pallet_geode::GeodeState::Unknown
+            );
 
             // TODO... Service related logic
             // TODO... Penalty related logic
@@ -470,13 +434,18 @@ pub mod pallet {
                 }
 
                 if <MinAttestorNum<T>>::get() > attestors.len() as u32 {
-                    <pallet_geode::Module<T>>::degrade_geode(geode);
-                } else {
-                    // because GeodeUpdateCounters will be updated in degrade_geode
-                    pallet_geode::GeodeUpdateCounters::<T>::insert(
-                        &geode,
-                        pallet_geode::GeodeUpdateCounters::<T>::get(&geode) + 1,
-                    );
+                    let geode = pallet_geode::Geodes::<T>::get(geode);
+                    match geode.state {
+                        pallet_geode::GeodeState::Attested => {
+                            <pallet_geode::Module<T>>::transit_state(&geode, pallet_geode::GeodeState::Registered);
+                        },
+                        pallet_geode::GeodeState::Instantiated => {
+                            <pallet_geode::Module<T>>::transit_state(&geode, pallet_geode::GeodeState::DegradedInstantiated);
+                        },
+                        _ => {
+                            // no state change
+                        }
+                    }
                 }
             }
         }

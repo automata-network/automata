@@ -13,7 +13,7 @@ pub mod pallet {
     use sp_core::H256;
     use sp_runtime::{RuntimeDebug, SaturatedConversion};
 
-    use frame_support::{debug::native::debug, ensure};
+    use frame_support::{ensure};
     use sha2::{Digest, Sha256};
     use sp_std::prelude::*;
 
@@ -63,6 +63,34 @@ pub mod pallet {
         }
     }
 
+    /// Geode state
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
+    pub enum DispatchState {
+        /// Pending to get a geode to query
+        Pending,
+        /// Waiting confirmation from geode
+        Awaiting,
+        /// Waiting dispatched geode to put online
+        PreOnline,
+    }
+
+    impl Default for DispatchState {
+        fn default() -> Self {
+            DispatchState::Pending
+        }
+    }
+
+    /// The full service struct shows its status
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default)]
+    pub struct Dispatch<AccountId: Ord, Hash> {
+        pub dispatch_id: DispatchId,
+        pub service_id: Hash,
+        pub geode: Option<AccountId>,
+        pub state: DispatchState,
+    }
+
     /// The full service struct shows its status
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default)]
@@ -89,6 +117,8 @@ pub mod pallet {
 
     pub type ServiceOf<T> =
         Service<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash>;
+    pub type DispatchOf<T> =
+    Dispatch<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash>;
 
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_geode::Config {
@@ -112,7 +142,7 @@ pub mod pallet {
                         .all(|_| true);
 
                     let mut processed_services = Vec::<u32>::new();
-                    for (dispatch, order_id) in <PendingDispatches<T>>::iter() {
+                    for (dispatch, order_id) in <PendingDispatchesQueue<T>>::iter() {
                         if avail_geodes.is_empty() {
                             break;
                         }
@@ -152,12 +182,18 @@ pub mod pallet {
 
                         // add to AwaitingDispatches
                         <AwaitingDispatches<T>>::insert(&geode, (&order_id, &now, &dispatch));
-                        // remove from PendingDispatches
+                        // remove from PendingDispatchesQueue
                         processed_services.push(dispatch);
+
+                        let mut dispatch_use = <Dispatches<T>>::get(&dispatch);
+                        dispatch_use.geode = Some(geode.clone());
+                        dispatch_use.state = DispatchState::Awaiting;
+
+                        <Dispatches<T>>::insert(&dispatch, dispatch_use);
 
                         Self::deposit_event(Event::DispatchQueriedGeode(dispatch, geode));
                     }
-                    // handling the updated geode maps
+                    // handling the updated geode maps in batch
                     for (p, v) in updated_geodes.iter() {
                         if v.is_empty() {
                             pallet_geode::PromisedGeodes::<T>::remove(p);
@@ -165,9 +201,9 @@ pub mod pallet {
                             pallet_geode::PromisedGeodes::<T>::insert(p, v);
                         }
                     }
-                    // remove processed services from PendingDispatches
+                    // remove processed services from PendingDispatchesQueue
                     for p in processed_services.iter() {
-                        <PendingDispatches<T>>::remove(p);
+                        <PendingDispatchesQueue<T>>::remove(p);
                     }
                 }
 
@@ -177,18 +213,19 @@ pub mod pallet {
                     for (geode, (order_id, block_num, dispatch)) in <AwaitingDispatches<T>>::iter()
                     {
                         if block_num + pallet_geode::DISPATCH_CONFIRMATION_TIMEOUT < now {
-                            // put the order back to PendingDispatches
-                            <PendingDispatches<T>>::insert(dispatch, &order_id);
-                            // detach geode to unknown state
-                            <pallet_geode::Module<T>>::detach_geode(
-                                pallet_geode::DetachOption::Unknown,
-                                geode.clone(),
-                                None,
-                            )
-                            .map_err(|e| {
-                                debug!("{:?}", e);
-                            })
-                            .ok();
+                            // put the order back to PendingDispatchesQueue
+                            <PendingDispatchesQueue<T>>::insert(&dispatch, &order_id);
+                            // change the dispatch state to Pending
+                            let mut dispatch_use = <Dispatches<T>>::get(&dispatch);
+                            dispatch_use.geode = None;
+                            dispatch_use.state = DispatchState::Pending;
+                            <Dispatches<T>>::insert(&dispatch, &dispatch_use);
+                            // transit geode to unknown state
+                            let geode_use = pallet_geode::Geodes::<T>::get(&geode);
+                            <pallet_geode::Module<T>>::transit_state(
+                                &geode_use,
+                                pallet_geode::GeodeState::Unknown
+                            );
                             // clean from AwaitingDispatches
                             expired.push(geode);
 
@@ -207,18 +244,18 @@ pub mod pallet {
                     for (geode, (order_id, block_num, dispatch)) in <PreOnlineDispatches<T>>::iter()
                     {
                         if block_num + pallet_geode::PUT_ONLINE_TIMEOUT < now {
-                            // put the order back to PendingDispatches
-                            <PendingDispatches<T>>::insert(dispatch, &order_id);
-                            // detach geode to unknown state
-                            <pallet_geode::Module<T>>::detach_geode(
-                                pallet_geode::DetachOption::Unknown,
-                                geode.clone(),
-                                None,
-                            )
-                            .map_err(|e| {
-                                debug!("{:?}", e);
-                            })
-                            .ok();
+                            // put the order back to PendingDispatchesQueue
+                            <PendingDispatchesQueue<T>>::insert(dispatch, &order_id);
+                            let mut dispatch_use = <Dispatches<T>>::get(&dispatch);
+                            dispatch_use.geode = None;
+                            dispatch_use.state = DispatchState::Pending;
+                            <Dispatches<T>>::insert(&dispatch, &dispatch_use);
+                            // transit geode to unknown state
+                            let geode_use = pallet_geode::Geodes::<T>::get(&geode);
+                            <pallet_geode::Module<T>>::transit_state(
+                                &geode_use,
+                                pallet_geode::GeodeState::Unknown
+                            );
                             // TODO: punish geode
 
                             // clean from AwaitingDispatches
@@ -238,14 +275,15 @@ pub mod pallet {
                     if <ExpectedEndings<T>>::contains_key(now) {
                         let terminated_services = <ExpectedEndings<T>>::get(now);
                         for service in terminated_services.iter() {
-                            Self::terminate_service(service.to_owned(), now, true);
+                            let service_record = <Services<T>>::get(service);
+                            Self::terminate_service(service_record, now, true);
                         }
                         <TerminatedBatch<T>>::insert(now, terminated_services);
                         <ExpectedEndings<T>>::remove(now);
                     }
                 }
 
-                // clean past terminated history
+                // clean expired terminated services records
             }
             0
         }
@@ -289,6 +327,10 @@ pub mod pallet {
         InvalidDurationType,
         /// Insecure execution operated such as type overflow etc.
         InsecureExecution,
+        /// Invalid operation
+        InvalidOperation,
+        /// Invalid dispatch
+        WrongDispatch,
     }
 
     #[pallet::pallet]
@@ -345,10 +387,15 @@ pub mod pallet {
     pub type LatestDispatchId<T: Config> =
         StorageValue<_, DispatchId, ValueQuery, DefaultDispatchId<T>>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn dispatch_states)]
+    pub type Dispatches<T: Config> =
+        StorageMap<_, Blake2_128Concat, DispatchId, DispatchOf<T>, ValueQuery>;
+
     /// Dispatches haven't been assigned to any geode
     #[pallet::storage]
     #[pallet::getter(fn pending_dispatches)]
-    pub type PendingDispatches<T: Config> =
+    pub type PendingDispatchesQueue<T: Config> =
         StorageMap<_, Blake2_128Concat, DispatchId, T::Hash, ValueQuery>;
 
     /// Dispatches waiting for geode's confirmation
@@ -412,8 +459,15 @@ pub mod pallet {
 
             for _n in 1..service_order.geode_num {
                 dispatch += 1;
-                <PendingDispatches<T>>::insert(&dispatch, &order_id);
+                <PendingDispatchesQueue<T>>::insert(&dispatch, &order_id);
                 dispatches.insert(dispatch.clone());
+                // change the dispatch state to Pending
+                <Dispatches<T>>::insert(&dispatch, Dispatch {
+                    dispatch_id: dispatch,
+                    service_id: order_id,
+                    geode: None,
+                    state: DispatchState::Pending
+                });
                 Self::deposit_event(Event::NewPendingDispatch(dispatch, order_id));
             }
 
@@ -456,20 +510,10 @@ pub mod pallet {
             );
             let service = <Services<T>>::get(&service_id);
             ensure!(service.owner == who, Error::<T>::NoRight);
-            // TODO: Currently only when the order is in pending state, implement for other state
-            ensure!(
-                service.state == ServiceState::Pending,
-                Error::<T>::InvalidServiceState
-            );
+            ensure!(service.state != ServiceState::Terminated, Error::<T>::InvalidServiceState);
 
-            for dispatch in service.dispatches.iter() {
-                <PendingDispatches<T>>::remove(dispatch);
-            }
-            <PendingServices<T>>::remove(&service_id);
-            <Services<T>>::remove(&service_id);
-            <Orders<T>>::remove(&service_id);
+            Self::terminate_service(service, <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>(), false);
 
-            Self::deposit_event(Event::ServiceRemoved(service_id));
             Ok(().into())
         }
 
@@ -520,99 +564,177 @@ pub mod pallet {
 
         /// Called by geode to confirm an order
         #[pallet::weight(0)]
-        pub fn geode_confirm_dispatching(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+        pub fn geode_confirm_dispatching(origin: OriginFor<T>, geode: T::AccountId, service_id: T::Hash) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
+
+            ensure!(pallet_geode::Geodes::<T>::contains_key(&geode), pallet_geode::Error::<T>::InvalidGeode);
+            let geode_use = pallet_geode::Geodes::<T>::get(&geode);
+            ensure!(geode_use.provider == who, pallet_geode::Error::<T>::NoRight);
+            ensure!(geode_use.state == pallet_geode::GeodeState::Attested, pallet_geode::Error::<T>::InvalidGeodeState);
+
+            ensure!(<Services<T>>::contains_key(&service_id), Error::<T>::InvalidService);
+            let service_use = <Services<T>>::get(&service_id);
+            ensure!(service_use.state != ServiceState::Terminated, Error::<T>::InvalidServiceState);
+
             ensure!(
-                <AwaitingDispatches<T>>::contains_key(&who),
-                Error::<T>::NoRight
+                <AwaitingDispatches<T>>::contains_key(&geode),
+                Error::<T>::InvalidOperation
             );
+
             // load the dispatch info
-            let (order_hash, _block_num, dispatch) = <AwaitingDispatches<T>>::get(&who);
+            let (order_hash, _block_num, dispatch) = <AwaitingDispatches<T>>::get(&geode);
+
+            ensure!(order_hash == service_id, Error::<T>::WrongDispatch);
+
+            let mut geode_use = geode_use;
+            geode_use.order = Some((service_id, None));
+            ensure!(<pallet_geode::Module<T>>::transit_state(
+                &geode_use,
+                pallet_geode::GeodeState::Instantiated
+            ), pallet_geode::Error::<T>::InvalidTransition);
+
             <PreOnlineDispatches<T>>::insert(
-                &who,
+                &geode,
                 (
                     order_hash,
                     <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>(),
                     &dispatch,
                 ),
             );
-            <AwaitingDispatches<T>>::remove(&who);
+            <AwaitingDispatches<T>>::remove(&geode);
 
-            Self::deposit_event(Event::DispatchConfirmed(dispatch, who));
+            let mut dispatch_use = <Dispatches<T>>::get(&dispatch);
+            dispatch_use.state = DispatchState::PreOnline;
+            <Dispatches<T>>::insert(&dispatch, dispatch_use);
+
+
+
+
+
+            Self::deposit_event(Event::DispatchConfirmed(dispatch, geode));
 
             Ok(().into())
         }
 
         /// Called by geode to start serving an order
         #[pallet::weight(0)]
-        pub fn geode_start_serving(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+        pub fn geode_start_serving(origin: OriginFor<T>, geode: T::AccountId, service_id: T::Hash) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
+
+            ensure!(pallet_geode::Geodes::<T>::contains_key(&geode), pallet_geode::Error::<T>::InvalidGeode);
+            let geode_use = pallet_geode::Geodes::<T>::get(&geode);
+            ensure!(geode_use.provider == who, pallet_geode::Error::<T>::NoRight);
+            ensure!(geode_use.state == pallet_geode::GeodeState::Instantiated || geode_use.state == pallet_geode::GeodeState::DegradedInstantiated, pallet_geode::Error::<T>::InvalidGeodeState);
+
+            ensure!(<Services<T>>::contains_key(&service_id), Error::<T>::InvalidService);
+            let service_use = <Services<T>>::get(&service_id);
+            ensure!(service_use.state != ServiceState::Terminated, Error::<T>::InvalidServiceState);
+
             ensure!(
-                <PreOnlineDispatches<T>>::contains_key(&who),
-                Error::<T>::NoRight
+                <PreOnlineDispatches<T>>::contains_key(&geode),
+                Error::<T>::InvalidOperation
             );
             // load the dispatch info
-            let (order_hash, _block_num, dispatch) = <PreOnlineDispatches<T>>::get(&who);
+            let (order_hash, _block_num, dispatch) = <PreOnlineDispatches<T>>::get(&geode);
+            ensure!(service_id == order_hash, Error::<T>::WrongDispatch);
 
             let order_record = <Orders<T>>::get(order_hash);
-            let mut service_record = <Services<T>>::get(order_hash);
-            service_record.dispatches.remove(&dispatch);
+            let mut service_use = service_use;
+            service_use.dispatches.remove(&dispatch);
 
             let now = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
 
-            <PreOnlineDispatches<T>>::remove(&who);
+            <PreOnlineDispatches<T>>::remove(&geode);
+            <Dispatches<T>>::remove(&dispatch);
 
-            match service_record.state {
+            match service_use.state {
                 ServiceState::Pending => {
                     <OnlineServices<T>>::insert(order_hash, now);
                     <PendingServices<T>>::remove(&order_hash);
-                    service_record.state = ServiceState::Online;
+                    service_use.state = ServiceState::Online;
                     Self::deposit_event(Event::ServiceOnline(order_hash));
                 }
                 ServiceState::Offline => {
                     <OnlineServices<T>>::insert(order_hash, now);
                     <OfflineServices<T>>::remove(&order_hash);
-                    service_record.state = ServiceState::Online;
+                    service_use.state = ServiceState::Online;
                     Self::deposit_event(Event::ServiceOnline(order_hash));
                 }
                 ServiceState::Online => {
                     // update weighted_uptime
                     let last_update = <OnlineServices<T>>::get(order_hash);
                     let updated_weighted_uptime = Self::get_updated_weighted_uptime(
-                        service_record.weighted_uptime,
+                        service_use.weighted_uptime,
                         last_update,
-                        service_record.geodes.len() as u32,
+                        service_use.geodes.len() as u32,
                     );
-                    service_record.weighted_uptime = updated_weighted_uptime;
+                    service_use.weighted_uptime = updated_weighted_uptime;
                     <OnlineServices<T>>::insert(order_hash, now);
                 }
                 _ => {}
             }
 
-            service_record.geodes.insert(who.clone());
+            service_use.geodes.insert(geode.clone());
 
             let new_expected_ending = Self::get_expected_ending(
                 order_record.geode_num,
                 order_record.duration,
-                service_record.weighted_uptime,
-                service_record.geodes.len() as u32,
+                service_use.weighted_uptime,
+                service_use.geodes.len() as u32,
             );
             Self::update_expected_ending(
                 order_hash,
-                service_record.expected_ending,
+                service_use.expected_ending,
                 new_expected_ending,
             );
-            service_record.expected_ending = Some(new_expected_ending);
+            service_use.expected_ending = Some(new_expected_ending);
 
-            <Services<T>>::insert(order_hash, service_record);
+            <Services<T>>::insert(order_hash, service_use);
 
             // update geode struct
-            let mut geode = pallet_geode::Geodes::<T>::get(&who);
-            geode.order = Some((order_hash, now));
+            let mut geode_use = geode_use;
+            geode_use.order = Some((order_hash, Some(now)));
+            pallet_geode::Geodes::<T>::insert(&geode, geode_use);
 
-            Self::deposit_event(Event::DispatchPutOnline(dispatch, who));
+            Self::deposit_event(Event::DispatchPutOnline(dispatch, geode));
 
             Ok(().into())
+        }
+
+        /// Called by provider to exit from Instantiated state
+        #[pallet::weight(0)]
+        pub fn geode_uninstantiate(
+            origin: OriginFor<T>,
+            geode: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            ensure!(pallet_geode::Geodes::<T>::contains_key(&geode), pallet_geode::Error::<T>::InvalidGeode);
+            let geode_use = pallet_geode::Geodes::<T>::get(geode);
+            ensure!(geode_use.provider == who, Error::<T>::NoRight);
+            ensure!(geode_use.state == pallet_geode::GeodeState::Instantiated || geode_use.state == pallet_geode::GeodeState::DegradedInstantiated, pallet_geode::Error::<T>::InvalidGeodeState);
+            
+            let order_id = geode_use.order.unwrap().0;
+            ensure!(!<Services<T>>::contains_key(order_id) || <Services<T>>::get(order_id).state == ServiceState::Terminated, Error::<T>::InvalidOperation);
+
+            // TODO: Backup logics
+            let ret;
+            match geode_use.state {
+                pallet_geode::GeodeState::Instantiated => {
+                    ret = <pallet_geode::Module<T>>::transit_state(&geode_use, pallet_geode::GeodeState::Attested);
+                }
+                pallet_geode::GeodeState::DegradedInstantiated => {
+                    ret = <pallet_geode::Module<T>>::transit_state(&geode_use, pallet_geode::GeodeState::Registered);
+                }
+                _ => {
+                    // won't happen
+                    ret = false;
+                }
+            }
+
+            match ret {
+                true => Ok(().into()),
+                false => Err(pallet_geode::Error::<T>::InvalidTransition.into()),
+            }
         }
     }
 
@@ -672,19 +794,55 @@ pub mod pallet {
                 .unwrap() as BlockNumber
         }
 
-        /// Only for Online service
-        fn terminate_service(service: T::Hash, when: BlockNumber, _completed: bool) {
-            let mut service_record = <Services<T>>::get(service);
-            <OnlineServices<T>>::remove(service);
-            service_record.state = ServiceState::Terminated;
-            <TerminatedServices<T>>::insert(service, &when);
-            for geode in service_record.geodes.iter() {
-                <pallet_geode::Module<T>>::dismiss_geode_from_service(
-                    geode.to_owned(),
-                    when.clone(),
-                );
+        fn terminate_service(service: ServiceOf<T>, when: BlockNumber, _completed: bool) {
+            let mut service = service;
+            // remove service from state map
+            match service.state {
+                ServiceState::Pending => {
+                    <PendingServices<T>>::remove(service.order_id);
+                },
+                ServiceState::Offline => {
+                    <OfflineServices<T>>::remove(service.order_id);
+                },
+                ServiceState::Online => {
+                    <OnlineServices<T>>::remove(service.order_id);
+                },
+                _ => {}
             }
 
+            // update service state
+            service.state = ServiceState::Terminated;
+            <TerminatedServices<T>>::insert(service.order_id, &when);
+
+            // TODO: how to compensate geode? - flagdown fee for each geode
+
+            // dismiss dispatches if there is any
+            for dispatch in service.dispatches.iter() {
+                let dispatch_use = <Dispatches<T>>::get(&dispatch);
+                match dispatch_use.state {
+                    DispatchState::Pending => {
+                        <PendingDispatchesQueue<T>>::remove(&dispatch);
+                    }
+                    DispatchState::Awaiting => {
+                        let geode = dispatch_use.geode.unwrap();
+                        <AwaitingDispatches<T>>::remove(&geode);
+                        // put geode back to priority pool
+                        let geode = pallet_geode::Geodes::<T>::get(&geode);
+                        <pallet_geode::Module<T>>::add_to_promises(&geode, &when);
+                    }
+                    DispatchState::PreOnline => {
+                        // let geode itself recover from Instantiated/DegradedInstantiated state
+                        <PreOnlineDispatches<T>>::remove(&dispatch_use.geode.unwrap());
+                        // if naturally completed - bad luck for geode
+                        // TODO: if user terminate - compensate geode with flagdown fee
+                    }
+                }
+            }
+
+            <Services<T>>::remove(&service.order_id);
+            <Orders<T>>::remove(&service.order_id);
+
+            Self::deposit_event(Event::ServiceRemoved(service.order_id));
             // TODO: how to distribute reward and let user claim back left staking?
         }
     }
