@@ -333,7 +333,7 @@ pub mod pallet {
 
         /// Called by provider to turn geode offline
         #[pallet::weight(0)]
-        pub fn turn_geode_offline(
+        pub fn provider_offline_geode(
             origin: OriginFor<T>,
             geode: T::AccountId,
         ) -> DispatchResultWithPostInfo {
@@ -349,7 +349,7 @@ pub mod pallet {
 
         /// Called by provider to turn geode online
         #[pallet::weight(0)]
-        pub fn turn_geode_online(
+        pub fn provider_online_geode(
             origin: OriginFor<T>,
             geode: T::AccountId,
         ) -> DispatchResultWithPostInfo {
@@ -565,7 +565,7 @@ pub mod pallet {
                         GeodeState::Instantiated => {
 
                         }
-                        GeodeState::Attested => {
+                        GeodeState::Registered => {
                             
                         }
                         GeodeState::Unknown => {

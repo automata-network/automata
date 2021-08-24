@@ -564,7 +564,7 @@ pub mod pallet {
 
         /// Called by geode to confirm an order
         #[pallet::weight(0)]
-        pub fn geode_confirm_dispatching(origin: OriginFor<T>, geode: T::AccountId, service_id: T::Hash) -> DispatchResultWithPostInfo {
+        pub fn provider_confirm_dispatch(origin: OriginFor<T>, geode: T::AccountId, service_id: T::Hash) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
 
             ensure!(pallet_geode::Geodes::<T>::contains_key(&geode), pallet_geode::Error::<T>::InvalidGeode);
@@ -618,7 +618,7 @@ pub mod pallet {
 
         /// Called by geode to start serving an order
         #[pallet::weight(0)]
-        pub fn geode_start_serving(origin: OriginFor<T>, geode: T::AccountId, service_id: T::Hash) -> DispatchResultWithPostInfo {
+        pub fn provider_start_serving(origin: OriginFor<T>, geode: T::AccountId, service_id: T::Hash) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
 
             ensure!(pallet_geode::Geodes::<T>::contains_key(&geode), pallet_geode::Error::<T>::InvalidGeode);
@@ -703,7 +703,7 @@ pub mod pallet {
 
         /// Called by provider to exit from Instantiated state
         #[pallet::weight(0)]
-        pub fn geode_uninstantiate(
+        pub fn provider_uninstantiate_geode(
             origin: OriginFor<T>,
             geode: T::AccountId,
         ) -> DispatchResultWithPostInfo {
