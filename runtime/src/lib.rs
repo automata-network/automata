@@ -404,6 +404,10 @@ impl pallet_liveness::Config for Runtime {
     type ReportExpiryBlockNumber = ReportExpiryBlockNumber;
 }
 
+impl pallet_service::Config for Runtime {
+    type Event = Event;
+}
+
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
@@ -451,6 +455,7 @@ construct_runtime!(
         Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
         AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>, ValidateUnsigned},
         GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
+        ServiceModule: pallet_service::{Module, Call, Storage, Event<T>},
         LivenessModule: pallet_liveness::{Module, Call, Storage, Event<T>},
     }
 );

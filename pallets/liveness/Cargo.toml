@@ -24,6 +24,7 @@ sp-runtime = { default-features = false, version = '3.0.0' }
 primitives = { package = "automata-primitives", path = "../../primitives", default-features = false }
 pallet-attestor = { version = "0.1.0", default-features = false, path = '../attestor' }
 pallet-geode = { version = "0.1.0", default-features = false, path = '../geode' }
+pallet-service = { version = "0.1.0", default-features = false, path = '../service' }
 
 [dev-dependencies]
 sp-core = { default-features = false, version = '3.0.0' }
