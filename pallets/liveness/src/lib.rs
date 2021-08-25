@@ -411,16 +411,14 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        /// Slash geode including update storage and penalty related logics
-        fn slash_geode(key: &T::AccountId) {
-            let geode = pallet_geode::Geodes::<T>::get(&key);
-            // TODO... Service related logic
+        fn detach_geode_services_dispatches(geode: &pallet_geode::GeodeOf<T>) {
+            // Service related logic
             // check if any service
             if geode.order != None {
                 // geode having an service
                 let service_id = geode.order.unwrap().0;
                 let mut service_use = pallet_service::Services::<T>::get(&service_id);
-                if service_use.geodes.contains(&key) {
+                if service_use.geodes.contains(&geode.id) {
                     // geode already serving
                     // update weighted uptime
                     // get last updated block num
@@ -434,7 +432,7 @@ pub mod pallet {
                     service_use.weighted_uptime = updated_weighted_uptime;
 
                     // remove geode from service_use
-                    service_use.geodes.remove(&key);
+                    service_use.geodes.remove(&geode.id);
 
                     let block_number =
                         <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
@@ -486,35 +484,40 @@ pub mod pallet {
                         // installing
                         // reset the old dispatch
                         let (_order_id, _block_num, dispatch) =
-                            pallet_service::PreOnlineDispatches::<T>::get(&key);
+                            pallet_service::PreOnlineDispatches::<T>::get(&geode.id);
                         let mut dispatch_use = pallet_service::Dispatches::<T>::get(&dispatch);
                         dispatch_use.geode = None;
                         dispatch_use.state = pallet_service::DispatchState::Pending;
-                        pallet_service::PreOnlineDispatches::<T>::remove(&key);
+                        pallet_service::PreOnlineDispatches::<T>::remove(&geode.id);
                         pallet_service::PendingDispatchesQueue::<T>::insert(
                             &dispatch_use.dispatch_id,
                             &dispatch_use.service_id,
                         );
                     }
                 }
-
                 pallet_service::Services::<T>::insert(service_id, service_use);
             } else {
                 // check is any dispatch on it
                 // if yes reset
-                if pallet_service::AwaitingDispatches::<T>::contains_key(&key) {
+                if pallet_service::AwaitingDispatches::<T>::contains_key(&geode.id) {
                     let (_order_id, _block_num, dispatch) =
-                        pallet_service::AwaitingDispatches::<T>::get(&key);
+                        pallet_service::AwaitingDispatches::<T>::get(&geode.id);
                     let mut dispatch_use = pallet_service::Dispatches::<T>::get(&dispatch);
                     dispatch_use.geode = None;
                     dispatch_use.state = pallet_service::DispatchState::Pending;
-                    pallet_service::AwaitingDispatches::<T>::remove(&key);
+                    pallet_service::AwaitingDispatches::<T>::remove(&geode.id);
                     pallet_service::PendingDispatchesQueue::<T>::insert(
                         &dispatch_use.dispatch_id,
                         &dispatch_use.service_id,
                     );
                 }
             }
+        }
+
+        /// Slash geode including update storage and penalty related logics
+        fn slash_geode(key: &T::AccountId) {
+            let geode = pallet_geode::Geodes::<T>::get(&key);
+            Self::detach_geode_services_dispatches(&geode);
 
             // TODO... Penalty related logic
             <pallet_geode::Module<T>>::transit_state(&geode, pallet_geode::GeodeState::Unknown);
@@ -535,17 +538,25 @@ pub mod pallet {
                 }
 
                 if <MinAttestorNum<T>>::get() > attestors.len() as u32 {
-                    let geode = pallet_geode::Geodes::<T>::get(geode);
-                    match geode.state {
+                    let geode_use = pallet_geode::Geodes::<T>::get(&geode);
+                    match geode_use.state {
                         pallet_geode::GeodeState::Attested => {
+                            // clean any existing dispatches
+                            Self::detach_geode_services_dispatches(&geode_use);
                             <pallet_geode::Module<T>>::transit_state(
-                                &geode,
+                                &geode_use,
                                 pallet_geode::GeodeState::Registered,
                             );
                         }
                         pallet_geode::GeodeState::Instantiated => {
+                            // if haven't put service Online
+                            let service_use = pallet_service::Services::<T>::get(geode_use.order.unwrap().0);
+                            if !service_use.geodes.contains(&geode) {
+                                Self::detach_geode_services_dispatches(&geode_use);
+                            }
+
                             <pallet_geode::Module<T>>::transit_state(
-                                &geode,
+                                &geode_use,
                                 pallet_geode::GeodeState::Degraded,
                             );
                         }
