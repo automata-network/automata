@@ -45,21 +45,21 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
     pub enum ServiceState {
-        /// The init state when a service is created.
+        /// Default state, the service not existing
+        Null,
+        /// Waiting for geode to serve the service.
         Pending,
-        /// When the service is being serviced by the geode.
+        /// When the service is being serviced by geode.
         Online,
-        // /// When the geode of the service is being reported.
-        // Degraded,
-        /// When the service turns offline.
+        /// When no geode is serving after the service online.
         Offline,
-        /// When the service is finished
+        /// When the service is completed or cancelled by user
         Terminated,
     }
 
     impl Default for ServiceState {
         fn default() -> Self {
-            ServiceState::Pending
+            ServiceState::Null
         }
     }
 
@@ -67,6 +67,8 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
     pub enum DispatchState {
+        /// default state, the dispatch not exist
+        None,
         /// Pending to get a geode to query
         Pending,
         /// Waiting confirmation from geode
@@ -77,7 +79,7 @@ pub mod pallet {
 
     impl Default for DispatchState {
         fn default() -> Self {
-            DispatchState::Pending
+            DispatchState::None
         }
     }
 
@@ -85,9 +87,13 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default)]
     pub struct Dispatch<AccountId: Ord, Hash> {
+        /// DispatchId is incremental from 0 and updated by 1 whenever a new dispatch is generated, it ensures dispatches will be served based on FIFO order.
         pub dispatch_id: DispatchId,
+        /// The service_id for which this dispatch is generated 
         pub service_id: Hash,
+        /// Geode assigned with this dispatch, None if no geode has been queried for this dispatch
         pub geode: Option<AccountId>,
+        /// Dispatch state
         pub state: DispatchState,
     }
 
@@ -95,17 +101,17 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default)]
     pub struct Service<AccountId: Ord, Hash> {
-        /// Service order id.
+        /// Service order id
         pub order_id: Hash,
-        /// dispatch id.
+        /// Current existing dispatch for this service
         pub dispatches: BTreeSet<DispatchId>,
-        /// Service creator id.
+        /// Service owner id.
         pub owner: AccountId,
-        /// Geodes being dispatched to fulfill the service.
+        /// Geodes serving the service(already put online).
         pub geodes: BTreeSet<AccountId>,
-        /// Total block number the service has been online
+        /// Total weighted uptime the service has been online (num of geode * online block num)
         pub weighted_uptime: u64,
-        /// Expected to be ended at
+        /// Expected block num for the service to complete
         pub expected_ending: Option<BlockNumber>,
         /// Whether the service has backup
         pub backup_flag: bool,
@@ -346,10 +352,10 @@ pub mod pallet {
     pub type Services<T: Config> =
         StorageMap<_, Blake2_128Concat, T::Hash, ServiceOf<T>, ValueQuery>;
 
-    #[pallet::storage]
-    #[pallet::getter(fn pending_services)]
-    pub type PendingServices<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::Hash, BlockNumber, ValueQuery>;
+    // #[pallet::storage]
+    // #[pallet::getter(fn pending_services)]
+    // pub type PendingServices<T: Config> =
+    //     StorageMap<_, Blake2_128Concat, T::Hash, BlockNumber, ValueQuery>;
 
     /// Value: the block number of when weighted_uptime updated last time
     #[pallet::storage]
@@ -358,19 +364,14 @@ pub mod pallet {
         StorageMap<_, Blake2_128Concat, T::Hash, BlockNumber, ValueQuery>;
 
     // #[pallet::storage]
-    // #[pallet::getter(fn degraded_services)]
-    // pub type DegradedServices<T: Config> =
+    // #[pallet::getter(fn offline_services)]
+    // pub type OfflineServices<T: Config> =
     //     StorageMap<_, Blake2_128Concat, T::Hash, BlockNumber, ValueQuery>;
 
-    #[pallet::storage]
-    #[pallet::getter(fn offline_services)]
-    pub type OfflineServices<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::Hash, BlockNumber, ValueQuery>;
-
-    #[pallet::storage]
-    #[pallet::getter(fn terminated_services)]
-    pub type TerminatedServices<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::Hash, BlockNumber, ValueQuery>;
+    // #[pallet::storage]
+    // #[pallet::getter(fn terminated_services)]
+    // pub type TerminatedServices<T: Config> =
+    //     StorageMap<_, Blake2_128Concat, T::Hash, BlockNumber, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn teminated_batch)]
@@ -471,9 +472,9 @@ pub mod pallet {
             <Orders<T>>::insert(&order_id, service_order);
             <Services<T>>::insert(&order_id, service);
 
-            let block_number =
-                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
-            <PendingServices<T>>::insert(&order_id, block_number);
+            // let block_number =
+            //     <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+            // <PendingServices<T>>::insert(&order_id, block_number);
 
             Self::deposit_event(Event::ServiceCreated(who, order_id.clone()));
 
@@ -507,50 +508,50 @@ pub mod pallet {
             Ok(().into())
         }
 
-        /// Called by user to increase the duration of a service order, extended BlockNumber will be rounded up by SLOT_LENGTH
-        #[pallet::weight(0)]
-        pub fn user_extend_duration(
-            origin: OriginFor<T>,
-            service_id: T::Hash,
-            extend: BlockNumber,
-        ) -> DispatchResultWithPostInfo {
-            let who = ensure_signed(origin)?;
-            let mut service = <Services<T>>::get(&service_id);
-            ensure!(service.owner == who, Error::<T>::NoRight);
-            ensure!(
-                service.state != ServiceState::Terminated,
-                Error::<T>::InvalidServiceState
-            );
-            let mut order = <Orders<T>>::get(&service_id);
-            // TODO: calculate fee
+        // /// Called by user to increase the duration of a service order, extended BlockNumber will be rounded up by SLOT_LENGTH
+        // #[pallet::weight(0)]
+        // pub fn user_extend_duration(
+        //     origin: OriginFor<T>,
+        //     service_id: T::Hash,
+        //     extend: BlockNumber,
+        // ) -> DispatchResultWithPostInfo {
+        //     let who = ensure_signed(origin)?;
+        //     let mut service = <Services<T>>::get(&service_id);
+        //     ensure!(service.owner == who, Error::<T>::NoRight);
+        //     ensure!(
+        //         service.state != ServiceState::Terminated,
+        //         Error::<T>::InvalidServiceState
+        //     );
+        //     let mut order = <Orders<T>>::get(&service_id);
+        //     // TODO: calculate fee
 
-            order.duration = match order.duration.checked_add(extend) {
-                Some(v) => v,
-                None => {
-                    return Err(Error::<T>::InsecureExecution.into());
-                }
-            };
+        //     order.duration = match order.duration.checked_add(extend) {
+        //         Some(v) => v,
+        //         None => {
+        //             return Err(Error::<T>::InsecureExecution.into());
+        //         }
+        //     };
 
-            // TODO: update expected ending
-            match service.expected_ending {
-                Some(v) => {
-                    let new_expected_ending = Self::get_expected_ending(
-                        order.geode_num,
-                        order.duration,
-                        service.weighted_uptime,
-                        service.geodes.len() as u32,
-                    );
-                    Self::update_expected_ending(service_id, Some(v), new_expected_ending);
-                    service.expected_ending = Some(new_expected_ending);
-                    <Services<T>>::insert(service_id, service);
-                }
-                None => {}
-            }
+        //     // TODO: update expected ending
+        //     match service.expected_ending {
+        //         Some(v) => {
+        //             let new_expected_ending = Self::get_expected_ending(
+        //                 order.geode_num,
+        //                 order.duration,
+        //                 service.weighted_uptime,
+        //                 service.geodes.len() as u32,
+        //             );
+        //             Self::update_expected_ending(service_id, Some(v), new_expected_ending);
+        //             service.expected_ending = Some(new_expected_ending);
+        //             <Services<T>>::insert(service_id, service);
+        //         }
+        //         None => {}
+        //     }
 
-            <Orders<T>>::insert(service_id, order);
+        //     <Orders<T>>::insert(service_id, order);
 
-            Ok(().into())
-        }
+        //     Ok(().into())
+        // }
 
         /// Called by geode to confirm an order
         #[pallet::weight(0)]
@@ -672,13 +673,13 @@ pub mod pallet {
             match service_use.state {
                 ServiceState::Pending => {
                     <OnlineServices<T>>::insert(order_hash, now);
-                    <PendingServices<T>>::remove(&order_hash);
+                    // <PendingServices<T>>::remove(&order_hash);
                     service_use.state = ServiceState::Online;
                     Self::deposit_event(Event::ServiceOnline(order_hash));
                 }
                 ServiceState::Offline => {
                     <OnlineServices<T>>::insert(order_hash, now);
-                    <OfflineServices<T>>::remove(&order_hash);
+                    // <OfflineServices<T>>::remove(&order_hash);
                     service_use.state = ServiceState::Online;
                     Self::deposit_event(Event::ServiceOnline(order_hash));
                 }
@@ -864,15 +865,15 @@ pub mod pallet {
             Some(dispatches)
         }
 
-        fn terminate_service(service: ServiceOf<T>, when: BlockNumber, _completed: bool) {
+        fn terminate_service(service: ServiceOf<T>, when: BlockNumber, completed: bool) {
             let mut service = service;
             // remove service from state map
             match service.state {
                 ServiceState::Pending => {
-                    <PendingServices<T>>::remove(service.order_id);
+                    // <PendingServices<T>>::remove(service.order_id);
                 }
                 ServiceState::Offline => {
-                    <OfflineServices<T>>::remove(service.order_id);
+                    // <OfflineServices<T>>::remove(service.order_id);
                 }
                 ServiceState::Online => {
                     <OnlineServices<T>>::remove(service.order_id);
@@ -882,7 +883,14 @@ pub mod pallet {
 
             // update service state
             service.state = ServiceState::Terminated;
-            <TerminatedServices<T>>::insert(service.order_id, &when);
+            // <TerminatedServices<T>>::insert(service.order_id, &when);
+
+            if !completed {
+                let now = <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+                let mut batch = <TerminatedBatch<T>>::get(&now);
+                batch.insert(service.order_id);
+                <TerminatedBatch<T>>::insert(now, batch);
+            }
 
             // TODO: how to compensate geode? - flagdown fee for each geode
 
@@ -906,6 +914,7 @@ pub mod pallet {
                         // if naturally completed - bad luck for geode
                         // TODO: if user terminate - compensate geode with flagdown fee
                     }
+                    _ => {}
                 }
             }
 

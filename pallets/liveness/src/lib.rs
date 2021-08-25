@@ -454,7 +454,7 @@ pub mod pallet {
                         // clean expected ending
                         service_use.expected_ending = None;
                         // put service to new state map
-                        pallet_service::OfflineServices::<T>::insert(&service_id, block_number);
+                        // pallet_service::OfflineServices::<T>::insert(&service_id, block_number);
                     } else {
                         // update latest online record for calculating weighted uptime next time
                         pallet_service::OnlineServices::<T>::insert(&service_id, block_number);
