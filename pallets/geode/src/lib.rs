@@ -205,24 +205,35 @@ pub mod pallet {
             geode_record: GeodeOf<T>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            let mut geode_record = geode_record;
-            let geode = geode_record.id.clone();
-            ensure!(!<Geodes<T>>::contains_key(&geode), Error::<T>::AlreadyGeode);
 
-            let block_number =
-                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
-            geode_record.state = GeodeState::Registered;
-            geode_record.provider = who.clone();
+            if <Geodes<T>>::contains_key(&geode_record.id) {
+                let mut geode = <Geodes<T>>::get(geode_record.id);
+                ensure!(geode.provider == who, Error::<T>::NoRight);
+                geode.order = None;
+                match Self::transit_state(&geode, GeodeState::Registered) {
+                    true => { return Ok(().into()); }
+                    false => { return Err(Error::<T>::InvalidTransition.into()); }
+                }
+            } else {
+                let mut geode_record = geode_record;
+                let geode = geode_record.id.clone();
+    
+                let block_number =
+                    <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+                geode_record.state = GeodeState::Registered;
+                geode_record.provider = who.clone();
+    
+                <Geodes<T>>::insert(&geode, &geode_record);
+                <RegisteredGeodes<T>>::insert(&geode, &block_number);
+    
+                Self::deposit_event(Event::GeodeRegister(who, geode));
+            }
 
-            <Geodes<T>>::insert(&geode, &geode_record);
-            <RegisteredGeodes<T>>::insert(&geode, &block_number);
 
-            Self::deposit_event(Event::GeodeRegister(who, geode));
             Ok(().into())
         }
 
         /// Called by provider to remove geode .
-        /// Return Ok() only when the geode's state is Registered/Attested
         #[pallet::weight(0)]
         pub fn geode_remove(
             origin: OriginFor<T>,
@@ -333,38 +344,6 @@ pub mod pallet {
             Self::deposit_event(Event::GeodePromiseUpdate(geode, promise));
 
             Ok(().into())
-        }
-
-        /// Called by provider to turn geode offline
-        #[pallet::weight(0)]
-        pub fn provider_offline_geode(
-            origin: OriginFor<T>,
-            geode: T::AccountId,
-        ) -> DispatchResultWithPostInfo {
-            let who = ensure_signed(origin)?;
-            ensure!(<Geodes<T>>::contains_key(&geode), Error::<T>::InvalidGeode);
-            let geode = <Geodes<T>>::get(geode);
-            ensure!(geode.provider == who, Error::<T>::NoRight);
-            match Self::transit_state(&geode, GeodeState::Offline) {
-                true => Ok(().into()),
-                false => Err(Error::<T>::InvalidTransition.into()),
-            }
-        }
-
-        /// Called by provider to turn geode online
-        #[pallet::weight(0)]
-        pub fn provider_online_geode(
-            origin: OriginFor<T>,
-            geode: T::AccountId,
-        ) -> DispatchResultWithPostInfo {
-            let who = ensure_signed(origin)?;
-            ensure!(<Geodes<T>>::contains_key(&geode), Error::<T>::InvalidGeode);
-            let geode = <Geodes<T>>::get(geode);
-            ensure!(geode.provider == who, Error::<T>::NoRight);
-            match Self::transit_state(&geode, GeodeState::Registered) {
-                true => Ok(().into()),
-                false => Err(Error::<T>::InvalidTransition.into()),
-            }
         }
     }
 
@@ -539,6 +518,9 @@ pub mod pallet {
                         GeodeState::Unknown => {
                             pallet_attestor::Module::<T>::detach_geode_from_attestors(&geode.id);
                         }
+                        GeodeState::Offline => {
+                            pallet_attestor::Module::<T>::detach_geode_from_attestors(&geode.id);
+                        }
                         _ => {
                             return false;
                         }
@@ -550,6 +532,9 @@ pub mod pallet {
                         GeodeState::Instantiated => {}
                         GeodeState::Registered => {}
                         GeodeState::Unknown => {
+                            pallet_attestor::Module::<T>::detach_geode_from_attestors(&geode.id);
+                        }
+                        GeodeState::Offline => {
                             pallet_attestor::Module::<T>::detach_geode_from_attestors(&geode.id);
                         }
                         _ => {

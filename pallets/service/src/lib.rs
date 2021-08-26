@@ -19,7 +19,6 @@ pub mod pallet {
 
     use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
-    pub const ALLOW_DEGRADED_DISPATCH: bool = false;
     pub const MIN_ORDER_DURATION: BlockNumber = 40;
 
     #[cfg(feature = "std")]
@@ -167,15 +166,13 @@ pub mod pallet {
                             promise = *entry.0;
                         } else if avail_geodes.contains_key(&0) {
                             promise = 0;
-                        } else if ALLOW_DEGRADED_DISPATCH {
+                        } else {
                             if let Some(entry) = avail_geodes.range(..expected_promise).last() {
                                 // else find the largest smaller geode
                                 promise = *entry.0;
                             } else {
                                 break;
                             }
-                        } else {
-                            continue;
                         }
 
                         geode = avail_geodes.get_mut(&promise).unwrap().remove(0);
@@ -508,50 +505,50 @@ pub mod pallet {
             Ok(().into())
         }
 
-        // /// Called by user to increase the duration of a service order, extended BlockNumber will be rounded up by SLOT_LENGTH
-        // #[pallet::weight(0)]
-        // pub fn user_extend_duration(
-        //     origin: OriginFor<T>,
-        //     service_id: T::Hash,
-        //     extend: BlockNumber,
-        // ) -> DispatchResultWithPostInfo {
-        //     let who = ensure_signed(origin)?;
-        //     let mut service = <Services<T>>::get(&service_id);
-        //     ensure!(service.owner == who, Error::<T>::NoRight);
-        //     ensure!(
-        //         service.state != ServiceState::Terminated,
-        //         Error::<T>::InvalidServiceState
-        //     );
-        //     let mut order = <Orders<T>>::get(&service_id);
-        //     // TODO: calculate fee
+        /// Called by user to increase the duration of a service order, extended BlockNumber will be rounded up by SLOT_LENGTH
+        #[pallet::weight(0)]
+        pub fn user_extend_duration(
+            origin: OriginFor<T>,
+            service_id: T::Hash,
+            extend: BlockNumber,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let mut service = <Services<T>>::get(&service_id);
+            ensure!(service.owner == who, Error::<T>::NoRight);
+            ensure!(
+                service.state != ServiceState::Terminated,
+                Error::<T>::InvalidServiceState
+            );
+            let mut order = <Orders<T>>::get(&service_id);
+            // TODO: calculate fee
 
-        //     order.duration = match order.duration.checked_add(extend) {
-        //         Some(v) => v,
-        //         None => {
-        //             return Err(Error::<T>::InsecureExecution.into());
-        //         }
-        //     };
+            order.duration = match order.duration.checked_add(extend) {
+                Some(v) => v,
+                None => {
+                    return Err(Error::<T>::InsecureExecution.into());
+                }
+            };
 
-        //     // TODO: update expected ending
-        //     match service.expected_ending {
-        //         Some(v) => {
-        //             let new_expected_ending = Self::get_expected_ending(
-        //                 order.geode_num,
-        //                 order.duration,
-        //                 service.weighted_uptime,
-        //                 service.geodes.len() as u32,
-        //             );
-        //             Self::update_expected_ending(service_id, Some(v), new_expected_ending);
-        //             service.expected_ending = Some(new_expected_ending);
-        //             <Services<T>>::insert(service_id, service);
-        //         }
-        //         None => {}
-        //     }
+            // TODO: update expected ending
+            match service.expected_ending {
+                Some(v) => {
+                    let new_expected_ending = Self::get_expected_ending(
+                        order.geode_num,
+                        order.duration,
+                        service.weighted_uptime,
+                        service.geodes.len() as u32,
+                    );
+                    Self::update_expected_ending(service_id, Some(v), new_expected_ending);
+                    service.expected_ending = Some(new_expected_ending);
+                    <Services<T>>::insert(service_id, service);
+                }
+                None => {}
+            }
 
-        //     <Orders<T>>::insert(service_id, order);
+            <Orders<T>>::insert(service_id, order);
 
-        //     Ok(().into())
-        // }
+            Ok(().into())
+        }
 
         /// Called by geode to confirm an order
         #[pallet::weight(0)]

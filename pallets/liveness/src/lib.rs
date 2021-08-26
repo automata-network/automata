@@ -14,7 +14,6 @@ pub mod pallet {
     use frame_support::ensure;
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
     use frame_system::pallet_prelude::*;
-    use pallet_geode::AttestedGeodes;
     use primitives::BlockNumber;
     use sp_runtime::{Percent, RuntimeDebug, SaturatedConversion};
     use sp_std::borrow::ToOwned;
@@ -392,6 +391,25 @@ pub mod pallet {
             );
             Self::do_attestor_exit(&who);
             Ok(().into())
+        }
+
+        /// Remove geodes while unlink the related service/dispatch
+        /// Called by provider to turn geode offline
+        #[pallet::weight(0)]
+        pub fn provider_offline_geode(
+            origin: OriginFor<T>,
+            geode: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            ensure!(pallet_geode::Geodes::<T>::contains_key(&geode), pallet_geode::Error::<T>::InvalidGeode);
+            let geode = pallet_geode::Geodes::<T>::get(geode);
+            ensure!(geode.provider == who, pallet_geode::Error::<T>::NoRight);
+            ensure!(geode.promise != 0 || geode.promise < <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>(), pallet_geode::Error::<T>::InvalidPromise);
+            Self::detach_geode_services_dispatches(&geode);
+            match <pallet_geode::Module<T>>::transit_state(&geode, pallet_geode::GeodeState::Offline) {
+                true => Ok(().into()),
+                false => Err(pallet_geode::Error::<T>::InvalidTransition.into()),
+            }
         }
 
         /// Called by root to set the min stake
