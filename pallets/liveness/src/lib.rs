@@ -284,6 +284,20 @@ pub mod pallet {
                     match t {
                         ReportType::Challenge => {
                             let geode = pallet_geode::Geodes::<T>::get(&geode_id);
+                            if geode.state == pallet_geode::GeodeState::Registered {
+                                // just exit attesting for it
+                                let mut attestors = pallet_attestor::GeodeAttestors::<T>::get(&geode_id);
+                                attestors.remove(&who);
+                
+                                if attestors.is_empty() {
+                                    pallet_attestor::GeodeAttestors::<T>::remove(&geode_id);
+                                } else {
+                                    pallet_attestor::GeodeAttestors::<T>::insert(&geode_id, &attestors);
+                                }
+
+                                Self::deposit_event(Event::ReportBlame(who, geode_id));
+                                return Ok(().into());
+                            }
                             ensure!(geode.state == pallet_geode::GeodeState::Attested || 
                                     geode.state == pallet_geode::GeodeState::Instantiated || 
                                     geode.state == pallet_geode::GeodeState::Degraded, pallet_geode::Error::<T>::InvalidGeodeState);
