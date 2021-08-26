@@ -7,3 +7,7 @@ members = [
 ]
 [profile.release]
 panic = 'unwind'
+
+[patch.crates-io.crypto-mac]
+git = "https://github.com/RustCrypto/traits.git"
+tag = "crypto-mac-v0.7.0"
