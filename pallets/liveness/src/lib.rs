@@ -280,11 +280,30 @@ pub mod pallet {
             );
             // check have report
             match ReportType::try_from(report_type) {
-                Ok(_) => {}
+                Ok(t) => {
+                    match t {
+                        ReportType::Challenge => {
+                            let geode = pallet_geode::Geodes::<T>::get(&geode_id);
+                            ensure!(geode.state == pallet_geode::GeodeState::Attested || 
+                                    geode.state == pallet_geode::GeodeState::Instantiated || 
+                                    geode.state == pallet_geode::GeodeState::Degraded, pallet_geode::Error::<T>::InvalidGeodeState);
+                        },
+                        ReportType::Service => {
+                            let geode = pallet_geode::Geodes::<T>::get(&geode_id);
+                            ensure!(geode.state == pallet_geode::GeodeState::Instantiated || geode.state == pallet_geode::GeodeState::Degraded, pallet_geode::Error::<T>::InvalidGeodeState);
+                            let service_use = pallet_service::Services::<T>::get(geode.order.unwrap().0);
+                            ensure!(service_use.geodes.contains(&geode_id), pallet_service::Error::<T>::InvalidServiceState);
+                        },
+                        _ => {
+                            return Err(Error::<T>::InvalidReportType.into());
+                        }
+                    }
+                }
                 Err(_) => {
                     return Err(Error::<T>::InvalidReportType.into());
                 }
             };
+
             let key = (geode_id.clone(), report_type);
             let mut report = ReportOf::<T>::default();
             if <Reports<T>>::contains_key(&key) {
