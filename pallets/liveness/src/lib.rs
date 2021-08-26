@@ -14,6 +14,7 @@ pub mod pallet {
     use frame_support::ensure;
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
     use frame_system::pallet_prelude::*;
+    use pallet_geode::AttestedGeodes;
     use primitives::BlockNumber;
     use sp_runtime::{Percent, RuntimeDebug, SaturatedConversion};
     use sp_std::borrow::ToOwned;
@@ -146,6 +147,8 @@ pub mod pallet {
         NotAttestingFor,
         /// Invalid Report Type
         InvalidReportType,
+        /// Invalid Input
+        InvalidInput
     }
 
     #[pallet::hooks]
@@ -395,8 +398,57 @@ pub mod pallet {
         #[pallet::weight(0)]
         pub fn set_min_attestor_num(origin: OriginFor<T>, num: u32) -> DispatchResultWithPostInfo {
             let _who = ensure_root(origin)?;
+            let prev_min_att_num = <MinAttestorNum<T>>::get();
+            if num > prev_min_att_num {
+                let mut geodes = Vec::new();
+                for (geode, _block_num) in pallet_geode::AttestedGeodes::<T>::iter() {
+                    let attestors = pallet_attestor::GeodeAttestors::<T>::get(&geode);
+                    if num > attestors.len() as u32 {
+                        // Self::degrade_geode(&geode);
+                        geodes.push(geode);
+                    }
+                }
+                for (geode, _block_num) in pallet_geode::InstantiatedGeodes::<T>::iter() {
+                    let attestors = pallet_attestor::GeodeAttestors::<T>::get(&geode);
+                    if num > attestors.len() as u32 {
+                        geodes.push(geode);
+                    }
+                }
+                for geode in geodes.iter() {
+                    Self::degrade_geode(&geode);
+                }
+            } else if num < prev_min_att_num {
+                let mut geodes_use = Vec::new();
+                for (geode, _block_num) in pallet_geode::RegisteredGeodes::<T>::iter() {
+                    let geode_use = pallet_geode::Geodes::<T>::get(&geode);
+                    geodes_use.push(geode_use);
+                }
+                for (geode, _block_num) in pallet_geode::DegradedGeodes::<T>::iter() {
+                    let geode_use = pallet_geode::Geodes::<T>::get(&geode);
+                    geodes_use.push(geode_use)
+                }
+                for geode_use in geodes_use.iter() {
+                    match geode_use.state {
+                        pallet_geode::GeodeState::Registered => {
+                            <pallet_geode::Module<T>>::transit_state(
+                                &geode_use,
+                                pallet_geode::GeodeState::Attested,
+                            );
+                        }
+                        pallet_geode::GeodeState::Degraded => {
+                            <pallet_geode::Module<T>>::transit_state(
+                                &geode_use,
+                                pallet_geode::GeodeState::Instantiated,
+                            );
+                        }
+                        _ => {}
+                    }
+                }
+            } else {
+                return Err(Error::<T>::InvalidInput.into());
+            }
             <MinAttestorNum<T>>::put(num);
-            // TODO: cause geode state change immediately
+            
             Ok(().into())
         }
 
@@ -538,32 +590,36 @@ pub mod pallet {
                 }
 
                 if <MinAttestorNum<T>>::get() > attestors.len() as u32 {
-                    let geode_use = pallet_geode::Geodes::<T>::get(&geode);
-                    match geode_use.state {
-                        pallet_geode::GeodeState::Attested => {
-                            // clean any existing dispatches
-                            Self::detach_geode_services_dispatches(&geode_use);
-                            <pallet_geode::Module<T>>::transit_state(
-                                &geode_use,
-                                pallet_geode::GeodeState::Registered,
-                            );
-                        }
-                        pallet_geode::GeodeState::Instantiated => {
-                            // if haven't put service Online
-                            let service_use = pallet_service::Services::<T>::get(geode_use.order.unwrap().0);
-                            if !service_use.geodes.contains(&geode) {
-                                Self::detach_geode_services_dispatches(&geode_use);
-                            }
+                    Self::degrade_geode(&geode);
+                }
+            }
+        }
 
-                            <pallet_geode::Module<T>>::transit_state(
-                                &geode_use,
-                                pallet_geode::GeodeState::Degraded,
-                            );
-                        }
-                        _ => {
-                            // no state change
-                        }
+        fn degrade_geode(geode: &T::AccountId) {
+            let geode_use = pallet_geode::Geodes::<T>::get(&geode);
+            match geode_use.state {
+                pallet_geode::GeodeState::Attested => {
+                    // clean any existing dispatches
+                    Self::detach_geode_services_dispatches(&geode_use);
+                    <pallet_geode::Module<T>>::transit_state(
+                        &geode_use,
+                        pallet_geode::GeodeState::Registered,
+                    );
+                }
+                pallet_geode::GeodeState::Instantiated => {
+                    // if haven't put service Online
+                    let service_use = pallet_service::Services::<T>::get(geode_use.order.unwrap().0);
+                    if !service_use.geodes.contains(&geode) {
+                        Self::detach_geode_services_dispatches(&geode_use);
                     }
+
+                    <pallet_geode::Module<T>>::transit_state(
+                        &geode_use,
+                        pallet_geode::GeodeState::Degraded,
+                    );
+                }
+                _ => {
+                    // no state change
                 }
             }
         }
