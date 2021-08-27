@@ -88,7 +88,7 @@ pub mod pallet {
     pub struct Dispatch<AccountId: Ord, Hash> {
         /// DispatchId is incremental from 0 and updated by 1 whenever a new dispatch is generated, it ensures dispatches will be served based on FIFO order.
         pub dispatch_id: DispatchId,
-        /// The service_id for which this dispatch is generated 
+        /// The service_id for which this dispatch is generated
         pub service_id: Hash,
         /// Geode assigned with this dispatch, None if no geode has been queried for this dispatch
         pub geode: Option<AccountId>,

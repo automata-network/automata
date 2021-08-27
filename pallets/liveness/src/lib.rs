@@ -147,7 +147,7 @@ pub mod pallet {
         /// Invalid Report Type
         InvalidReportType,
         /// Invalid Input
-        InvalidInput
+        InvalidInput,
     }
 
     #[pallet::hooks]
@@ -286,28 +286,42 @@ pub mod pallet {
                             let geode = pallet_geode::Geodes::<T>::get(&geode_id);
                             if geode.state == pallet_geode::GeodeState::Registered {
                                 // just exit attesting for it
-                                let mut attestors = pallet_attestor::GeodeAttestors::<T>::get(&geode_id);
+                                let mut attestors =
+                                    pallet_attestor::GeodeAttestors::<T>::get(&geode_id);
                                 attestors.remove(&who);
-                
+
                                 if attestors.is_empty() {
                                     pallet_attestor::GeodeAttestors::<T>::remove(&geode_id);
                                 } else {
-                                    pallet_attestor::GeodeAttestors::<T>::insert(&geode_id, &attestors);
+                                    pallet_attestor::GeodeAttestors::<T>::insert(
+                                        &geode_id, &attestors,
+                                    );
                                 }
 
                                 Self::deposit_event(Event::ReportBlame(who, geode_id));
                                 return Ok(().into());
                             }
-                            ensure!(geode.state == pallet_geode::GeodeState::Attested || 
-                                    geode.state == pallet_geode::GeodeState::Instantiated || 
-                                    geode.state == pallet_geode::GeodeState::Degraded, pallet_geode::Error::<T>::InvalidGeodeState);
-                        },
+                            ensure!(
+                                geode.state == pallet_geode::GeodeState::Attested
+                                    || geode.state == pallet_geode::GeodeState::Instantiated
+                                    || geode.state == pallet_geode::GeodeState::Degraded,
+                                pallet_geode::Error::<T>::InvalidGeodeState
+                            );
+                        }
                         ReportType::Service => {
                             let geode = pallet_geode::Geodes::<T>::get(&geode_id);
-                            ensure!(geode.state == pallet_geode::GeodeState::Instantiated || geode.state == pallet_geode::GeodeState::Degraded, pallet_geode::Error::<T>::InvalidGeodeState);
-                            let service_use = pallet_service::Services::<T>::get(geode.order.unwrap().0);
-                            ensure!(service_use.geodes.contains(&geode_id), pallet_service::Error::<T>::InvalidServiceState);
-                        },
+                            ensure!(
+                                geode.state == pallet_geode::GeodeState::Instantiated
+                                    || geode.state == pallet_geode::GeodeState::Degraded,
+                                pallet_geode::Error::<T>::InvalidGeodeState
+                            );
+                            let service_use =
+                                pallet_service::Services::<T>::get(geode.order.unwrap().0);
+                            ensure!(
+                                service_use.geodes.contains(&geode_id),
+                                pallet_service::Error::<T>::InvalidServiceState
+                            );
+                        }
                         _ => {
                             return Err(Error::<T>::InvalidReportType.into());
                         }
@@ -434,12 +448,23 @@ pub mod pallet {
             geode: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            ensure!(pallet_geode::Geodes::<T>::contains_key(&geode), pallet_geode::Error::<T>::InvalidGeode);
+            ensure!(
+                pallet_geode::Geodes::<T>::contains_key(&geode),
+                pallet_geode::Error::<T>::InvalidGeode
+            );
             let geode = pallet_geode::Geodes::<T>::get(geode);
             ensure!(geode.provider == who, pallet_geode::Error::<T>::NoRight);
-            ensure!(geode.promise != 0 || geode.promise < <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>(), pallet_geode::Error::<T>::InvalidPromise);
+            ensure!(
+                geode.promise != 0
+                    || geode.promise
+                        < <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>(),
+                pallet_geode::Error::<T>::InvalidPromise
+            );
             Self::detach_geode_services_dispatches(&geode);
-            match <pallet_geode::Module<T>>::transit_state(&geode, pallet_geode::GeodeState::Offline) {
+            match <pallet_geode::Module<T>>::transit_state(
+                &geode,
+                pallet_geode::GeodeState::Offline,
+            ) {
                 true => Ok(().into()),
                 false => Err(pallet_geode::Error::<T>::InvalidTransition.into()),
             }
@@ -499,7 +524,7 @@ pub mod pallet {
                 return Err(Error::<T>::InvalidInput.into());
             }
             <MinAttestorNum<T>>::put(num);
-            
+
             Ok(().into())
         }
 
@@ -659,7 +684,8 @@ pub mod pallet {
                 }
                 pallet_geode::GeodeState::Instantiated => {
                     // if haven't put service Online
-                    let service_use = pallet_service::Services::<T>::get(geode_use.order.unwrap().0);
+                    let service_use =
+                        pallet_service::Services::<T>::get(geode_use.order.unwrap().0);
                     if !service_use.geodes.contains(&geode) {
                         Self::detach_geode_services_dispatches(&geode_use);
                     }

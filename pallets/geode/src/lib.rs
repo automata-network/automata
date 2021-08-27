@@ -211,24 +211,27 @@ pub mod pallet {
                 ensure!(geode.provider == who, Error::<T>::NoRight);
                 geode.order = None;
                 match Self::transit_state(&geode, GeodeState::Registered) {
-                    true => { return Ok(().into()); }
-                    false => { return Err(Error::<T>::InvalidTransition.into()); }
+                    true => {
+                        return Ok(().into());
+                    }
+                    false => {
+                        return Err(Error::<T>::InvalidTransition.into());
+                    }
                 }
             } else {
                 let mut geode_record = geode_record;
                 let geode = geode_record.id.clone();
-    
+
                 let block_number =
                     <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
                 geode_record.state = GeodeState::Registered;
                 geode_record.provider = who.clone();
-    
+
                 <Geodes<T>>::insert(&geode, &geode_record);
                 <RegisteredGeodes<T>>::insert(&geode, &block_number);
-    
+
                 Self::deposit_event(Event::GeodeRegister(who, geode));
             }
-
 
             Ok(().into())
         }
