@@ -4,7 +4,7 @@ use automata_runtime::Block;
 use automata_runtime::{
     opaque::SessionKeys, BabeConfig, BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig,
     GrandpaConfig, IndicesConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig,
-    SystemConfig, WASM_BINARY,
+    ImOnlineConfig, SystemConfig, WASM_BINARY,
 };
 use hex_literal::hex;
 use sc_chain_spec::ChainSpecExtension;
@@ -18,6 +18,7 @@ use sp_core::{
 };
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 
 // The URL for the telemetry server.
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -45,8 +46,8 @@ fn get_properties() -> Option<Properties> {
     Some(properties)
 }
 
-fn get_session_keys(grandpa: GrandpaId, babe: BabeId) -> SessionKeys {
-    SessionKeys { babe, grandpa }
+fn get_session_keys(grandpa: GrandpaId, babe: BabeId, im_online: ImOnlineId) -> SessionKeys {
+    SessionKeys { babe, grandpa, im_online }
 }
 
 /// Generate a crypto pair from seed.
@@ -67,12 +68,13 @@ where
 }
 
 /// Generate an authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AccountId, AccountId, GrandpaId, BabeId) {
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, AccountId, GrandpaId, BabeId, ImOnlineId) {
     (
         get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", s)),
         get_account_id_from_seed::<sr25519::Public>(s),
         get_from_seed::<GrandpaId>(s),
         get_from_seed::<BabeId>(s),
+        get_from_seed::<ImOnlineId>(s),
     )
 }
 
@@ -158,7 +160,7 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
 
     let boot_nodes = vec![];
 
-    let initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId)> = vec![
+    let initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId, ImOnlineId)> = vec![
         (
             // 5EpoJPebo3FWWahy6i9dcNzjzyTNe1J5zwsQu5NEmg4Yr9PQ
             hex!["7a1996d0fc27b5a0b8c8292ab10e3311045f3bb9ee52353ba93060d0fe433076"].into(),
@@ -166,6 +168,9 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
             hex!["0430c51a3882a8d9d4d6ecc04f9058e96690aca93cb145b1e1b0b6a010222e0f"].into(),
             // 5FEQBJZuHQidTV2Y1PjJR2SipmDgtYc9PnULS39Fzg1JuMdF
             hex!["8c19a47f493eb8135b010ff1e12d3bf920f66de2d84d0104a409b3947204329c"]
+                .unchecked_into(),
+            // 5GzqxNzhJspoNAhT6AswEwbH6b5AsJumWPuxVRVLk3QLFnux
+            hex!["da3b7291438a4d373623628d116f0407f6d957c5956e6da15cfb01d50a63777d"]
                 .unchecked_into(),
             // 5GzqxNzhJspoNAhT6AswEwbH6b5AsJumWPuxVRVLk3QLFnux
             hex!["da3b7291438a4d373623628d116f0407f6d957c5956e6da15cfb01d50a63777d"]
@@ -182,6 +187,9 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
             // 5HatiikkNpBtfgyMXhrteSG2wUfasqcYS4xFdjzYarMU8y9W
             hex!["f43318eee81b201bbda6f3eea82736cbf39c80292e52dbfe2586504b80ce4137"]
                 .unchecked_into(),
+            // 5HatiikkNpBtfgyMXhrteSG2wUfasqcYS4xFdjzYarMU8y9W
+            hex!["f43318eee81b201bbda6f3eea82736cbf39c80292e52dbfe2586504b80ce4137"]
+                .unchecked_into(),
         ),
         (
             // 5HigvfW7JfXig7MXpCAhnu1quSWRU96CzaRDAoS4nFYuMTUT
@@ -194,6 +202,9 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
             // 5DCSE99RB1YZ22ntanKrzgZsWiGLYY5LXXJU9iNPVWgC7oLw
             hex!["3221950754289dcba6ad9b2a84aee41b5cbe8aa72f64677ca01826b17580c95c"]
                 .unchecked_into(),
+            // 5DCSE99RB1YZ22ntanKrzgZsWiGLYY5LXXJU9iNPVWgC7oLw
+            hex!["3221950754289dcba6ad9b2a84aee41b5cbe8aa72f64677ca01826b17580c95c"]
+                .unchecked_into(),
         ),
         (
             // 5DPaPfAoEqwNvHtd3Wv34ZKqYoXLdpR95LPq8ZzAnHMGRv7q
@@ -202,6 +213,9 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
             hex!["a0f7e30a0ec26590ec3976fe3369ae3bdb326410813c79bf18a241bf1bd31d57"].into(),
             // 5GJFSUuHFWDC21ShQ8tvZG2n8UDF5xuY8dkc1G4yL31LnyiW
             hex!["bb45711e96f16cf7341d2dad00a5b177a1347b0131f56fa3f837e9dcb46a61d4"]
+                .unchecked_into(),
+            // 5CuC84fjuaLvZzoRXGsNNJHTUgPR8JjvqnrqNwfVjeTESNHK
+            hex!["24faede9dc6c3eb99771d470de6ab76cd103fc8af275e33ce38ca887ee49e97a"]
                 .unchecked_into(),
             // 5CuC84fjuaLvZzoRXGsNNJHTUgPR8JjvqnrqNwfVjeTESNHK
             hex!["24faede9dc6c3eb99771d470de6ab76cd103fc8af275e33ce38ca887ee49e97a"]
@@ -254,7 +268,7 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
     wasm_binary: &[u8],
-    initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId)>,
+    initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId, ImOnlineId)>,
     root_key: AccountId,
     endowed_accounts: Option<Vec<AccountId>>,
     ethereum_accounts: Option<Vec<AccountId>>,
@@ -319,6 +333,7 @@ fn testnet_genesis(
                         get_session_keys(
                             x.2.clone(), // grandpa
                             x.3.clone(), // babe
+                            x.4.clone(),
                         ),
                     )
                 })
@@ -347,6 +362,9 @@ fn testnet_genesis(
         }),
         pallet_grandpa: Some(GrandpaConfig {
             authorities: vec![],
+        }),
+        pallet_im_online: Some(ImOnlineConfig {
+            keys: vec![]
         }),
         // pallet_grandpa: Some(GrandpaConfig {
         //     authorities: initial_authorities

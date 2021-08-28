@@ -415,6 +415,7 @@ dependencies = [
  "jsonrpc-pubsub 15.1.0",
  "pallet-ethereum",
  "pallet-evm",
+ "pallet-im-online",
  "pallet-indices",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
@@ -515,6 +516,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "hex-literal",
  "pallet-attestor",
+ "pallet-authorship",
  "pallet-babe",
  "pallet-balances",
  "pallet-ethereum",
@@ -522,8 +524,10 @@ dependencies = [
  "pallet-evm-precompile-simple",
  "pallet-geode",
  "pallet-grandpa",
+ "pallet-im-online",
  "pallet-indices",
  "pallet-liveness",
+ "pallet-offences",
  "pallet-randomness-collective-flip",
  "pallet-session",
  "pallet-staking",
@@ -4431,6 +4435,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-im-online"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5149e46f347bfcf7852693a6c2b6143ace94ae1fc2a81ac87a99c92f027329b"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-authorship",
+ "parity-scale-codec",
+ "serde",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-indices"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4463,6 +4486,22 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-offences"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82ed59a0c9489ccf9d20d934dfdffcddc705685035bf8a2e2a8fdad0134eef50"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parity-scale-codec",
+ "serde",
+ "sp-runtime",
+ "sp-staking",
  "sp-std",
 ]
 

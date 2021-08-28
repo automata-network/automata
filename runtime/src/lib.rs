@@ -22,6 +22,7 @@ use frame_system::EnsureRoot;
 use pallet_geode::{Geode, GeodeState};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
+use pallet_im_online::sr25519::AuthorityId as ImOnlinedId;
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
 use sp_runtime::traits::{
@@ -93,6 +94,7 @@ pub mod opaque {
         pub struct SessionKeys {
             pub babe: Babe,
             pub grandpa: Grandpa,
+            pub im_online: ImOnline,
         }
     }
 }
@@ -224,9 +226,8 @@ impl pallet_babe::Config for Runtime {
         KeyTypeId,
         pallet_babe::AuthorityId,
     )>>::IdentificationTuple;
-    // type HandleEquivocation =
-    // pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences, ReportLongevity>;
-    type HandleEquivocation = ();
+    type HandleEquivocation =
+        pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences, ReportLongevity>;
     type WeightInfo = ();
 }
 
@@ -272,9 +273,9 @@ pallet_staking_reward_curve::build! {
 }
 
 parameter_types! {
-    pub const SessionsPerEra: sp_staking::SessionIndex = 3; // 24 hours
-    pub const BondingDuration: pallet_staking::EraIndex = 28; // 28 days
-    pub const SlashDeferDuration: pallet_staking::EraIndex = 27; // 27 days
+    pub const SessionsPerEra: sp_staking::SessionIndex = 3;
+    pub const BondingDuration: pallet_staking::EraIndex = 28;
+    pub const SlashDeferDuration: pallet_staking::EraIndex = 27;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
     // only top N nominators get paid for each validator
     pub const MaxNominatorRewardedPerValidator: u32 = 64;
@@ -320,7 +321,7 @@ impl pallet_grandpa::Config for Runtime {
     type Event = Event;
     type Call = Call;
 
-    type KeyOwnerProofSystem = ();
+    type KeyOwnerProofSystem = Historical;
 
     type KeyOwnerProof =
         <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
@@ -330,7 +331,7 @@ impl pallet_grandpa::Config for Runtime {
         GrandpaId,
     )>>::IdentificationTuple;
 
-    type HandleEquivocation = ();
+    type HandleEquivocation = pallet_grandpa::EquivocationHandler<Self::KeyOwnerIdentification, Offences, ReportLongevity>;
 
     type WeightInfo = ();
 }
@@ -448,6 +449,44 @@ where
     type OverarchingCall = Call;
 }
 
+parameter_types! {
+    pub const SessionDuration: BlockNumber = EPOCH_DURATION_IN_SLOTS as _;
+    pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+}
+
+impl pallet_im_online::Config for Runtime {
+    type AuthorityId = ImOnlinedId;
+    type Event = Event;
+    type SessionDuration = SessionDuration;
+    type ValidatorSet = Historical;
+    type ReportUnresponsiveness = Offences;
+    type UnsignedPriority = ImOnlineUnsignedPriority;
+    type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+    pub OffencesWeightSoftLimit: Weight = Perbill::from_percent(60) *
+        BlockWeights::get().max_block;
+}
+
+impl pallet_offences::Config for Runtime {
+    type Event = Event;
+    type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
+    type OnOffenceHandler = Staking;
+    type WeightSoftLimit = OffencesWeightSoftLimit;
+}
+
+parameter_types! {
+    pub const UncleGenerations: BlockNumber = 5;
+}
+
+impl pallet_authorship::Config for Runtime {
+    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
+    type UncleGenerations = UncleGenerations;
+    type FilterUncle = ();
+    type EventHandler = (Staking, ImOnline);
+}
+
 /// Fixed gas price of `1`.
 pub struct FixedGasPrice;
 
@@ -562,6 +601,9 @@ construct_runtime!(
         Staking: pallet_staking::{Module, Call, Storage, Config<T>, Event<T>, ValidateUnsigned},
         Session: pallet_session::{Module, Call, Storage, Event, Config<T>},
         Historical: pallet_session_historical::{Module},
+        Offences: pallet_offences::{Module, Call, Storage, Event},
+        ImOnline: pallet_im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
+        Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
     }
 );
 
