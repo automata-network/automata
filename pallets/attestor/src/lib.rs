@@ -214,6 +214,7 @@ pub mod pallet {
         #[pallet::weight(0)]
         pub fn attestor_update(origin: OriginFor<T>, url: Vec<u8>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
+            ensure!(<Attestors<T>>::contains_key(&who), Error::<T>::InvalidAttestor);
             let mut attestor = <Attestors<T>>::get(&who);
             attestor.url = url;
             <Attestors<T>>::insert(&who, attestor);
