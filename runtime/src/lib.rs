@@ -453,6 +453,7 @@ impl pallet_attestor::Config for Runtime {
 
 impl pallet_geode::Config for Runtime {
     type Event = Event;
+    type GeodeAccounting = AccountingModule;
 }
 
 impl pallet_liveness::Config for Runtime {

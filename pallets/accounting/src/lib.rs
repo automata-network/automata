@@ -17,7 +17,7 @@ pub mod pallet {
     use sp_std::prelude::*;
     use core::{convert::TryInto,};
 
-    use automata_runtime_traits::AttestorAccounting;
+    use automata_runtime_traits::{AttestorAccounting, GeodeAccounting};
     use pallet_attestor;
 
     type BalanceOf<T> =
@@ -147,9 +147,26 @@ pub mod pallet {
 
     impl<T: Config>  AttestorAccounting for Pallet<T> {
         type AccountId = <T as frame_system::Config>::AccountId;
-        // type Currency = T::Currency;
         fn attestor_staking(who: T::AccountId) -> DispatchResultWithPostInfo {
             <T as Config>::Currency::reserve(&who, T::AttestorStakingAmount::get())?;
+            Ok(().into())
+        }
+
+        fn attestor_unreserve(who: T::AccountId) -> DispatchResultWithPostInfo {
+            <T as Config>::Currency::unreserve(&who, T::AttestorStakingAmount::get());
+            Ok(().into())
+        }
+    }
+
+    impl<T: Config>  GeodeAccounting for Pallet<T> {
+        type AccountId = <T as frame_system::Config>::AccountId;
+        fn geode_staking(who: T::AccountId) -> DispatchResultWithPostInfo {
+            <T as Config>::Currency::reserve(&who, T::GeodeStakingAmount::get())?;
+            Ok(().into())
+        }
+
+        fn geode_unreserve(who: T::AccountId) -> DispatchResultWithPostInfo {
+            <T as Config>::Currency::unreserve(&who, T::GeodeStakingAmount::get());
             Ok(().into())
         }
     }

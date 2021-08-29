@@ -17,6 +17,7 @@ pub mod pallet {
     use primitives::BlockNumber;
     use sp_runtime::{RuntimeDebug, SaturatedConversion};
     use sp_std::{collections::btree_map::BTreeMap, prelude::*};
+    use automata_runtime_traits::GeodeAccounting;
 
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
@@ -81,6 +82,7 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_attestor::Config {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+        type GeodeAccounting: GeodeAccounting<AccountId=Self::AccountId>;
     }
 
     #[pallet::hooks]

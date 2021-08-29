@@ -4404,6 +4404,7 @@ name = "pallet-geode"
 version = "0.1.0"
 dependencies = [
  "automata-primitives",
+ "automata-runtime-traits",
  "frame-support",
  "frame-system",
  "pallet-accounting",
