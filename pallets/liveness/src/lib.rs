@@ -454,12 +454,15 @@ pub mod pallet {
             );
             let geode = pallet_geode::Geodes::<T>::get(geode);
             ensure!(geode.provider == who, pallet_geode::Error::<T>::NoRight);
-            ensure!(
-                geode.promise != 0
-                    && geode.promise
-                        < <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>(),
-                pallet_geode::Error::<T>::InvalidPromise
-            );
+            if geode.state == GeodeState::Instantiated || geode.state == GeodeState::Degraded {
+                ensure!(
+                    geode.promise != 0
+                        && geode.promise
+                            < <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>(),
+                    pallet_geode::Error::<T>::InvalidPromise
+                );
+            }
+
             Self::detach_geode_services_dispatches(&geode);
             match <pallet_geode::Module<T>>::transit_state(
                 &geode,
