@@ -209,6 +209,7 @@ pub mod pallet {
             if <Geodes<T>>::contains_key(&geode_record.id) {
                 let mut geode = <Geodes<T>>::get(geode_record.id);
                 ensure!(geode.provider == who, Error::<T>::NoRight);
+                ensure!(geode.state == GeodeState::Offline, Error::<T>::InvalidGeodeState);
                 geode.order = None;
                 match Self::transit_state(&geode, GeodeState::Registered) {
                     true => {
