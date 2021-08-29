@@ -31,21 +31,23 @@ pub mod pallet {
         /// The currency in which fees are paid and contract balances are held.
         type Currency: ReservableCurrency<Self::AccountId> + Currency<Self::AccountId>;
 
-        /// Staked token for attestor register
         type AttestorStakingAmount: Get<BalanceOf<Self>>;
-
-        /// Total reward to attestors
+        type GeodeStakingAmount: Get<BalanceOf<Self>>;
         type AttestorTotalReward: Get<BalanceOf<Self>>;
-
-        /// The percentage as basic reward, (100 - BasicRewardRatio) as commission
-        type BasicRewardRatio: Get<u8>;
-
-        /// The slot length
+        type GeodeTotalReward: Get<BalanceOf<Self>>;
+    
+        type GeodeTerminatePenalty: Get<BalanceOf<Self>>;
+        type GeodeMisconductForAttestor: Get<BalanceOf<Self>>;
+        type GeodeMisconductForServiceUser: Get<BalanceOf<Self>>;  
+    
         type SlotLength: Get<Self::BlockNumber>;
-
-        /// The reward for each slot
-        type RewardEachSlot: Get<BalanceOf<Self>>;
-
+    
+        type AttestorBasicRewardRatio: Get<u8>;
+        type CommissionRateForService: Get<u8>;
+        type CommissionRateForOnDemand: Get<u8>;
+    
+        type AttestorRewardEachSlot: Get<BalanceOf<Self>>;
+        type GeodeRewardEachSlot: Get<BalanceOf<Self>>;
     }
 
     #[pallet::pallet]
@@ -122,10 +124,10 @@ pub mod pallet {
 
             let attestors_length = attestors.len();
             let geodes_length: usize = attestors.iter().map(|(_, geodes)| geodes).sum();
-            let reward_each_slot = T::RewardEachSlot::get();
+            let reward_each_slot = T::AttestorRewardEachSlot::get();
             
             /// Compute basic reward and commission reward
-            let basic_reward = reward_each_slot * BalanceOf::<T>::from(T::BasicRewardRatio::get()) / BalanceOf::<T>::from(100_u32);
+            let basic_reward = reward_each_slot * BalanceOf::<T>::from(T::AttestorBasicRewardRatio::get()) / BalanceOf::<T>::from(100_u32);
             let basic_reward_per_attestor = basic_reward / BalanceOf::<T>::from(attestors_length as u32);
             let commission_reward = reward_each_slot - basic_reward;
             let commission_reward_per_geode = commission_reward / BalanceOf::<T>::from(geodes_length as u32);

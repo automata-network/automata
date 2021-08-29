@@ -129,8 +129,21 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 pub const YEARS: BlockNumber = DAYS * 365;
-pub const FIVE_YEARS: BlockNumber = YEARS * 5;
-pub const ConstSlotLength: BlockNumber = 10;
+
+// All parameters for accounting
+pub const ATTESTOR_STAKING_AMOUNT: Balance = 1 * CENTS;
+pub const GEODE_STAKING_AMOUNT: Balance = 1 * CENTS;
+pub const ATTESTOR_TOTAL_REWARD: Balance = 1 * CENTS;
+pub const GEODE_TOTAL_REWARD: Balance = 1 * CENTS;
+pub const ATTESTOR_REWARD_TIMESPAN: u128 = YEARS as u128 * 5 as u128;
+pub const GEODE_REWARD_TIMESPAN: u128 = YEARS as u128 * 5 as u128;
+pub const ATTESTOR_BASIC_REWARD_RATIO: u8 = 1_u8;
+pub const GEODE_TERMINATE_PENALTY: Balance = 1 * CENTS;
+pub const GEODE_MISCONDUCT_FOR_ATTESTOR: Balance = 1 * CENTS;
+pub const GEODE_MISCONDUCT_FOR_SERVICE_USER: Balance = 1 * CENTS;
+pub const COMMISSION_RATE_FOR_SERVICE: u8 = 1_u8;
+pub const COMMISSION_RATE_FOR_ON_DEMAND: u8 = 1_u8;
+pub const SLOT_LENGTH: BlockNumber = 1;
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -390,22 +403,46 @@ impl pallet_template::Config for Runtime {
 }
 
 parameter_types! {
-    pub const AttestorStakingAmount: Balance = 1 * CENTS;
-    pub const AttestorTotalReward: Balance = 1 * CENTS;
-    pub const BasicRewardRatio: u8 = 20_u8;
-    pub const SlotLength: BlockNumber = ConstSlotLength;
-    /// Reward attestor for 5 years
-    pub const RewardEachSlot: Balance = 500_000_000 * DOLLARS * (ConstSlotLength as u128) / (FIVE_YEARS as u128);
+    pub const AttestorStakingAmount: Balance = ATTESTOR_STAKING_AMOUNT;
+    pub const GeodeStakingAmount: Balance = GEODE_STAKING_AMOUNT;
+    pub const AttestorTotalReward: Balance = ATTESTOR_TOTAL_REWARD;
+    pub const GeodeTotalReward: Balance = GEODE_TOTAL_REWARD;
+
+    pub const GeodeTerminatePenalty: Balance = GEODE_TERMINATE_PENALTY;
+    pub const GeodeMisconductForAttestor: Balance = GEODE_MISCONDUCT_FOR_ATTESTOR;
+    pub const GeodeMisconductForServiceUser: Balance = GEODE_MISCONDUCT_FOR_SERVICE_USER;  
+
+    pub const SlotLength: BlockNumber = SLOT_LENGTH;
+
+    pub const AttestorBasicRewardRatio: u8 = ATTESTOR_BASIC_REWARD_RATIO;
+    pub const CommissionRateForService: u8 = COMMISSION_RATE_FOR_SERVICE;
+    pub const CommissionRateForOnDemand: u8 = COMMISSION_RATE_FOR_ON_DEMAND;
+
+    pub const AttestorRewardEachSlot: Balance = ATTESTOR_TOTAL_REWARD * (SLOT_LENGTH as u128) / ATTESTOR_REWARD_TIMESPAN;
+    pub const GeodeRewardEachSlot: Balance = GEODE_TOTAL_REWARD * (SLOT_LENGTH as u128) / GEODE_REWARD_TIMESPAN;
 }
 
 impl pallet_accounting::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
+
     type AttestorStakingAmount = AttestorStakingAmount;
-    type AttestorTotalReward =  AttestorTotalReward;
-    type BasicRewardRatio = BasicRewardRatio;
+    type GeodeStakingAmount = GeodeStakingAmount;
+    type AttestorTotalReward = AttestorTotalReward;
+    type GeodeTotalReward = GeodeTotalReward;
+
+    type GeodeTerminatePenalty = GeodeTerminatePenalty;
+    type GeodeMisconductForAttestor = GeodeMisconductForAttestor;
+    type GeodeMisconductForServiceUser = GeodeMisconductForServiceUser;  
+
     type SlotLength = SlotLength;
-    type RewardEachSlot = RewardEachSlot;
+
+    type AttestorBasicRewardRatio = AttestorBasicRewardRatio;
+    type CommissionRateForService = CommissionRateForService;
+    type CommissionRateForOnDemand = CommissionRateForOnDemand;
+
+    type AttestorRewardEachSlot = AttestorRewardEachSlot;
+    type GeodeRewardEachSlot = GeodeRewardEachSlot;
 }
 
 impl pallet_attestor::Config for Runtime {
