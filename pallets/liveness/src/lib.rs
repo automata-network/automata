@@ -456,7 +456,7 @@ pub mod pallet {
             ensure!(geode.provider == who, pallet_geode::Error::<T>::NoRight);
             ensure!(
                 geode.promise != 0
-                    || geode.promise
+                    && geode.promise
                         < <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>(),
                 pallet_geode::Error::<T>::InvalidPromise
             );
