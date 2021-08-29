@@ -188,4 +188,10 @@ pub mod pallet {
             res
         }
     }
+
+    impl<T: Config> Get<BTreeMap::<T::AccountId, usize>> for Pallet<T> {
+        fn get() -> BTreeMap::<T::AccountId, usize> {
+            Self::get_all_attestors()
+        }
+    }
 }

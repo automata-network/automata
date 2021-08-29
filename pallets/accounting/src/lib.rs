@@ -13,23 +13,25 @@ pub mod pallet {
     use frame_support::traits::{Currency, ReservableCurrency};
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*,};
     use frame_system::pallet_prelude::*;
-    use sp_std::collections::btree_set::BTreeSet;
+    use sp_std::collections::{btree_set::BTreeSet, btree_map::BTreeMap};
     use sp_std::prelude::*;
     use core::{convert::TryInto,};
-
     use automata_runtime_traits::{AttestorAccounting, GeodeAccounting};
-    use pallet_attestor;
 
     type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_attestor::Config {
+    // pub trait Config: frame_system::Config + pallet_attestor::Config {
+    pub trait Config: frame_system::Config {
+
         /// Because this pallet emits events, it depends on the runtime's definition of an event.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         /// The currency in which fees are paid and contract balances are held.
         type Currency: ReservableCurrency<Self::AccountId> + Currency<Self::AccountId>;
+
+        type GetAttestors: Get<BTreeMap::<Self::AccountId, usize>>;
 
         type AttestorStakingAmount: Get<BalanceOf<Self>>;
         type GeodeStakingAmount: Get<BalanceOf<Self>>;
@@ -99,7 +101,7 @@ pub mod pallet {
                 Self::deposit_event(Event::AttestorRewarded(block_number));
             }
 
-			1000
+			10000
 		}
     }
 
@@ -120,7 +122,7 @@ pub mod pallet {
         /// Reward attestors
         pub fn reward_attestors() {
             /// Get all attestors and its verified geodes number
-            let attestors = <pallet_attestor::Pallet<T>>::get_all_attestors();
+            let attestors = T::GetAttestors::get();
 
             let attestors_length = attestors.len();
             let geodes_length: usize = attestors.iter().map(|(_, geodes)| geodes).sum();
@@ -142,6 +144,10 @@ pub mod pallet {
                 Some(value) => TotalDistributedReward::<T>::put(value + reward_each_slot),
                 None => TotalDistributedReward::<T>::put(reward_each_slot),
             }
+        }
+
+        pub fn reward_geodes() {
+
         }
     }
 
