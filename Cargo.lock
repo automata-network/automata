@@ -496,6 +496,7 @@ dependencies = [
  "sp-consensus",
  "sp-consensus-babe",
  "sp-keystore",
+ "sp-core",
  "sp-runtime",
  "sp-std",
  "sp-transaction-pool",

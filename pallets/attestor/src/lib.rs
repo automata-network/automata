@@ -14,9 +14,19 @@ mod benchmarking;
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::traits::{Currency, ReservableCurrency};
-    use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
-    use frame_system::pallet_prelude::*;
+    use frame_support::{
+        dispatch::DispatchResultWithPostInfo, pallet_prelude::*, unsigned::ValidateUnsigned,
+    };
+    use frame_system::{
+        offchain::{SendTransactionTypes, SubmitTransaction},
+        pallet_prelude::*,
+    };
     use primitives::BlockNumber;
+    #[cfg(feature = "full_crypto")]
+    use sp_core::crypto::Pair;
+    #[cfg(feature = "full_crypto")]
+    use sp_core::sr25519::Pair as Sr25519Pair;
+    use sp_core::sr25519::{Public, Signature};
     use sp_runtime::{RuntimeDebug, SaturatedConversion};
     use sp_std::collections::btree_set::BTreeSet;
     use sp_std::prelude::*;
@@ -36,15 +46,17 @@ pub mod pallet {
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
     pub type AttestorOf<T> = Attestor<<T as frame_system::Config>::AccountId>;
 
+    pub const UNSIGNED_TXS_PRIORITY: u64 = 100;
     pub const DEFAULT_ATT_STAKE_MIN: primitives::Balance = 1000;
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: SendTransactionTypes<Call<Self>> + frame_system::Config {
         /// Because this pallet emits events, it depends on the runtime's definition of an event.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         /// The currency in which fees are paid and contract balances are held.
         type Currency: ReservableCurrency<Self::AccountId>;
+        type Call: From<Call<Self>>;
     }
 
     #[pallet::pallet]
@@ -108,8 +120,54 @@ pub mod pallet {
     pub enum Error<T> {
         /// Use an invalid attestor id.
         InvalidAttestor,
-        /// Attestor already registered
+        /// Attestor already registered.
         AlreadyRegistered,
+        /// Invalid notification input.
+        InvalidNotification,
+    }
+
+    #[pallet::validate_unsigned]
+    impl<T: Config> ValidateUnsigned for Pallet<T> {
+        type Call = Call<T>;
+
+        fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+            match call {
+                Call::attestor_notify_chain(message, signature_raw_bytes) => {
+                    // validate inputs
+                    if message.len() != 40 {
+                        return InvalidTransaction::Call.into();
+                    }
+
+                    let mut attestor = [0u8; 32];
+                    attestor.copy_from_slice(&message[0..32]);
+
+                    let pubkey = Public::from_raw(attestor.clone());
+                    let signature = Signature::from_raw(signature_raw_bytes.clone());
+
+                    #[cfg(feature = "full_crypto")]
+                    if !Sr25519Pair::verify(&signature, message, &pubkey) {
+                        return InvalidTransaction::Call.into();
+                    }
+
+                    let acc = T::AccountId::decode(&mut &attestor[..]).unwrap_or_default();
+                    if !<Attestors<T>>::contains_key(acc) {
+                        return InvalidTransaction::Call.into();
+                    }
+
+                    ValidTransaction::with_tag_prefix("Automata/attestor/notify")
+                        .priority(UNSIGNED_TXS_PRIORITY)
+                        .and_provides((
+                            attestor,
+                            <frame_system::Module<T>>::block_number()
+                                .saturated_into::<BlockNumber>(),
+                        ))
+                        .longevity(3)
+                        .propagate(true)
+                        .build()
+                }
+                _ => InvalidTransaction::Call.into(),
+            }
+        }
     }
 
     #[pallet::hooks]
@@ -156,6 +214,7 @@ pub mod pallet {
         #[pallet::weight(0)]
         pub fn attestor_update(origin: OriginFor<T>, url: Vec<u8>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
+            ensure!(<Attestors<T>>::contains_key(&who), Error::<T>::InvalidAttestor);
             let mut attestor = <Attestors<T>>::get(&who);
             attestor.url = url;
             <Attestors<T>>::insert(&who, attestor);
@@ -164,16 +223,36 @@ pub mod pallet {
         }
 
         #[pallet::weight(0)]
-        pub fn attestor_notify_chain(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-            let who = ensure_signed(origin)?;
-            // check attestor existance
+        pub fn attestor_notify_chain(
+            _origin: OriginFor<T>,
+            message: Vec<u8>,
+            signature_raw_bytes: [u8; 64],
+        ) -> DispatchResultWithPostInfo {
+            // validate inputs
+            ensure!(message.len() == 40, Error::<T>::InvalidNotification);
+
+            let mut attestor = [0u8; 32];
+            attestor.copy_from_slice(&message[0..32]);
+
+            let pubkey = Public::from_raw(attestor.clone());
+            let signature = Signature::from_raw(signature_raw_bytes.clone());
+
+            #[cfg(feature = "full_crypto")]
             ensure!(
-                <Attestors::<T>>::contains_key(&who),
+                Sr25519Pair::verify(&signature, message, &pubkey),
+                Error::<T>::InvalidNotification
+            );
+
+            let acc = T::AccountId::decode(&mut &attestor[..]).unwrap_or_default();
+            ensure!(
+                <Attestors<T>>::contains_key(&acc),
                 Error::<T>::InvalidAttestor
             );
+
             let block_number =
                 <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
-            <AttestorLastNotify<T>>::insert(&who, block_number);
+            <AttestorLastNotify<T>>::insert(&acc, block_number);
+
             Ok(().into())
         }
 
@@ -190,6 +269,14 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        pub fn unsigned_attestor_notify_chain(
+            message: Vec<u8>,
+            signature_raw_bytes: [u8; 64],
+        ) -> Result<(), ()> {
+            let call = Call::attestor_notify_chain(message, signature_raw_bytes);
+            SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
+        }
+
         /// Return attestors' url and pubkey list for rpc.
         pub fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>, u32)> {
             let mut res = Vec::<(Vec<u8>, Vec<u8>, u32)>::new();
@@ -237,6 +324,19 @@ pub mod pallet {
             Self::deposit_event(Event::AttestorRemove(attestor));
 
             ret
+        }
+
+        /// detach geode from attestors
+        pub fn detach_geode_from_attestors(geode: &T::AccountId) {
+            // clean record on attestors
+            if GeodeAttestors::<T>::contains_key(&geode) {
+                for id in GeodeAttestors::<T>::get(&geode) {
+                    let mut attestor = Attestors::<T>::get(&id);
+                    attestor.geodes.remove(&geode);
+                    Attestors::<T>::insert(&id, attestor);
+                }
+                GeodeAttestors::<T>::remove(&geode);
+            }
         }
 
         /// clean all the storage, USE WITH CARE!

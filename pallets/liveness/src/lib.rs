@@ -153,7 +153,7 @@ pub mod pallet {
         fn on_initialize(block_number: T::BlockNumber) -> Weight {
             if let Ok(now) = TryInto::<BlockNumber>::try_into(block_number) {
                 // check is there a need to cancel degrade mode
-                if !<DegradeMode<T>>::get()
+                if <DegradeMode<T>>::get()
                     && pallet_attestor::AttestorNum::<T>::get() >= <MinAttestorNum<T>>::get()
                 {
                     // reset all the start block num for degraded geode
@@ -299,9 +299,9 @@ pub mod pallet {
             ) >= REPORT_APPROVAL_RATIO
             {
                 // slash the geode
-                Self::slash_geode(&key, report);
+                Self::slash_geode(&key.0);
                 <Reports<T>>::remove(&key);
-                Self::deposit_event(Event::SlashGeode(key.0.clone()))
+                Self::deposit_event(Event::SlashGeode(key.0.clone()));
             } else {
                 // update report storage
                 <Reports<T>>::insert(&key, report);
@@ -372,6 +372,11 @@ pub mod pallet {
                 );
             }
 
+            pallet_geode::GeodeUpdateCounters::<T>::insert(
+                &geode,
+                pallet_geode::GeodeUpdateCounters::<T>::get(&geode) + 1,
+            );
+
             Self::deposit_event(Event::AttestFor(who, geode));
             Ok(().into())
         }
@@ -408,32 +413,20 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        /// Return attestors' url and pubkey list for rpc.
-        fn slash_geode(key: &(T::AccountId, u8), report: ReportOf<T>) {
-            // update pallet_attestor::Attestors
-            for id in report.attestors {
-                let mut att = pallet_attestor::Attestors::<T>::get(&id);
-                att.geodes.remove(&key.0);
-                pallet_attestor::Attestors::<T>::insert(&id, att);
-            }
-            // remove from pallet_attestor::GeodeAttestors
-            pallet_attestor::GeodeAttestors::<T>::remove(&key.0);
-            // change geode_state
-            let mut geode = pallet_geode::Geodes::<T>::get(&key.0);
-            match geode.state {
-                pallet_geode::GeodeState::Registered => {
-                    pallet_geode::RegisteredGeodes::<T>::remove(&key.0);
-                }
-                pallet_geode::GeodeState::Attested => {
-                    pallet_geode::AttestedGeodes::<T>::remove(&key.0);
-                }
-                _ => {
-                    // TODO... Other states
-                }
-            }
-            geode.state = pallet_geode::GeodeState::Unknown;
-            pallet_geode::Geodes::<T>::insert(&key.0, geode);
+        /// Slash geode including update storage and penalty related logics
+        fn slash_geode(key: &T::AccountId) {
+            <pallet_geode::Module<T>>::detach_geode(
+                pallet_geode::DetachOption::Unknown,
+                key.to_owned(),
+                None,
+            )
+            .map_err(|e| {
+                debug!("{:?}", e);
+            })
+            .ok();
+
             // TODO... Service related logic
+            // TODO... Penalty related logic
         }
 
         /// Remove attestors while unlink the related geodes.
@@ -445,13 +438,19 @@ pub mod pallet {
                 attestors.remove(&key);
 
                 if attestors.is_empty() {
-                    pallet_attestor::GeodeAttestors::<T>::insert(&geode, &attestors);
-                } else {
                     pallet_attestor::GeodeAttestors::<T>::remove(&geode);
+                } else {
+                    pallet_attestor::GeodeAttestors::<T>::insert(&geode, &attestors);
                 }
 
                 if <MinAttestorNum<T>>::get() > attestors.len() as u32 {
                     <pallet_geode::Module<T>>::degrade_geode(geode);
+                } else {
+                    // because GeodeUpdateCounters will be updated in degrade_geode
+                    pallet_geode::GeodeUpdateCounters::<T>::insert(
+                        &geode,
+                        pallet_geode::GeodeUpdateCounters::<T>::get(&geode) + 1,
+                    );
                 }
             }
         }
@@ -476,6 +475,10 @@ pub mod pallet {
 
             // reset DegradeMode
             <DegradeMode<T>>::put(true);
+
+            <pallet_geode::Module<T>>::clean_storage();
+
+            <pallet_attestor::Module<T>>::clean_storage();
         }
     }
 }

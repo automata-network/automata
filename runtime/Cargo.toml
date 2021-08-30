@@ -99,6 +99,7 @@ std = [
     "pallet-session/std",
     'pallet-template/std',
     'pallet-attestor/std',
+    'pallet-attestor/full_crypto',
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
