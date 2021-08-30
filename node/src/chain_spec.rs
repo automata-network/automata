@@ -3,10 +3,11 @@ use automata_runtime::constants::currency::*;
 use automata_runtime::Block;
 use automata_runtime::{
     opaque::SessionKeys, BabeConfig, BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig,
-    GrandpaConfig, IndicesConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig,
-    ImOnlineConfig, SystemConfig, WASM_BINARY,
+    GrandpaConfig, ImOnlineConfig, IndicesConfig, SessionConfig, StakerStatus, StakingConfig,
+    SudoConfig, SystemConfig, WASM_BINARY,
 };
 use hex_literal::hex;
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::{ChainType, Properties};
 use sc_telemetry::TelemetryEndpoints;
@@ -18,7 +19,6 @@ use sp_core::{
 };
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 
 // The URL for the telemetry server.
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -47,7 +47,11 @@ fn get_properties() -> Option<Properties> {
 }
 
 fn get_session_keys(grandpa: GrandpaId, babe: BabeId, im_online: ImOnlineId) -> SessionKeys {
-    SessionKeys { babe, grandpa, im_online }
+    SessionKeys {
+        babe,
+        grandpa,
+        im_online,
+    }
 }
 
 /// Generate a crypto pair from seed.
@@ -363,9 +367,7 @@ fn testnet_genesis(
         pallet_grandpa: Some(GrandpaConfig {
             authorities: vec![],
         }),
-        pallet_im_online: Some(ImOnlineConfig {
-            keys: vec![]
-        }),
+        pallet_im_online: Some(ImOnlineConfig { keys: vec![] }),
         // pallet_grandpa: Some(GrandpaConfig {
         //     authorities: initial_authorities
         //         .iter()
