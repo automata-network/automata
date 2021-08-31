@@ -6,6 +6,7 @@ use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
 };
+use primitives::BlockNumber;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -23,6 +24,7 @@ frame_support::construct_runtime!(
         Balances: pallet_balances::{Module, Call, Storage, Event<T>},
         AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
         GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
+        ServiceModule: pallet_service::{Module, Call, Storage, Event<T>},
         LivenessModule: liveness::{Module, Call, Storage, Event<T>},
     }
 );
@@ -91,8 +93,17 @@ impl pallet_geode::Config for Test {
     type Event = Event;
 }
 
+impl pallet_service::Config for Test {
+    type Event = Event;
+}
+
+parameter_types! {
+    pub const ReportExpiryBlockNumber: BlockNumber = 10;
+}
+
 impl liveness::Config for Test {
     type Event = Event;
+    type ReportExpiryBlockNumber = ReportExpiryBlockNumber;
 }
 
 // Build genesis storage according to the mock runtime.

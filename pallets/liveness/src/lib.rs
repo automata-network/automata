@@ -454,7 +454,7 @@ pub mod pallet {
             );
             let geode = pallet_geode::Geodes::<T>::get(geode);
             ensure!(geode.provider == who, pallet_geode::Error::<T>::NoRight);
-            if geode.state == GeodeState::Instantiated || geode.state == GeodeState::Degraded {
+            if geode.state == pallet_geode::GeodeState::Instantiated || geode.state == pallet_geode::GeodeState::Degraded {
                 ensure!(
                     geode.promise != 0
                         && geode.promise

@@ -14,6 +14,9 @@ fn it_works_attestor_attest_geode() {
             Origin::signed(attestor_account),
             geode_account
         ));
+
+        let attested_geode = GeodeModule::geodes(geode_account);
+        assert_eq!(attested_geode.state, pallet_geode::GeodeState::Attested);
     });
 }
 
