@@ -72,6 +72,8 @@ fc-db = { default-features = false, version = '1.0.0'}
 fc-mapping-sync = { default-features = false, version = '1.0.0'}
 pallet-indices = { default-features = false, version = '3.0.0' }
 pallet-im-online = { default-features = false, version = '3.0.0' }
+sp-authority-discovery = { default-features = false, version = '3.0.0' }
+sc-authority-discovery = { default-features = false, version = '0.9.0' }
 
 [features]
 default = []

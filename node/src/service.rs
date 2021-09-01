@@ -12,6 +12,7 @@ pub use sc_executor::NativeExecutor;
 use sc_finality_grandpa::FinalityProofProvider;
 use sc_finality_grandpa::SharedVoterState;
 use sc_keystore::LocalKeystore;
+use sc_network::Event;
 use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskManager};
 use sp_inherents::InherentDataProviders;
 use std::time::Duration;
@@ -307,6 +308,33 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
             system_rpc_tx,
             config,
         })?;
+
+    // Spawn authority discovery module.
+    if role.is_authority() {
+        let authority_discovery_role =
+            sc_authority_discovery::Role::PublishAndDiscover(keystore_container.keystore());
+        let dht_event_stream =
+            network
+                .event_stream("authority-discovery")
+                .filter_map(|e| async move {
+                    match e {
+                        Event::Dht(e) => Some(e),
+                        _ => None,
+                    }
+                });
+        let (authority_discovery_worker, _service) = sc_authority_discovery::new_worker_and_service(
+            client.clone(),
+            network.clone(),
+            Box::pin(dht_event_stream),
+            authority_discovery_role,
+            prometheus_registry.clone(),
+        );
+
+        task_manager.spawn_handle().spawn(
+            "authority-discovery-worker",
+            authority_discovery_worker.run(),
+        );
+    }
 
     if role.is_authority() {
         let proposer_factory = sc_basic_authorship::ProposerFactory::new(

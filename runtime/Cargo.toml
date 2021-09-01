@@ -37,6 +37,7 @@ sp-consensus-babe = { version = "0.9.0", default-features = false }
 pallet-im-online = { default-features = false, version = '3.0.0' }
 pallet-offences = { default-features = false, version = '3.0.0' }
 pallet-authorship = { default-features = false, version = '3.0.0' }
+pallet-authority-discovery = { default-features = false, version = '3.0.0' }
 pallet-staking = { default-features = false, version = '3.0.0' }
 pallet-session = { version = "3.0.0", features = ["historical"], default-features = false }
 pallet-staking-reward-curve = { version = "3.0.0", default-features = false }
@@ -52,6 +53,7 @@ sp-staking = { default-features = false, version = '3.0.0' }
 sp-session = { default-features = false, version = '3.0.0' }
 sp-std = { default-features = false, version = '3.0.0' }
 sp-transaction-pool = { default-features = false, version = '3.0.0' }
+sp-authority-discovery = { default-features = false, version = '3.0.0' }
 sp-version = { default-features = false, version = '3.0.0' }
 pallet-ethereum = { default-features = false, version = '1.0.0' }
 pallet-evm-precompile-simple = { default-features = false, version = '1.0.0' }
@@ -95,6 +97,7 @@ std = [
     "pallet-im-online/std",
     "pallet-offences/std",
     "pallet-authorship/std",
+    "pallet-authority-discovery/std",
     'pallet-staking/std',
     "pallet-session/std",
     'pallet-template/std',
@@ -116,6 +119,7 @@ std = [
     'sp-std/std',
     'sp-transaction-pool/std',
     'sp-version/std',
+    "sp-authority-discovery/std",
 	'pallet-ethereum/std',
 	'fp-rpc/std',
     'pallet-indices/std',

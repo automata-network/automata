@@ -24,6 +24,7 @@ use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlinedId;
 use sp_api::impl_runtime_apis;
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
 use sp_runtime::traits::{
     BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion, StaticLookup, Verify,
@@ -95,6 +96,7 @@ pub mod opaque {
             pub babe: Babe,
             pub grandpa: Grandpa,
             pub im_online: ImOnline,
+            pub authority_discovery: AuthorityDiscovery,
         }
     }
 }
@@ -491,6 +493,8 @@ impl pallet_authorship::Config for Runtime {
     type EventHandler = (Staking, ImOnline);
 }
 
+impl pallet_authority_discovery::Config for Runtime {}
+
 /// Fixed gas price of `1`.
 pub struct FixedGasPrice;
 
@@ -609,6 +613,7 @@ construct_runtime!(
         Offences: pallet_offences::{Module, Call, Storage, Event},
         ImOnline: pallet_im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
+        AuthorityDiscovery: pallet_authority_discovery::{Module, Call, Config},
     }
 );
 
@@ -753,6 +758,12 @@ impl_runtime_apis! {
                 equivocation_proof,
                 key_owner_proof,
                 )
+        }
+    }
+
+    impl sp_authority_discovery::AuthorityDiscoveryApi<Block> for Runtime {
+        fn authorities() -> Vec<AuthorityDiscoveryId> {
+            AuthorityDiscovery::authorities()
         }
     }
 
