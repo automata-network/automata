@@ -6,6 +6,7 @@
 use automata_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 use automata_runtime::apis::AttestorApi as AttestorRuntimeApi;
 use automata_runtime::apis::GeodeApi as GeodeRuntimeApi;
+use automata_runtime::apis::TransferApi as TransferRuntimeApi;
 use fc_rpc::{SchemaV1Override, StorageOverride};
 use fc_rpc_core::types::PendingTransactions;
 use jsonrpc_pubsub::manager::SubscriptionManager;
@@ -33,6 +34,7 @@ use std::sync::Arc;
 
 pub mod attestor;
 pub mod geode;
+pub mod transfer;
 
 /// Extra dependencies for BABE.
 pub struct BabeDeps {
@@ -103,6 +105,7 @@ where
     C::Api: BlockBuilder<Block>,
     C::Api: AttestorRuntimeApi<Block>,
     C::Api: GeodeRuntimeApi<Block>,
+    C::Api: TransferRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
@@ -119,6 +122,7 @@ where
     use sc_consensus_babe_rpc::BabeRpcHandler;
     use sc_finality_grandpa_rpc::GrandpaRpcHandler;
     use substrate_frame_rpc_system::{FullSystem, SystemApi};
+    use transfer::TransferServer;
 
     let mut io = jsonrpc_core::IoHandler::default();
     let FullDeps {
@@ -230,7 +234,13 @@ where
         client.clone(),
     )));
 
-    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(client)));
+    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
+        client.clone(),
+    )));
+
+    io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(
+        client.clone(),
+    )));
 
     io
 }

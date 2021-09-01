@@ -72,6 +72,7 @@ pub use pallet_geode;
 pub use pallet_liveness;
 /// Import the template pallet.
 pub use pallet_template;
+pub use pallet_transfer;
 
 pub use automata_primitives::*;
 
@@ -557,6 +558,12 @@ impl pallet_liveness::Config for Runtime {
     type Event = Event;
 }
 
+impl pallet_transfer::Config for Runtime {
+    type Event = Event;
+    type Currency = Balances;
+    type Call = Call;
+}
+
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
@@ -614,6 +621,7 @@ construct_runtime!(
         ImOnline: pallet_im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
         AuthorityDiscovery: pallet_authority_discovery::{Module, Call, Config},
+        TransferModule: pallet_transfer::{Module, Call, Storage, Event<T>, ValidateUnsigned},
     }
 );
 
@@ -855,6 +863,15 @@ impl_runtime_apis! {
 
         fn geode_state(geode: AccountId) -> Option<GeodeState> {
             GeodeModule::geode_state(geode)
+        }
+    }
+
+    impl apis::TransferApi<Block> for Runtime {
+        fn submit_unsigned_transaction(
+            message: [u8; 72],
+            signature_raw_bytes: [u8; 65]
+        ) -> Result<(), ()> {
+            TransferModule::submit_unsigned_transaction(message, signature_raw_bytes)
         }
     }
 
