@@ -6,6 +6,7 @@
 use automata_primitives::{AccountId, Balance, Block, Hash, Index};
 use automata_runtime::apis::AttestorApi as AttestorRuntimeApi;
 use automata_runtime::apis::GeodeApi as GeodeRuntimeApi;
+use automata_runtime::apis::TransferApi as TransferRuntimeApi;
 use fc_rpc::{SchemaV1Override, StorageOverride};
 use fc_rpc_core::types::PendingTransactions;
 use jsonrpc_pubsub::manager::SubscriptionManager;
@@ -27,6 +28,7 @@ use std::sync::Arc;
 
 pub mod attestor;
 pub mod geode;
+pub mod transfer;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -66,6 +68,7 @@ where
     C::Api: BlockBuilder<Block>,
     C::Api: AttestorRuntimeApi<Block>,
     C::Api: GeodeRuntimeApi<Block>,
+    C::Api: TransferRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
 {
     use fc_rpc::{
@@ -77,6 +80,7 @@ where
     use geode::GeodeServer;
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
     use substrate_frame_rpc_system::{FullSystem, SystemApi};
+    use transfer::TransferServer;
 
     let mut io = jsonrpc_core::IoHandler::default();
     let FullDeps {
@@ -150,7 +154,13 @@ where
         client.clone(),
     )));
 
-    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(client)));
+    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
+        client.clone(),
+    )));
+
+    io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(
+        client.clone(),
+    )));
 
     io
 }

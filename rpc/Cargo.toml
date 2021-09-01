@@ -29,12 +29,14 @@ pallet-transaction-payment-rpc = '3.0.0'
 sc-light = '3.0.0'
 hex = '0.4.3'
 sp-std = '3.0.0'
+frame-system-rpc-runtime-api = { default-features = false, version = '3.0.0' }
 sp-core = { features = ["full_crypto"], version = '3.0.0' }
 
 # local dependencies
 automata-primitives = { path = "../primitives" }
 automata-runtime = { path = '../runtime' }
 pallet-geode = { path = "../pallets/geode" }
+pallet-transfer = { path = "../pallets/transfer" }
 
 fc-rpc = { default-features = false, version = '1.0.0'}
 fc-rpc-core = { default-features = false, version = '1.0.0'}

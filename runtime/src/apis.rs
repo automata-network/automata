@@ -15,4 +15,11 @@ sp_api::decl_runtime_apis! {
         fn attestor_attested_geodes(attestor: AccountId) -> Vec<Geode<AccountId, Hash>>;
         fn geode_state(geode: AccountId) -> Option<GeodeState>;
     }
+
+    pub trait TransferApi {
+        fn submit_unsigned_transaction(
+            message: [u8; 72],
+            signature_raw_bytes: [u8; 65]
+        ) -> Result<(), ()>;
+    }
 }

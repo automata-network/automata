@@ -469,6 +469,7 @@ dependencies = [
  "fc-rpc",
  "fc-rpc-core",
  "fp-rpc",
+ "frame-system-rpc-runtime-api",
  "hex",
  "jsonrpc-core 15.1.0",
  "jsonrpc-core-client 15.1.0",
@@ -477,6 +478,7 @@ dependencies = [
  "pallet-ethereum",
  "pallet-geode",
  "pallet-transaction-payment-rpc",
+ "pallet-transfer",
  "sc-client-api",
  "sc-light",
  "sc-network",
@@ -523,6 +525,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-transfer",
  "parity-scale-codec",
  "serde",
  "sp-api",
@@ -4592,6 +4595,23 @@ dependencies = [
  "parity-scale-codec",
  "sp-api",
  "sp-runtime",
+]
+
+[[package]]
+name = "pallet-transfer"
+version = "0.1.0"
+dependencies = [
+ "automata-primitives",
+ "blake2",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

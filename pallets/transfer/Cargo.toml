@@ -1,0 +1,38 @@
+[package]
+authors = ['Automata Team']
+edition = '2018'
+name = 'pallet-transfer'
+version = '0.1.0'
+license = "Apache-2.0"
+
+[package.metadata.docs.rs]
+targets = ['x86_64-unknown-linux-gnu']
+
+[dependencies]
+serde = { version = "1.0.119", optional = true, features = ["derive"] }
+codec = { default-features = false, features = ['derive'], package = 'parity-scale-codec', version = '2.0.0' }
+frame-support = { version = "3.0.0", default-features = false }
+frame-system = { version = "3.0.0", default-features = false }
+sp-runtime = { version = "3.0.0", default-features = false }
+sp-std = {version  = "3.0.0", default-features = false }
+sp-core = {version  = "3.0.0", default-features = false }
+sp-io = { version = "3.0.0", default-features = false }
+blake2 = { version = "0.9.1", default-features = false }
+primitives = { package = "automata-primitives", path = "../../primitives", default-features = false }
+
+[dev-dependencies]
+sp-io = { version = "3.0.0" }
+sp-core = { version = "3.0.0" }
+pallet-balances = { version = "3.0.0" }
+
+[features]
+default = ['std']
+std = [
+    'serde',
+    'codec/std',
+    'sp-std/std',
+    'sp-runtime/std',
+    'primitives/std',
+    'frame-support/std',
+    'frame-system/std'
+]
