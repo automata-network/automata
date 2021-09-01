@@ -18,18 +18,20 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 
 use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
+use frame_system::EnsureRoot;
 use pallet_geode::{Geode, GeodeState};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
+use pallet_im_online::sr25519::AuthorityId as ImOnlinedId;
 use sp_api::impl_runtime_apis;
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
 use sp_runtime::traits::{
     BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion, StaticLookup, Verify,
 };
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
-    transaction_validity::{TransactionSource, TransactionValidity},
+    transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
     ApplyExtrinsicResult,
 };
 use sp_std::prelude::*;
@@ -45,19 +47,20 @@ use sp_runtime::generic::Era;
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
     construct_runtime, debug, parameter_types,
-    traits::{KeyOwnerProofSystem, Randomness},
+    traits::{KeyOwnerProofSystem, Randomness, U128CurrencyToVote},
     weights::{
         constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-        IdentityFee, Weight,
+        DispatchClass, IdentityFee, Weight,
     },
     StorageValue,
 };
 pub use pallet_balances::Call as BalancesCall;
+pub use pallet_staking::StakerStatus;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::CurrencyAdapter;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-pub use sp_runtime::{Perbill, Permill};
+pub use sp_runtime::{curve::PiecewiseLinear, traits::OpaqueKeys, Perbill, Permill};
 
 /// Import the EVM pallet.
 use pallet_evm::{
@@ -91,8 +94,10 @@ pub mod opaque {
 
     impl_opaque_keys! {
         pub struct SessionKeys {
-            pub aura: Aura,
+            pub babe: Babe,
             pub grandpa: Grandpa,
+            pub im_online: ImOnline,
+            pub authority_discovery: AuthorityDiscovery,
         }
     }
 }
@@ -123,6 +128,15 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 pub const MILLISECS_PER_BLOCK: u64 = 15000;
 
 pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
+
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 4 * HOURS;
+pub const EPOCH_DURATION_IN_SLOTS: u64 = {
+    const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
+
+    (EPOCH_DURATION_IN_BLOCKS as f64 * SLOT_FILL_RATE) as u64
+};
+
+pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
 // Time is measured by number of blocks.
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
@@ -202,15 +216,115 @@ impl frame_system::Config for Runtime {
     type SS58Prefix = SS58Prefix;
 }
 
-impl pallet_aura::Config for Runtime {
-    type AuthorityId = AuraId;
+impl pallet_babe::Config for Runtime {
+    type EpochDuration = EpochDuration;
+    type ExpectedBlockTime = ExpectedBlockTime;
+    type EpochChangeTrigger = pallet_babe::ExternalTrigger;
+    type KeyOwnerProofSystem = Historical;
+    type KeyOwnerProof = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
+        KeyTypeId,
+        pallet_babe::AuthorityId,
+    )>>::Proof;
+    type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
+        KeyTypeId,
+        pallet_babe::AuthorityId,
+    )>>::IdentificationTuple;
+    type HandleEquivocation =
+        pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences, ReportLongevity>;
+    type WeightInfo = ();
+}
+
+parameter_types! {
+    pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
+}
+
+impl pallet_session::Config for Runtime {
+    type Event = Event;
+    type ValidatorId = <Self as frame_system::Config>::AccountId;
+    type ValidatorIdOf = pallet_staking::StashOf<Self>;
+    type ShouldEndSession = Babe;
+    type NextSessionRotation = Babe;
+    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
+    type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+    type Keys = opaque::SessionKeys;
+    type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
+    type WeightInfo = ();
+}
+
+parameter_types! {
+    pub const EpochDuration: u64 = EPOCH_DURATION_IN_SLOTS;
+    pub const ExpectedBlockTime: Moment = MILLISECS_PER_BLOCK;
+    pub const ReportLongevity: u64 =
+        BondingDuration::get() as u64 * SessionsPerEra::get() as u64 * EpochDuration::get();
+}
+
+impl pallet_session::historical::Config for Runtime {
+    type FullIdentification = pallet_staking::Exposure<AccountId, Balance>;
+    type FullIdentificationOf = pallet_staking::ExposureOf<Runtime>;
+}
+
+pallet_staking_reward_curve::build! {
+    // 4.5% min, 27.5% max, 50% ideal stake
+    const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
+        min_inflation: 0_045_000,
+        max_inflation: 0_275_000,
+        ideal_stake: 0_500_000,
+        falloff: 0_050_000,
+        max_piece_count: 40,
+        test_precision: 0_005_500,
+    );
+}
+
+parameter_types! {
+    pub const SessionsPerEra: sp_staking::SessionIndex = 6;
+    pub const BondingDuration: pallet_staking::EraIndex = 28;
+    pub const SlashDeferDuration: pallet_staking::EraIndex = 27;
+    pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
+    // only top N nominators get paid for each validator
+    pub const MaxNominatorRewardedPerValidator: u32 = 256;
+    pub const ElectionLookahead: BlockNumber = EPOCH_DURATION_IN_BLOCKS / 4;
+    pub const MaxIterations: u32 = 5;
+    // 0.05%. The higher the value, the more strict solution acceptance becomes.
+    pub MinSolutionScoreBump: Perbill = Perbill::from_rational_approximation(5 as u32, 10_000);
+    // offchain tx signing
+    pub const StakingUnsignedPriority: TransactionPriority = TransactionPriority::max_value() / 2;
+    pub OffchainSolutionWeightLimit: Weight = BlockWeights::get()
+        .get(DispatchClass::Normal)
+        .max_extrinsic
+        .expect("Normal extrinsics have weight limit configured by default; qed")
+        .saturating_sub(BlockExecutionWeight::get());
+}
+
+impl pallet_staking::Config for Runtime {
+    type Currency = Balances;
+    type UnixTime = Timestamp;
+    type CurrencyToVote = U128CurrencyToVote;
+    type RewardRemainder = (); // burn
+    type Event = Event;
+    type Slash = (); // burn slashed rewards
+    type Reward = (); // rewards are minted from the void
+    type SessionsPerEra = SessionsPerEra;
+    type BondingDuration = BondingDuration;
+    type SlashDeferDuration = SlashDeferDuration;
+    type SlashCancelOrigin = EnsureRoot<AccountId>;
+    type SessionInterface = Self;
+    type RewardCurve = RewardCurve;
+    type NextNewSession = Session;
+    type ElectionLookahead = ElectionLookahead;
+    type Call = Call;
+    type MaxIterations = MaxIterations;
+    type MinSolutionScoreBump = MinSolutionScoreBump;
+    type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
+    type UnsignedPriority = StakingUnsignedPriority;
+    type WeightInfo = ();
+    type OffchainSolutionWeightLimit = OffchainSolutionWeightLimit;
 }
 
 impl pallet_grandpa::Config for Runtime {
     type Event = Event;
     type Call = Call;
 
-    type KeyOwnerProofSystem = ();
+    type KeyOwnerProofSystem = Historical;
 
     type KeyOwnerProof =
         <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
@@ -220,7 +334,11 @@ impl pallet_grandpa::Config for Runtime {
         GrandpaId,
     )>>::IdentificationTuple;
 
-    type HandleEquivocation = ();
+    type HandleEquivocation = pallet_grandpa::EquivocationHandler<
+        Self::KeyOwnerIdentification,
+        Offences,
+        ReportLongevity,
+    >;
 
     type WeightInfo = ();
 }
@@ -232,7 +350,7 @@ parameter_types! {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = Aura;
+    type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
 }
@@ -338,6 +456,46 @@ where
     type OverarchingCall = Call;
 }
 
+parameter_types! {
+    pub const SessionDuration: BlockNumber = EPOCH_DURATION_IN_SLOTS as _;
+    pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+}
+
+impl pallet_im_online::Config for Runtime {
+    type AuthorityId = ImOnlinedId;
+    type Event = Event;
+    type SessionDuration = SessionDuration;
+    type ValidatorSet = Historical;
+    type ReportUnresponsiveness = Offences;
+    type UnsignedPriority = ImOnlineUnsignedPriority;
+    type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+    pub OffencesWeightSoftLimit: Weight = Perbill::from_percent(60) *
+        BlockWeights::get().max_block;
+}
+
+impl pallet_offences::Config for Runtime {
+    type Event = Event;
+    type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
+    type OnOffenceHandler = Staking;
+    type WeightSoftLimit = OffencesWeightSoftLimit;
+}
+
+parameter_types! {
+    pub const UncleGenerations: BlockNumber = 5;
+}
+
+impl pallet_authorship::Config for Runtime {
+    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
+    type UncleGenerations = UncleGenerations;
+    type FilterUncle = ();
+    type EventHandler = (Staking, ImOnline);
+}
+
+impl pallet_authority_discovery::Config for Runtime {}
+
 /// Fixed gas price of `1`.
 pub struct FixedGasPrice;
 
@@ -430,6 +588,8 @@ impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConve
     }
 }
 
+use pallet_session::historical as pallet_session_historical;
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -440,8 +600,8 @@ construct_runtime!(
         System: frame_system::{Module, Call, Config, Storage, Event<T>},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        Aura: pallet_aura::{Module, Config<T>},
-        Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event},
+        Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
+        Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event, ValidateUnsigned},
         Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
         TransactionPayment: pallet_transaction_payment::{Module, Storage},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
@@ -454,6 +614,13 @@ construct_runtime!(
         AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>, ValidateUnsigned},
         GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
         LivenessModule: pallet_liveness::{Module, Call, Storage, Event<T>},
+        Staking: pallet_staking::{Module, Call, Storage, Config<T>, Event<T>, ValidateUnsigned},
+        Session: pallet_session::{Module, Call, Storage, Event, Config<T>},
+        Historical: pallet_session_historical::{Module},
+        Offences: pallet_offences::{Module, Call, Storage, Event},
+        ImOnline: pallet_im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
+        Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
+        AuthorityDiscovery: pallet_authority_discovery::{Module, Call, Config},
         TransferModule: pallet_transfer::{Module, Call, Storage, Event<T>, ValidateUnsigned},
     }
 );
@@ -554,13 +721,57 @@ impl_runtime_apis! {
         }
     }
 
-    impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
-        fn slot_duration() -> u64 {
-            Aura::slot_duration()
+    impl sp_consensus_babe::BabeApi<Block> for Runtime {
+        fn configuration() -> sp_consensus_babe::BabeGenesisConfiguration {
+            sp_consensus_babe::BabeGenesisConfiguration {
+                slot_duration: Babe::slot_duration(),
+                epoch_length: EpochDuration::get(),
+                c: PRIMARY_PROBABILITY,
+                genesis_authorities: Babe::authorities(),
+                randomness: Babe::randomness(),
+                allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryPlainSlots,
+            }
         }
 
-        fn authorities() -> Vec<AuraId> {
-            Aura::authorities()
+        fn current_epoch_start() -> sp_consensus_babe::Slot {
+            Babe::current_epoch_start()
+        }
+
+        fn current_epoch() -> sp_consensus_babe::Epoch {
+            Babe::current_epoch()
+        }
+
+        fn next_epoch() -> sp_consensus_babe::Epoch {
+            Babe::next_epoch()
+        }
+
+        fn generate_key_ownership_proof(
+            _slot_number: sp_consensus_babe::Slot,
+            authority_id: sp_consensus_babe::AuthorityId,
+            ) -> Option<sp_consensus_babe::OpaqueKeyOwnershipProof> {
+            use codec::Encode;
+
+            Historical::prove((sp_consensus_babe::KEY_TYPE, authority_id))
+                .map(|p| p.encode())
+                .map(sp_consensus_babe::OpaqueKeyOwnershipProof::new)
+        }
+
+        fn submit_report_equivocation_unsigned_extrinsic(
+            equivocation_proof: sp_consensus_babe::EquivocationProof<<Block as BlockT>::Header>,
+            key_owner_proof: sp_consensus_babe::OpaqueKeyOwnershipProof,
+            ) -> Option<()> {
+            let key_owner_proof = key_owner_proof.decode()?;
+
+            Babe::submit_unsigned_equivocation_report(
+                equivocation_proof,
+                key_owner_proof,
+                )
+        }
+    }
+
+    impl sp_authority_discovery::AuthorityDiscoveryApi<Block> for Runtime {
+        fn authorities() -> Vec<AuthorityDiscoveryId> {
+            AuthorityDiscovery::authorities()
         }
     }
 
