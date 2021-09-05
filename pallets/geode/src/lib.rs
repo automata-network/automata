@@ -390,4 +390,10 @@ pub mod pallet {
             Ok(())
         }
     }
+
+    impl<T: Config> Get<Vec::<GeodeOf<T>>> for Pallet<T> {
+        fn get() -> Vec::<GeodeOf<T>> {
+            Self::registered_geodes()
+        }
+    }
 }
