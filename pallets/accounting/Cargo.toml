@@ -20,6 +20,8 @@ sp-std = {version  = "3.0.0", default-features = false }
 
 automata-runtime-traits = { path = "../../runtime/traits", default-features = false}
 pallet-attestor = { path = "../attestor", default-features = false}
+pallet-geode = { path = "../geode", default-features = false}
+
 
 [dev-dependencies]
 serde = { version = "1.0.119" }
@@ -38,4 +40,5 @@ std = [
 	'sp-std/std',
 	'automata-runtime-traits/std',
 	'pallet-attestor/std',
+	'pallet-geode/std',
 ]

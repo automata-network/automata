@@ -170,6 +170,7 @@ pub mod pallet {
             let block_number = <frame_system::Module<T>>::block_number();
             geode_record.state = GeodeState::Registered;
             geode_record.provider = who.clone();
+            T::GeodeAccounting::geode_staking(who.clone())?;
 
             <Geodes<T>>::insert(geode.clone(), geode_record);
             <RegisteredGeodes<T>>::insert(&geode, block_number.saturated_into::<BlockNumber>());
@@ -185,8 +186,11 @@ pub mod pallet {
             geode: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            match Self::detach_geode(DetachOption::Remove, geode, Some(who)) {
-                Ok(_) => Ok(().into()),
+            match Self::detach_geode(DetachOption::Remove, geode, Some(who.clone())) {
+                Ok(_) => {
+                    T::GeodeAccounting::geode_unreserve(who)?;
+                    Ok(().into())
+                },
                 Err(e) => Err(e.into()),
             }
         }

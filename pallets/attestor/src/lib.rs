@@ -136,6 +136,7 @@ pub mod pallet {
                 attestors.remove(&who);
                 <GeodeAttestors<T>>::insert(&geode, attestors);
             }
+            T::AttestorAccounting::attestor_unreserve(who.clone());
             <Attestors<T>>::remove(&who);
             Self::deposit_event(Event::AttestorRemove(who));
             Ok(().into())

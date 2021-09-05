@@ -17,6 +17,7 @@ pub mod pallet {
     use sp_std::prelude::*;
     use core::{convert::TryInto,};
     use automata_runtime_traits::{AttestorAccounting, GeodeAccounting};
+    use pallet_geode::GeodeOf;
 
     type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -30,6 +31,7 @@ pub mod pallet {
         type Currency: ReservableCurrency<Self::AccountId> + Currency<Self::AccountId>;
 
         type GetAttestors: Get<BTreeMap::<Self::AccountId, usize>>;
+        type GetGeodes: Get<Vec::<GeodeOf<Self>>>;
 
         type AttestorStakingAmount: Get<BalanceOf<Self>>;
         type GeodeStakingAmount: Get<BalanceOf<Self>>;
@@ -55,8 +57,13 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::storage]
-    #[pallet::getter(fn total_distributed_reward)]
-    pub type TotalDistributedReward<T: Config> =
+    #[pallet::getter(fn total_attestor_distributed_reward)]
+    pub type TotalAttestorDistributedReward<T: Config> =
+        StorageValue<_, BalanceOf<T>>;
+
+        #[pallet::storage]
+    #[pallet::getter(fn total_geode_distributed_reward)]
+    pub type TotalGeodeDistributedReward<T: Config> =
         StorageValue<_, BalanceOf<T>>;
 
     // The pallet's runtime storage items.
@@ -71,8 +78,12 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// Attestor rewarded. \[attestor_id\]
         AttestorRewarded(T::BlockNumber),
+        /// Geode rewarded. \[geode_id\]
+        GeodeRewarded(T::BlockNumber),
         /// No reward left for attestor
         AttestorRewardRanOut(),
+        /// No reward left for geode
+        GeodeRewardRanOut(),
     }
 
     #[pallet::error]
@@ -83,9 +94,16 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(block_number: T::BlockNumber) -> Weight {
-            if let Some(value) = Self::total_distributed_reward() {
+            if let Some(value) = Self::total_attestor_distributed_reward() {
                 if value >= T::AttestorTotalReward::get() {
                     Self::deposit_event(Event::AttestorRewardRanOut());
+                    return 0;
+                }
+            }
+
+            if let Some(value) = Self::total_geode_distributed_reward() {
+                if value >= T::GeodeTotalReward::get() {
+                    Self::deposit_event(Event::GeodeRewardRanOut());
                     return 0;
                 }
             }
@@ -96,7 +114,9 @@ pub mod pallet {
             /// Reward at the begin of each slot
             if index_in_slot == T::BlockNumber::from(0_u32) {
                 Self::reward_attestors();
+                Self::reward_geodes();
                 Self::deposit_event(Event::AttestorRewarded(block_number));
+                Self::deposit_event(Event::GeodeRewarded(block_number));
             }
 
 			10000
@@ -138,14 +158,27 @@ pub mod pallet {
                 <T as Config>::Currency::deposit_into_existing(accountId, reward);
             });
 
-            match Self::total_distributed_reward() {
-                Some(value) => TotalDistributedReward::<T>::put(value + reward_each_slot),
-                None => TotalDistributedReward::<T>::put(reward_each_slot),
+            match Self::total_attestor_distributed_reward() {
+                Some(value) => TotalAttestorDistributedReward::<T>::put(value + reward_each_slot),
+                None => TotalAttestorDistributedReward::<T>::put(reward_each_slot),
             }
         }
 
         pub fn reward_geodes() {
+            let geodes = T::GetGeodes::get();
 
+            let geodes_len = geodes.len();
+            let reward_each_slot = T::GeodeRewardEachSlot::get();
+            let reward = reward_each_slot / BalanceOf::<T>::from(geodes_len as u32);
+
+            geodes.iter().map(|geode| {
+                <T as Config>::Currency::deposit_into_existing(&geode.id, reward);
+            });
+
+            match Self::total_geode_distributed_reward() {
+                Some(value) => TotalGeodeDistributedReward::<T>::put(value + reward_each_slot),
+                None => TotalGeodeDistributedReward::<T>::put(reward_each_slot),
+            }
         }
     }
 

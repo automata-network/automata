@@ -426,6 +426,7 @@ impl pallet_accounting::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
     type GetAttestors = AttestorModule;
+    type GetGeodes = GeodeModule;
     
     type AttestorStakingAmount = AttestorStakingAmount;
     type GeodeStakingAmount = GeodeStakingAmount;
