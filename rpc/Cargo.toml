@@ -42,7 +42,8 @@ sp-core = { features = ["full_crypto"], version = '3.0.0' }
 
 # local dependencies
 automata-primitives = { path = "../primitives" }
-automata-runtime = { path = '../runtime' }
+automata-runtime = { path = '../runtime/automata', optional = true }
+contextfree-runtime = { path = '../runtime/contextfree', optional = true }
 pallet-geode = { path = "../pallets/geode" }
 pallet-transfer = { path = "../pallets/transfer" }
 
@@ -51,3 +52,8 @@ fc-rpc-core = { default-features = false, version = '1.0.0'}
 fc-db = { default-features = false, version = '1.0.0'}
 fp-rpc = { default-features = false, version = '1.0.0'}
 pallet-ethereum = { default-features = false, version = '1.0.0'}
+
+[features]
+default = ["contextfree-runtime"]
+automata = ["automata-runtime"]
+contextfree = ["contextfree-runtime"]

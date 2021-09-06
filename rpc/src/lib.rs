@@ -4,9 +4,11 @@
 //! capabilities that are specific to this project's runtime configuration.
 
 use automata_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
-use automata_runtime::apis::AttestorApi as AttestorRuntimeApi;
-use automata_runtime::apis::GeodeApi as GeodeRuntimeApi;
+// use automata_runtime::apis::AttestorApi as AttestorRuntimeApi;
+// use automata_runtime::apis::GeodeApi as GeodeRuntimeApi;
+#[cfg(feature = "automata")]
 use automata_runtime::apis::TransferApi as TransferRuntimeApi;
+use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
 use fc_rpc::{SchemaV1Override, StorageOverride};
 use fc_rpc_core::types::PendingTransactions;
 use jsonrpc_pubsub::manager::SubscriptionManager;
@@ -32,8 +34,11 @@ use sp_transaction_pool::TransactionPool;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+#[cfg(feature = "automata")]
 pub mod attestor;
+#[cfg(feature = "automata")]
 pub mod geode;
+#[cfg(feature = "automata")]
 pub mod transfer;
 
 /// Extra dependencies for BABE.
@@ -103,9 +108,9 @@ where
     C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
     C::Api: sp_consensus_babe::BabeApi<Block>,
     C::Api: BlockBuilder<Block>,
-    C::Api: AttestorRuntimeApi<Block>,
-    C::Api: GeodeRuntimeApi<Block>,
-    C::Api: TransferRuntimeApi<Block>,
+    // C::Api: AttestorRuntimeApi<Block>,
+    // C::Api: GeodeRuntimeApi<Block>,
+    // C::Api: TransferRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
@@ -116,12 +121,15 @@ where
         HexEncodedIdProvider, NetApi, NetApiServer, Web3Api, Web3ApiServer,
     };
 
+    #[cfg(feature = "automata")]
     use attestor::AttestorServer;
+    #[cfg(feature = "automata")]
     use geode::GeodeServer;
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
     use sc_consensus_babe_rpc::BabeRpcHandler;
     use sc_finality_grandpa_rpc::GrandpaRpcHandler;
     use substrate_frame_rpc_system::{FullSystem, SystemApi};
+    #[cfg(feature = "automata")]
     use transfer::TransferServer;
 
     let mut io = jsonrpc_core::IoHandler::default();
@@ -183,7 +191,10 @@ where
     io.extend_with(EthApiServer::to_delegate(EthApi::new(
         client.clone(),
         pool.clone(),
-        automata_runtime::TransactionConverter,
+        // #[cfg(feature = "automata")]
+        // automata_runtime::TransactionConverter,
+        // #[cfg(feature = "contextfree")]
+        contextfree_runtime::TransactionConverter,
         network.clone(),
         pending_transactions,
         signers,
@@ -230,14 +241,17 @@ where
         ),
     )));
 
+    #[cfg(feature = "automata")]
     io.extend_with(AttestorServer::to_delegate(attestor::AttestorApi::new(
         client.clone(),
     )));
 
+    #[cfg(feature = "automata")]
     io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
         client.clone(),
     )));
 
+    #[cfg(feature = "automata")]
     io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(
         client.clone(),
     )));

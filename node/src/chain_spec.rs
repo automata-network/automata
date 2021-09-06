@@ -1,11 +1,19 @@
 pub use automata_primitives::{AccountId, Balance, Signature};
-use automata_runtime::constants::currency::*;
-use automata_runtime::Block;
+#[cfg(feature = "automata")]
 use automata_runtime::{
+    constants::currency::*,
     opaque::SessionKeys, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, EVMConfig,
     EthereumConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, SessionConfig,
     StakerStatus, StakingConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
+#[cfg(feature = "contextfree")]
+use contextfree_runtime::{
+    constants::currency::*,
+    GenesisConfig, StakerStatus,
+};
+#[cfg(feature = "contextfree")]
+use contextfree_runtime as contextfree;
+use automata_primitives::Block;
 use hex_literal::hex;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -21,8 +29,12 @@ use sp_core::{
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
+#[cfg(feature = "contextfree")]
+pub type ContextFreeChainSpec = sc_service::GenericChainSpec<contextfree::GenesisConfig, Extensions>;
+
 // The URL for the telemetry server.
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
+const DEFAULT_PROTOCOL_ID: &str = "ata";
 
 /// Node `ChainSpec` extensions.
 ///
@@ -47,6 +59,7 @@ fn get_properties() -> Option<Properties> {
     Some(properties)
 }
 
+#[cfg(feature = "automata")]
 fn get_session_keys(
     grandpa: GrandpaId,
     babe: BabeId,
@@ -54,6 +67,21 @@ fn get_session_keys(
     authority_discovery: AuthorityDiscoveryId,
 ) -> SessionKeys {
     SessionKeys {
+        babe,
+        grandpa,
+        im_online,
+        authority_discovery,
+    }
+}
+
+#[cfg(feature = "contextfree")]
+fn get_contextfree_session_keys(
+    grandpa: GrandpaId,
+    babe: BabeId,
+    im_online: ImOnlineId,
+    authority_discovery: AuthorityDiscoveryId,
+) -> contextfree::opaque::SessionKeys {
+    contextfree::opaque::SessionKeys {
         babe,
         grandpa,
         im_online,
@@ -99,6 +127,7 @@ pub fn authority_keys_from_seed(
     )
 }
 
+#[cfg(feature = "automata")]
 pub fn development_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
 
@@ -137,6 +166,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
     ))
 }
 
+#[cfg(feature = "automata")]
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
 
@@ -175,7 +205,29 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
     ))
 }
 
+#[cfg(feature = "contextfree")]
+pub fn contextfree_testnet_config() -> Result<ContextFreeChainSpec, String> {
+    let wasm_binary = contextfree::WASM_BINARY.ok_or("ContextFree testnet awsm not available")?;
+    let boot_nodes = vec![];
+
+    Ok(ContextFreeChainSpec::from_genesis(
+        "ContextFree Network", 
+        "contextfree_network", 
+        ChainType::Live, 
+        move || contextfree_config_genesis(wasm_binary), 
+        boot_nodes, 
+        Some(
+            TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
+                .expect("Staging telemetry url is valid; qed"),
+        ),
+        Some(DEFAULT_PROTOCOL_ID),
+        get_properties(),
+        Default::default(),
+    ))
+}
+
 /// Staging testnet config.
+#[cfg(feature = "automata")]
 pub fn staging_testnet_config() -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
 
@@ -305,7 +357,161 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
     ))
 }
 
+//TODO: we need to update contextfree spec when we want to launch it officially
+#[cfg(feature = "contextfree")]
+fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig {
+    let mut endowed_accounts: Vec<AccountId> = vec![
+        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        get_account_id_from_seed::<sr25519::Public>("Bob"),
+        get_account_id_from_seed::<sr25519::Public>("Charlie"),
+        get_account_id_from_seed::<sr25519::Public>("Dave"),
+        get_account_id_from_seed::<sr25519::Public>("Eve"),
+        get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+    ];
+
+    let initial_authorities: Vec<(
+        AccountId,
+        AccountId,
+        GrandpaId,
+        BabeId,
+        ImOnlineId,
+        AuthorityDiscoveryId,
+    )> = vec![
+        authority_keys_from_seed("Alice"),
+        authority_keys_from_seed("Bob"),
+    ];
+
+    let root_key: AccountId = hex![
+        // 5HGWsrBrgNxVTisu5DYjfGGbCf69VxtybSW8t36arFUabVtn
+        "e62f26bc433a9fa7679a284b1f85898739c32ab4b23246515be0ee339643003f"
+    ].into();
+    endowed_accounts.push(root_key.clone());
+
+    const ENDOWMENT: u128 = 1_000_000 * DOLLARS;
+    const INITIAL_STAKING: u128 = 1_000_000 * DOLLARS;
+
+    contextfree::GenesisConfig {
+        frame_system: Some(contextfree::SystemConfig {
+            // Add Wasm runtime to storage.
+            code: wasm_binary.to_vec(),
+            changes_trie_config: Default::default(),
+        }),
+        pallet_balances: Some(contextfree::BalancesConfig {
+            // Configure endowed accounts with initial balance of 1 << 60.
+            balances: endowed_accounts
+                .iter()
+                .cloned()
+                .map(|k| (k, ENDOWMENT))
+                .collect(),
+        }),
+        pallet_indices: Some(contextfree::IndicesConfig { indices: vec![] }),
+        pallet_babe: Some(contextfree::BabeConfig {
+            authorities: vec![],
+        }),
+        pallet_grandpa: Some(contextfree::GrandpaConfig {
+            authorities: vec![],
+        }),
+        pallet_staking: Some(contextfree::StakingConfig {
+            validator_count: 4,
+            minimum_validator_count: 2,
+            stakers: vec![],
+            invulnerables: vec![],
+            slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
+            ..Default::default()
+            // validator_count: initial_authorities.len() as u32 * 2,
+            // minimum_validator_count: initial_authorities.len() as u32,
+            // stakers: initial_authorities
+            //     .iter()
+            //     .map(|x| {
+            //         (
+            //             x.0.clone(),
+            //             x.1.clone(),
+            //             INITIAL_STAKING,
+            //             StakerStatus::Validator,
+            //         )
+            //     })
+            //     .collect(),
+            // invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+            // slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
+            // ..Default::default()
+        }),
+        pallet_session: Some(contextfree::SessionConfig {
+            keys: initial_authorities
+                .iter()
+                .map(|x| {
+                    (
+                        x.0.clone(), // stash
+                        x.0.clone(), // stash
+                        get_contextfree_session_keys(
+                            x.2.clone(), // grandpa
+                            x.3.clone(), // babe
+                            x.4.clone(),
+                            x.5.clone(),
+                        ),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        }),
+        pallet_im_online: Some(contextfree::ImOnlineConfig { 
+            keys: vec![] 
+        }),
+        pallet_authority_discovery: Some(contextfree::AuthorityDiscoveryConfig { 
+            keys: vec![] 
+        }),
+		pallet_democracy: Some(contextfree::DemocracyConfig::default()),
+		pallet_collective_Instance1: Some(contextfree::CouncilConfig { members: vec![], phantom: Default::default() }),
+		pallet_collective_Instance2: Some(contextfree::TechnicalCommitteeConfig {
+			members: vec![],
+			phantom: Default::default(),
+		}),
+        pallet_elections_phragmen: Some(Default::default()),
+		pallet_membership_Instance1: Some(Default::default()),
+        pallet_treasury: Some(Default::default()),
+        pallet_evm: Some(contextfree::EVMConfig {
+            accounts: vec![
+                H160::from(hex_literal::hex![
+                    "18bD778c044F47d41CFabF336F2b1e06648e0771"
+                ]),
+                H160::from(hex_literal::hex![
+                    "b4b58365166402a78b4ac05e1b13b6d64fCcF60f"
+                ]),
+                H160::from(hex_literal::hex![
+                    "2CCDD9Fa13d97F6FAEC4B1D8085861AE57e1D9c9"
+                ]),
+                H160::from(hex_literal::hex![
+                    "3e29eF30D9836928DDc3667af68da02bAd913316"
+                ]),
+            ]
+            .into_iter()
+            .map(|x| {
+                (
+                    x,
+                    pallet_evm::GenesisAccount {
+                        balance: U256::from(ENDOWMENT),
+                        nonce: Default::default(),
+                        code: Default::default(),
+                        storage: Default::default(),
+                    },
+                )
+            })
+            .collect(),
+        }),
+        pallet_ethereum: Some(contextfree::EthereumConfig {}),
+        pallet_sudo: Some(contextfree::SudoConfig {
+            // Assign network admin rights.
+            key: root_key,
+        }),
+    }
+}
+
 /// Configure initial storage state for FRAME modules.
+#[cfg(feature = "automata")]
 fn testnet_genesis(
     wasm_binary: &[u8],
     initial_authorities: Vec<(

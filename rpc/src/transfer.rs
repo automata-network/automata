@@ -1,5 +1,8 @@
 use automata_primitives::{AccountId, Block, BlockId, Index};
+#[cfg(feature = "automata")]
 use automata_runtime::apis::TransferApi as TransferRuntimeApi;
+#[cfg(feature = "contextfree")]
+use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
 use fp_rpc::EthereumRuntimeRPCApi;
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use jsonrpc_core::{Error, ErrorCode, Result};
