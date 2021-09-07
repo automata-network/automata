@@ -15,7 +15,7 @@ pub mod currency {
 
 /// Time.
 pub mod time {
-    use automata_primitives::{BlockNumber};
+    use automata_primitives::BlockNumber;
 
     pub const MILLISECS_PER_BLOCK: u64 = 5000;
     pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;

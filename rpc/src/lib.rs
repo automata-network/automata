@@ -2,15 +2,14 @@
 //! Substrate provides the `sc-rpc` crate, which defines the core RPC layer
 //! used by Substrate nodes. This file extends those RPC definitions with
 //! capabilities that are specific to this project's runtime configuration.
-#[cfg(all(feature="automata", feature="contextfree"))]
+#[cfg(all(feature = "automata", feature = "contextfree"))]
 compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
 
 use automata_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 #[cfg(feature = "automata")]
 use automata_runtime::apis::{
+    AttestorApi as AttestorRuntimeApi, GeodeApi as GeodeRuntimeApi,
     TransferApi as TransferRuntimeApi,
-    GeodeApi as GeodeRuntimeApi,
-    AttestorApi as AttestorRuntimeApi,
 };
 #[cfg(feature = "contextfree")]
 use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
@@ -101,7 +100,7 @@ pub fn create_full<C, P, BE, B, SC>(
     deps: FullDeps<C, P, B, SC>,
     subscription_task_executor: SubscriptionTaskExecutor,
 ) -> jsonrpc_core::IoHandler<sc_rpc::Metadata>
-where 
+where
     BE: Backend<Block> + 'static,
     BE::State: StateBackend<BlakeTwo256>,
     C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + sc_client_api::AuxStore,
@@ -128,7 +127,7 @@ pub fn create_full<C, P, BE, B, SC>(
     deps: FullDeps<C, P, B, SC>,
     subscription_task_executor: SubscriptionTaskExecutor,
 ) -> jsonrpc_core::IoHandler<sc_rpc::Metadata>
-where 
+where
     BE: Backend<Block> + 'static,
     BE::State: StateBackend<BlakeTwo256>,
     C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + sc_client_api::AuxStore,
@@ -152,9 +151,9 @@ where
     let client = deps.client.clone();
     let mut io = create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor);
 
-    io.extend_with(attestor::AttestorServer::to_delegate(attestor::AttestorApi::new(
-        client.clone(),
-    )));
+    io.extend_with(attestor::AttestorServer::to_delegate(
+        attestor::AttestorApi::new(client.clone()),
+    ));
 
     io.extend_with(geode::GeodeServer::to_delegate(geode::GeodeApi::new(
         client.clone(),

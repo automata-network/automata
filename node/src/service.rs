@@ -1,15 +1,15 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
-#[cfg(all(feature="automata", feature="contextfree"))]
+#[cfg(all(feature = "automata", feature = "contextfree"))]
 compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
 
 #[cfg(feature = "automata")]
-pub use automata_runtime::{self as runtime, opaque::Block, RuntimeApi};
-#[cfg(feature = "automata")]
 use automata_rpc as runtime_rpc;
-#[cfg(feature = "contextfree")]
-pub use contextfree_runtime::{self as runtime, opaque::Block, RuntimeApi};
+#[cfg(feature = "automata")]
+pub use automata_runtime::{self as runtime, opaque::Block, RuntimeApi};
 #[cfg(feature = "contextfree")]
 use contextfree_rpc as runtime_rpc;
+#[cfg(feature = "contextfree")]
+pub use contextfree_runtime::{self as runtime, opaque::Block, RuntimeApi};
 use fc_consensus::FrontierBlockImport;
 use fc_mapping_sync::MappingSyncWorker;
 use fc_rpc_core::types::PendingTransactions;
@@ -17,15 +17,15 @@ use futures::StreamExt;
 use sc_cli::SubstrateCli;
 use sc_client_api::{BlockchainEvents, ExecutorProvider, RemoteBackend};
 use sc_executor::native_executor_instance;
+pub use sc_executor::NativeExecutionDispatch;
 pub use sc_executor::NativeExecutor;
 use sc_finality_grandpa::FinalityProofProvider;
 use sc_finality_grandpa::SharedVoterState;
 use sc_keystore::LocalKeystore;
 use sc_network::Event;
-use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskManager, ChainSpec};
-use sp_inherents::InherentDataProviders;
+use sc_service::{error::Error as ServiceError, BasePath, ChainSpec, Configuration, TaskManager};
 pub use sp_api::ConstructRuntimeApi;
-pub use sc_executor::NativeExecutionDispatch;
+use sp_inherents::InherentDataProviders;
 use std::time::Duration;
 use std::{
     collections::HashMap,
@@ -85,20 +85,20 @@ pub fn open_frontier_backend(config: &Configuration) -> Result<Arc<fc_db::Backen
 }
 
 pub trait IdentifyVariant {
-	/// Returns if this is a configuration for the `Automata` network.
-	fn is_automata(&self) -> bool;
+    /// Returns if this is a configuration for the `Automata` network.
+    fn is_automata(&self) -> bool;
 
-	/// Returns if this is a configuration for the `ContextFree` network.
-	fn is_contextfree(&self) -> bool;
+    /// Returns if this is a configuration for the `ContextFree` network.
+    fn is_contextfree(&self) -> bool;
 }
 
 impl IdentifyVariant for Box<dyn ChainSpec> {
-	fn is_automata(&self) -> bool {
-		self.id().starts_with("automata")
-	}
-	fn is_contextfree(&self) -> bool {
-		self.id().starts_with("contextfree")
-	}
+    fn is_automata(&self) -> bool {
+        self.id().starts_with("automata")
+    }
+    fn is_contextfree(&self) -> bool {
+        self.id().starts_with("contextfree")
+    }
 }
 
 pub fn new_partial(

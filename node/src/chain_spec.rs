@@ -1,22 +1,19 @@
-#[cfg(all(feature="automata", feature="contextfree"))]
+#[cfg(all(feature = "automata", feature = "contextfree"))]
 compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
 
+use automata_primitives::Block;
 pub use automata_primitives::{AccountId, Balance, Signature};
 #[cfg(feature = "automata")]
 use automata_runtime::{
-    constants::currency::*,
-    opaque::SessionKeys, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, EVMConfig,
-    EthereumConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, SessionConfig,
-    StakerStatus, StakingConfig, SudoConfig, SystemConfig, WASM_BINARY,
-};
-#[cfg(feature = "contextfree")]
-use contextfree_runtime::{
-    constants::currency::*,
-    GenesisConfig, StakerStatus,
+    constants::currency::*, opaque::SessionKeys, AuthorityDiscoveryConfig, BabeConfig,
+    BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig,
+    IndicesConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
+    WASM_BINARY,
 };
 #[cfg(feature = "contextfree")]
 use contextfree_runtime as contextfree;
-use automata_primitives::Block;
+#[cfg(feature = "contextfree")]
+use contextfree_runtime::{constants::currency::*, GenesisConfig, StakerStatus};
 use hex_literal::hex;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -33,7 +30,8 @@ use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
 #[cfg(feature = "contextfree")]
-pub type ContextFreeChainSpec = sc_service::GenericChainSpec<contextfree::GenesisConfig, Extensions>;
+pub type ContextFreeChainSpec =
+    sc_service::GenericChainSpec<contextfree::GenesisConfig, Extensions>;
 
 // The URL for the telemetry server.
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -214,11 +212,11 @@ pub fn contextfree_testnet_config() -> Result<ContextFreeChainSpec, String> {
     let boot_nodes = vec![];
 
     Ok(ContextFreeChainSpec::from_genesis(
-        "ContextFree Network", 
-        "contextfree_network", 
-        ChainType::Live, 
-        move || contextfree_config_genesis(wasm_binary), 
-        boot_nodes, 
+        "ContextFree Network",
+        "contextfree_network",
+        ChainType::Live,
+        move || contextfree_config_genesis(wasm_binary),
+        boot_nodes,
         Some(
             TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
                 .expect("Staging telemetry url is valid; qed"),
@@ -393,7 +391,8 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
     let root_key: AccountId = hex![
         // 5HGWsrBrgNxVTisu5DYjfGGbCf69VxtybSW8t36arFUabVtn
         "e62f26bc433a9fa7679a284b1f85898739c32ab4b23246515be0ee339643003f"
-    ].into();
+    ]
+    .into();
     endowed_accounts.push(root_key.clone());
 
     const ENDOWMENT: u128 = 1_000_000 * DOLLARS;
@@ -444,20 +443,19 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
                 })
                 .collect::<Vec<_>>(),
         }),
-        pallet_im_online: Some(contextfree::ImOnlineConfig { 
-            keys: vec![] 
+        pallet_im_online: Some(contextfree::ImOnlineConfig { keys: vec![] }),
+        pallet_authority_discovery: Some(contextfree::AuthorityDiscoveryConfig { keys: vec![] }),
+        pallet_democracy: Some(contextfree::DemocracyConfig::default()),
+        pallet_collective_Instance1: Some(contextfree::CouncilConfig {
+            members: vec![],
+            phantom: Default::default(),
         }),
-        pallet_authority_discovery: Some(contextfree::AuthorityDiscoveryConfig { 
-            keys: vec![] 
+        pallet_collective_Instance2: Some(contextfree::TechnicalCommitteeConfig {
+            members: vec![],
+            phantom: Default::default(),
         }),
-		pallet_democracy: Some(contextfree::DemocracyConfig::default()),
-		pallet_collective_Instance1: Some(contextfree::CouncilConfig { members: vec![], phantom: Default::default() }),
-		pallet_collective_Instance2: Some(contextfree::TechnicalCommitteeConfig {
-			members: vec![],
-			phantom: Default::default(),
-		}),
         pallet_elections_phragmen: Some(Default::default()),
-		pallet_membership_Instance1: Some(Default::default()),
+        pallet_membership_Instance1: Some(Default::default()),
         pallet_treasury: Some(Default::default()),
         pallet_evm: Some(contextfree::EVMConfig {
             accounts: vec![

@@ -166,7 +166,7 @@ pub fn run() -> sc_cli::Result<()> {
                     .into())
             }
             // Err("Benchmarking wasn't enabled when building the node. \
-			// 	You can enable it with `--features runtime-benchmarks`."
+            // 	You can enable it with `--features runtime-benchmarks`."
             //         .into())
         }
         None => {
