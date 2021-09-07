@@ -26,8 +26,9 @@ use pallet_im_online::sr25519::AuthorityId as ImOnlinedId;
 use sp_api::impl_runtime_apis;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
+// use sp_io::hashing::blake2_128;
 use sp_runtime::traits::{
-    BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion, StaticLookup, Verify,
+    AccountIdLookup, BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion, StaticLookup, Verify,
 };
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
@@ -70,6 +71,8 @@ use pallet_evm::{
 pub use pallet_attestor;
 pub use pallet_geode;
 pub use pallet_liveness;
+pub use pallet_bridge;
+pub use pallet_bridgetransfer;
 /// Import the template pallet.
 pub use pallet_template;
 pub use pallet_transfer;
@@ -588,6 +591,32 @@ impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConve
     }
 }
 
+parameter_types! {
+    pub const BridgeChainId: u8 = 86;
+    pub const ProposalLifetime: BlockNumber = 50400; // ~7 days
+}
+
+impl pallet_bridge::Config for Runtime {
+    type Event = Event;
+    type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
+    type Proposal = Call;
+    type BridgeChainId = BridgeChainId;
+    type ProposalLifetime = ProposalLifetime;
+}
+
+parameter_types! {
+    // bridge::derive_resource_id(1, &bridge::hashing::blake2_128(b"PHA"));
+    pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000000000008b857677f3fcaa404fd2d97f398cce9b00");
+}
+
+impl pallet_bridgetransfer::Config for Runtime {
+    type Event = Event;
+    type BridgeOrigin = pallet_bridge::EnsureBridge<Runtime>;
+    type Currency = Balances;
+    type BridgeTokenId = BridgeTokenId;
+    // type OnFeePay = Treasury;
+}
+
 use pallet_session::historical as pallet_session_historical;
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -622,6 +651,8 @@ construct_runtime!(
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
         AuthorityDiscovery: pallet_authority_discovery::{Module, Call, Config},
         TransferModule: pallet_transfer::{Module, Call, Storage, Event<T>, ValidateUnsigned},
+        ChainBridge: pallet_bridge::{Module, Call, Storage, Event<T>},
+        BridgeTransfer: pallet_bridgetransfer::{Module, Call, Event<T>},
     }
 );
 

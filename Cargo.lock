@@ -525,6 +525,8 @@ dependencies = [
  "pallet-authorship",
  "pallet-babe",
  "pallet-balances",
+ "pallet-bridge",
+ "pallet-bridgetransfer",
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-precompile-simple",
@@ -553,6 +555,7 @@ dependencies = [
  "sp-consensus-babe",
  "sp-core",
  "sp-inherents",
+ "sp-io",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
@@ -4335,6 +4338,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-bridge"
+version = "0.0.2"
+dependencies = [
+ "blake2-rfc",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "substrate-wasm-builder-runner",
+]
+
+[[package]]
+name = "pallet-bridgetransfer"
+version = "0.0.1"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "hex",
+ "pallet-balances",
+ "pallet-bridge",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "substrate-wasm-builder-runner",
+]
+
+[[package]]
 name = "pallet-ethereum"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8054,6 +8093,12 @@ dependencies = [
  "walkdir",
  "wasm-gc-api",
 ]
+
+[[package]]
+name = "substrate-wasm-builder-runner"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54cab12167e32b38a62c5ea5825aa0874cde315f907a46aad2b05aa8ef3d862f"
 
 [[package]]
 name = "subtle"
