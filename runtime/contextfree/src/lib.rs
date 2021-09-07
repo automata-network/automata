@@ -161,8 +161,6 @@ impl Filter<Call> for CallFilter {
             // These modules are not allowed to be called by transactions:
             Call::EVM(_) |
             Call::Ethereum(_) |
-            Call::TransferModule(_) |
-            Call::Balances(_) |
             Call::Democracy(_) |
             Call::Council(_) |
             Call::TechnicalCommittee(_) |
@@ -171,7 +169,9 @@ impl Filter<Call> for CallFilter {
             Call::PhragmenElection(_) |
             Call::Scheduler(_) |
             Call::Staking(_) |
-			Call::Session(_) => false,
+			Call::Session(_) |
+            Call::Balances(_) |
+            Call::TransferModule(_) => false,
 		}
 	}
 }
@@ -517,12 +517,12 @@ impl pallet_authorship::Config for Runtime {
 impl pallet_authority_discovery::Config for Runtime {}
 
 parameter_types! {
-    pub const EnactmentPeriod: BlockNumber = 28 * DAYS;
-    pub const LaunchPeriod: BlockNumber = 28 * DAYS;
-    pub const VotingPeriod: BlockNumber = 28 * DAYS;
+    pub const EnactmentPeriod: BlockNumber = 10 * MINUTES;
+    pub const LaunchPeriod: BlockNumber = 3 * MINUTES;
+    pub const VotingPeriod: BlockNumber = 3 * MINUTES;
     pub const MinimumDeposit: Balance = 100 * DOLLARS;
     pub const InstantAllowed: bool = true;
-    pub const FastTrackVotingPeriod: BlockNumber = 3 * HOURS;
+    pub const FastTrackVotingPeriod: BlockNumber = 3 * MINUTES;
     pub const CooloffPeriod: BlockNumber = 7 * DAYS;
     pub const PreimageByteDeposit: Balance = 1 * CENTS;
     pub const MaxVotes: u32 = 100;
@@ -588,7 +588,7 @@ impl pallet_democracy::Config for Runtime {
 }
 
 parameter_types! {
-    pub const CouncilMotionDuration: BlockNumber = 7 * DAYS;
+    pub const CouncilMotionDuration: BlockNumber = 5 * MINUTES;
 	pub const CouncilMaxProposals: u32 = 100;
 	pub const CouncilMaxMembers: u32 = 100;
 }
@@ -609,7 +609,7 @@ parameter_types! {
     pub const CandidacyBond: Balance = 100 * DOLLARS;
 	pub const VotingBondBase: Balance = deposit(1, 64);
 	pub const VotingBondFactor: Balance = deposit(0, 32);
-	pub const TermDuration: BlockNumber = 7 * DAYS;
+	pub const TermDuration: BlockNumber = 5 * MINUTES;
 	pub const DesiredMembers: u32 = 13;
 	pub const DesiredRunnersUp: u32 = 20;
 	pub const PhragmenElectionModuleId: LockIdentifier = *b"phrelect";
@@ -636,7 +636,7 @@ impl pallet_elections_phragmen::Config for Runtime {
 }
 
 parameter_types! {
-    pub const TechnicalMotionDuration: BlockNumber = 7 * DAYS;
+    pub const TechnicalMotionDuration: BlockNumber = 5 * MINUTES;
 	pub const TechnicalMaxProposals: u32 = 100;
 	pub const TechnicalMaxMembers: u32 = 100;
 }
@@ -673,7 +673,7 @@ impl pallet_membership::Config<pallet_membership::Instance1> for Runtime {
 parameter_types! {
     pub const ProposalBond: Permill = Permill::from_percent(5);
 	pub const ProposalBondMinimum: Balance = 100 * DOLLARS;
-	pub const SpendPeriod: BlockNumber = 24 * DAYS;
+	pub const SpendPeriod: BlockNumber = 5 * MINUTES;
 	pub const Burn: Permill = Permill::from_percent(1);
 	pub const TreasuryModuleId: ModuleId = ModuleId(*b"ct/trsry");
 }

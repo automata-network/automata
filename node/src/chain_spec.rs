@@ -1,3 +1,6 @@
+#[cfg(all(feature="automata", feature="contextfree"))]
+compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
+
 pub use automata_primitives::{AccountId, Balance, Signature};
 #[cfg(feature = "automata")]
 use automata_runtime::{
@@ -394,7 +397,6 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
     endowed_accounts.push(root_key.clone());
 
     const ENDOWMENT: u128 = 1_000_000 * DOLLARS;
-    const INITIAL_STAKING: u128 = 1_000_000 * DOLLARS;
 
     contextfree::GenesisConfig {
         frame_system: Some(contextfree::SystemConfig {
@@ -421,25 +423,9 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
             validator_count: 4,
             minimum_validator_count: 2,
             stakers: vec![],
-            invulnerables: vec![],
+            invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
             ..Default::default()
-            // validator_count: initial_authorities.len() as u32 * 2,
-            // minimum_validator_count: initial_authorities.len() as u32,
-            // stakers: initial_authorities
-            //     .iter()
-            //     .map(|x| {
-            //         (
-            //             x.0.clone(),
-            //             x.1.clone(),
-            //             INITIAL_STAKING,
-            //             StakerStatus::Validator,
-            //         )
-            //     })
-            //     .collect(),
-            // invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
-            // slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
-            // ..Default::default()
         }),
         pallet_session: Some(contextfree::SessionConfig {
             keys: initial_authorities

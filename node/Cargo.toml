@@ -28,7 +28,10 @@ futures = { version = "0.3.9", features = ["compat"] }
 # Substrate dependencies
 frame-benchmarking = '3.1.0'
 frame-benchmarking-cli = '3.0.0'
+frame-system-rpc-runtime-api = '3.0.0'
 pallet-transaction-payment-rpc = '3.0.0'
+pallet-transaction-payment-rpc-runtime-api = '3.0.0'
+pallet-grandpa = '3.0.0'
 sc-basic-authorship = '0.9.0'
 sc-cli = { features = ['wasmtime'], version = '0.9.0' }
 sc-client-api = '3.0.0'
@@ -52,6 +55,8 @@ sp-finality-grandpa = '3.0.0'
 sp-inherents = '3.0.0'
 sp-runtime = '3.0.0'
 sp-transaction-pool = '3.0.0'
+sp-offchain = '3.0.0'
+sp-session = '3.0.0'
 substrate-frame-rpc-system = '3.0.0'
 sc-network = '0.9.0'
 sc-chain-spec = '3.0.0'
@@ -60,7 +65,8 @@ sc-chain-spec = '3.0.0'
 automata-runtime = { path = '../runtime/automata', optional = true }
 contextfree-runtime = { path = '../runtime/contextfree', optional = true }
 automata-primitives = { path = "../primitives" }
-automata-rpc = { path = "../rpc" }
+automata-rpc = { path = "../rpc", package = "automata-rpc", optional = true, features=["automata"]}
+contextfree-rpc = { path = "../rpc", package = "automata-rpc", optional = true, features=["contextfree"]}
 
 pallet-evm = { default-features = false, version = '3.0.0'}
 pallet-ethereum = { default-features = false, version = '1.0.0'}
@@ -79,5 +85,5 @@ sc-authority-discovery = { default-features = false, version = '0.9.0' }
 [features]
 default = []
 runtime-benchmarks = ['automata-runtime/runtime-benchmarks']
-automata = ["automata-runtime"]
-contextfree = ["contextfree-runtime"]
+automata = ["automata-runtime", "automata-rpc"]
+contextfree = ["contextfree-runtime", "contextfree-rpc"]

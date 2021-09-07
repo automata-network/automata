@@ -90,127 +90,53 @@ pub fn run() -> sc_cli::Result<()> {
         }
         Some(Subcommand::CheckBlock(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            let chain_spec = &runner.config().chain_spec;
 
-            if chain_spec.is_automata() {
-                #[cfg(feature = "automata")]
-                return runner.async_run(|config| {
-                    let PartialComponents {
-                        client,
-                        task_manager,
-                        import_queue,
-                        ..
-                    } = service::new_partial(&config)?;
-                    Ok((cmd.run(client, import_queue), task_manager))
-                });
-                #[cfg(not(feature = "automata"))]
-                panic!("{}", "Automata feature not enabled");
-            } else {
-                #[cfg(feature = "contextfree")]
-                return runner.async_run(|config| {
-                    let PartialComponents {
-                        client,
-                        task_manager,
-                        import_queue,
-                        ..
-                    } = service::new_contextfree_partial(&config)?;
-                    Ok((cmd.run(client, import_queue), task_manager))
-                });
-                #[cfg(not(feature = "contextfree"))]
-                panic!("{}", "ContextFree runtime not available");
-            }
+            runner.async_run(|config| {
+                let PartialComponents {
+                    client,
+                    task_manager,
+                    import_queue,
+                    ..
+                } = service::new_partial(&config)?;
+                Ok((cmd.run(client, import_queue), task_manager))
+            })
         }
         Some(Subcommand::ExportBlocks(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            let chain_spec = &runner.config().chain_spec;
 
-            if chain_spec.is_automata() {
-                #[cfg(feature = "automata")]
-                return runner.async_run(|config| {
-                    let PartialComponents {
-                        client,
-                        task_manager,
-                        ..
-                    } = service::new_partial(&config)?;
-                    Ok((cmd.run(client, config.database), task_manager))
-                });
-                #[cfg(not(feature = "automata"))]
-                panic!("{}", "Automata feature not enabled");
-            } else {
-                #[cfg(feature = "contextfree")]
-                return runner.async_run(|config| {
-                    let PartialComponents {
-                        client,
-                        task_manager,
-                        ..
-                    } = service::new_contextfree_partial(&config)?;
-                    Ok((cmd.run(client, config.database), task_manager))
-                });
-                #[cfg(not(feature = "contextfree"))]
-                panic!("{}", "Contextfree feature not enabled");
-            }
+            runner.async_run(|config| {
+                let PartialComponents {
+                    client,
+                    task_manager,
+                    ..
+                } = service::new_partial(&config)?;
+                Ok((cmd.run(client, config.database), task_manager))
+            })
         }
         Some(Subcommand::ExportState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            let chain_spec = &runner.config().chain_spec;
 
-            if chain_spec.is_automata() {
-                #[cfg(feature = "automata")]
-                return runner.async_run(|config| {
-                    let PartialComponents {
-                        client,
-                        task_manager,
-                        ..
-                    } = service::new_partial(&config)?;
-                    Ok((cmd.run(client, config.chain_spec), task_manager))
-                });
-                #[cfg(not(feature = "automata"))]
-                panic!("{}", "Automata feature not enabled");
-            } else {
-                #[cfg(feature = "contextfree")]
-                return runner.async_run(|config| {
-                    let PartialComponents {
-                        client,
-                        task_manager,
-                        ..
-                    } = service::new_contextfree_partial(&config)?;
-                    Ok((cmd.run(client, config.chain_spec), task_manager))
-                });
-                #[cfg(not(feature = "contextfree"))]
-                panic!("{}", "Contextfree feature not enabled");
-            }
+            runner.async_run(|config| {
+                let PartialComponents {
+                    client,
+                    task_manager,
+                    ..
+                } = service::new_partial(&config)?;
+                Ok((cmd.run(client, config.chain_spec), task_manager))
+            })
         }
         Some(Subcommand::ImportBlocks(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            let chain_spec = &runner.config().chain_spec;
 
-            if chain_spec.is_automata() {
-                #[cfg(feature = "automata")]
-                return runner.async_run(|config| {
-                    let PartialComponents {
-                        client,
-                        task_manager,
-                        import_queue,
-                        ..
-                    } = service::new_partial(&config)?;
-                    Ok((cmd.run(client, import_queue), task_manager))
-                });
-                #[cfg(not(feature = "automata"))]
-                panic!("{}", "Automata feature not enabled");
-            } else {
-                #[cfg(feature = "contextfree")]
-                return runner.async_run(|config| {
-                    let PartialComponents {
-                        client,
-                        task_manager,
-                        import_queue,
-                        ..
-                    } = service::new_contextfree_partial(&config)?;
-                    Ok((cmd.run(client, import_queue), task_manager))
-                });
-                #[cfg(not(feature = "contextfree"))]
-                panic!("{}", "Contextfree feature not enabled");
-            }
+            runner.async_run(|config| {
+                let PartialComponents {
+                    client,
+                    task_manager,
+                    import_queue,
+                    ..
+                } = service::new_partial(&config)?;
+                Ok((cmd.run(client, import_queue), task_manager))
+            })
         }
         Some(Subcommand::PurgeChain(cmd)) => {
             let runner = cli.create_runner(cmd)?;
@@ -218,77 +144,41 @@ pub fn run() -> sc_cli::Result<()> {
         }
         Some(Subcommand::Revert(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            let chain_spec = &runner.config().chain_spec;
 
-            if chain_spec.is_automata() {
-                #[cfg(feature = "automata")]
-                return runner.async_run(|config| {
-                    let PartialComponents {
-                        client,
-                        task_manager,
-                        backend,
-                        ..
-                    } = service::new_partial(&config)?;
-                    Ok((cmd.run(client, backend), task_manager))
-                });
-                #[cfg(not(feature = "automata"))]
-                panic!("{}", "Automata feature not enabled");
-            } else {
-                #[cfg(feature = "contextfree")]
-                return runner.async_run(|config| {
-                    let PartialComponents {
-                        client,
-                        task_manager,
-                        backend,
-                        ..
-                    } = service::new_contextfree_partial(&config)?;
-                    Ok((cmd.run(client, backend), task_manager))
-                });
-                #[cfg(not(feature = "contextfree"))]
-                panic!("{}", "Contextfree feature not enabled");
-            }
+            runner.async_run(|config| {
+                let PartialComponents {
+                    client,
+                    task_manager,
+                    backend,
+                    ..
+                } = service::new_partial(&config)?;
+                Ok((cmd.run(client, backend), task_manager))
+            })
         }
         Some(Subcommand::Benchmark(cmd)) => {
-            // if cfg!(feature = "runtime-benchmarks") {
-            //     let runner = cli.create_runner(cmd)?;
+            if cfg!(feature = "runtime-benchmarks") {
+                let runner = cli.create_runner(cmd)?;
 
-            //     runner.sync_run(|config| cmd.run::<Block, service::Executor>(config))
-            // } else {
-            //     Err("Benchmarking wasn't enabled when building the node. \
-			// 	You can enable it with `--features runtime-benchmarks`."
-            //         .into())
-            // }
-            Err("Benchmarking wasn't enabled when building the node. \
+                runner.sync_run(|config| cmd.run::<Block, service::Executor>(config))
+            } else {
+                Err("Benchmarking wasn't enabled when building the node. \
 				You can enable it with `--features runtime-benchmarks`."
                     .into())
+            }
+            // Err("Benchmarking wasn't enabled when building the node. \
+			// 	You can enable it with `--features runtime-benchmarks`."
+            //         .into())
         }
         None => {
             let runner = cli.create_runner(&cli.run)?;
-            let chain_spec = &runner.config().chain_spec;
 
-            if chain_spec.is_automata() {
-                #[cfg(feature = "automata")]
-                return runner.run_node_until_exit(|config| async move {
-                    match config.role {
-                        Role::Light => service::new_light(config),
-                        _ => service::new_full(config),
-                    }
-                    .map_err(sc_cli::Error::Service)
-                });
-                #[cfg(not(feature = "automata"))]
-                panic!("{}", "Automata feature not enabled");
-            } else {
-                #[cfg(feature = "contextfree")]
-                return runner.run_node_until_exit(|config| async move {
-                    match config.role {
-                        Role::Light => service::new_contextfree_light(config),
-                        _ => service::new_contextfree_full(config),
-                    }
-                    .map_err(sc_cli::Error::Service)
-                });
-                #[cfg(not(feature = "contextfree"))]
-                panic!("{}", "Contextfree feature not enabled");
-            }
+            runner.run_node_until_exit(|config| async move {
+                match config.role {
+                    Role::Light => service::new_light(config),
+                    _ => service::new_full(config),
+                }
+                .map_err(sc_cli::Error::Service)
+            })
         }
     }
 }
