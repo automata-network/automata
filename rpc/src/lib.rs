@@ -42,6 +42,7 @@ use std::sync::Arc;
 pub mod attestor;
 #[cfg(feature = "automata")]
 pub mod geode;
+#[cfg(feature = "automata")]
 pub mod transfer;
 
 /// Extra dependencies for BABE.
@@ -113,7 +114,6 @@ where
     C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
     C::Api: sp_consensus_babe::BabeApi<Block>,
     C::Api: BlockBuilder<Block>,
-    C::Api: TransferRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
@@ -159,6 +159,10 @@ where
         client.clone(),
     )));
 
+    io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(
+        client.clone(),
+    )));
+
     io
 }
 
@@ -181,7 +185,7 @@ where
     C::Api: BlockBuilder<Block>,
     // C::Api: AttestorRuntimeApi<Block>,
     // C::Api: GeodeRuntimeApi<Block>,
-    C::Api: TransferRuntimeApi<Block>,
+    // C::Api: TransferRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
@@ -200,6 +204,7 @@ where
     use sc_consensus_babe_rpc::BabeRpcHandler;
     use sc_finality_grandpa_rpc::GrandpaRpcHandler;
     use substrate_frame_rpc_system::{FullSystem, SystemApi};
+    #[cfg(feature = "automata")]
     use transfer::TransferServer;
 
     let mut io = jsonrpc_core::IoHandler::default();
@@ -309,10 +314,6 @@ where
             HexEncodedIdProvider::default(),
             Arc::new(subscription_task_executor),
         ),
-    )));
-
-    io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(
-        client.clone(),
     )));
 
     io

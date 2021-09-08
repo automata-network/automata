@@ -76,7 +76,7 @@ use pallet_evm::{
     Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner,
 };
 
-pub use pallet_transfer;
+// pub use pallet_transfer;
 
 pub use automata_primitives::*;
 
@@ -164,17 +164,17 @@ impl Filter<Call> for CallFilter {
             // These modules are not allowed to be called by transactions:
             Call::EVM(_)
             | Call::Ethereum(_)
+            | Call::Utility(_)
+            | Call::Staking(_)
+            | Call::Session(_)
+            | Call::Balances(_)
             | Call::Democracy(_)
             | Call::Council(_)
             | Call::TechnicalCommittee(_)
             | Call::TechnicalMembership(_)
             | Call::Treasury(_)
             | Call::PhragmenElection(_)
-            | Call::Scheduler(_)
-            | Call::Staking(_)
-            | Call::Session(_)
-            | Call::Balances(_)
-            | Call::TransferModule(_) => false,
+            | Call::Scheduler(_) => false,
         }
     }
 }
@@ -747,11 +747,11 @@ impl pallet_ethereum::Config for Runtime {
     type StateRoot = pallet_ethereum::IntermediateStateRoot;
 }
 
-impl pallet_transfer::Config for Runtime {
-    type Event = Event;
-    type Currency = Balances;
-    type Call = Call;
-}
+// impl pallet_transfer::Config for Runtime {
+//     type Event = Event;
+//     type Currency = Balances;
+//     type Call = Call;
+// }
 
 parameter_types! {
     pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) *
@@ -774,6 +774,12 @@ impl pallet_scheduler::Config for Runtime {
     type ScheduleOrigin = ScheduleOrigin;
     type MaxScheduledPerBlock = MaxScheduledPerBlock;
     type WeightInfo = pallet_scheduler::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_utility::Config for Runtime {
+    type Event = Event;
+    type Call = Call;
+    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
 pub struct TransactionConverter;
@@ -840,8 +846,9 @@ construct_runtime!(
         EVM: pallet_evm::{Module, Call, Storage, Config, Event<T>},
         Ethereum: pallet_ethereum::{Module, Call, Storage, Event, Config, ValidateUnsigned},
 
-        TransferModule: pallet_transfer::{Module, Call, Storage, Event<T>, ValidateUnsigned},
+        // TransferModule: pallet_transfer::{Module, Call, Storage, Event<T>, ValidateUnsigned},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
+        Utility: pallet_utility::{Module, Call, Event},
     }
 );
 
@@ -1054,14 +1061,14 @@ impl_runtime_apis! {
         }
     }
 
-    impl apis::TransferApi<Block> for Runtime {
-        fn submit_unsigned_transaction(
-            message: [u8; 72],
-            signature_raw_bytes: [u8; 65]
-        ) -> Result<(), ()> {
-            TransferModule::submit_unsigned_transaction(message, signature_raw_bytes)
-        }
-    }
+    // impl apis::TransferApi<Block> for Runtime {
+    //     fn submit_unsigned_transaction(
+    //         message: [u8; 72],
+    //         signature_raw_bytes: [u8; 65]
+    //     ) -> Result<(), ()> {
+    //         TransferModule::submit_unsigned_transaction(message, signature_raw_bytes)
+    //     }
+    // }
 
     impl fp_rpc::EthereumRuntimeRPCApi<Block> for Runtime {
         fn chain_id() -> u64 {
