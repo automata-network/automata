@@ -28,7 +28,8 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H160, H256, U256};
 // use sp_io::hashing::blake2_128;
 use sp_runtime::traits::{
-    AccountIdLookup, BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion, StaticLookup, Verify,
+    AccountIdLookup, BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion,
+    StaticLookup, Verify,
 };
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
@@ -69,10 +70,10 @@ use pallet_evm::{
 };
 
 pub use pallet_attestor;
-pub use pallet_geode;
-pub use pallet_liveness;
 pub use pallet_bridge;
 pub use pallet_bridgetransfer;
+pub use pallet_geode;
+pub use pallet_liveness;
 /// Import the template pallet.
 pub use pallet_template;
 pub use pallet_transfer;

@@ -19,7 +19,7 @@ use sp_core::{
     sr25519, Pair, Public, H160, U256,
 };
 use sp_finality_grandpa::AuthorityId as GrandpaId;
-use sp_runtime::traits::{IdentifyAccount, Verify, AccountIdConversion};
+use sp_runtime::traits::{AccountIdConversion, IdentifyAccount, Verify};
 use sp_runtime::ModuleId;
 
 // The URL for the telemetry server.
