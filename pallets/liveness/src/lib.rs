@@ -11,7 +11,7 @@ mod tests;
 #[frame_support::pallet]
 pub mod pallet {
     use core::convert::{TryFrom, TryInto};
-    use frame_support::ensure;
+    use frame_support::{ensure, debug::debug};
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
     use frame_system::pallet_prelude::*;
     use primitives::BlockNumber;
@@ -22,13 +22,6 @@ pub mod pallet {
 
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
-
-    pub const REPORT_APPROVAL_RATIO: Percent = Percent::from_percent(50);
-    pub const REPORT_EXPIRY_BLOCK_NUMBER: BlockNumber = 10;
-    pub const UNKNOWN_EXPIRY_BLOCK_NUMBER: BlockNumber = 5760;
-    pub const DEGRADED_INSTANTIATED_EXPIRY_BLOCK_NUMBER: BlockNumber = 30;
-    pub const ATTESTOR_NOTIFY_TIMEOUT_BLOCK_NUMBER: BlockNumber = 12;
-    pub const DEFAULT_MIN_ATTESTOR_NUM: u32 = 1;
 
     /// Geode state
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -82,7 +75,23 @@ pub mod pallet {
         /// Because this pallet emits events, it depends on the runtime's definition of an event.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
+        #[pallet::constant]
         type ReportExpiryBlockNumber: Get<BlockNumber>;
+
+        #[pallet::constant]
+        type ReportApprovalRatio: Get<Percent>;
+
+        #[pallet::constant]
+        type UnknownExpiryBlockNumber: Get<BlockNumber>;
+
+        #[pallet::constant]
+        type DegradedInstantiatedExpiryBlockNumber: Get<BlockNumber>;
+
+        #[pallet::constant]
+        type AttestorNotifyTimeoutBlockNumber: Get<BlockNumber>;
+
+        #[pallet::constant]
+        type DefaultMinAttestorNum: Get<u32>;
     }
 
     #[pallet::pallet]
@@ -97,7 +106,7 @@ pub mod pallet {
 
     #[pallet::type_value]
     pub fn DefaultMinAttestorNum<T: Config>() -> u32 {
-        DEFAULT_MIN_ATTESTOR_NUM
+        T::DefaultMinAttestorNum::get()
     }
 
     #[pallet::storage]
@@ -190,7 +199,7 @@ pub mod pallet {
                     if !<DegradeMode<T>>::get() {
                         pallet_geode::RegisteredGeodes::<T>::iter()
                             .map(|(key, start)| {
-                                if start + pallet_geode::ATTESTATION_EXPIRY_BLOCK_NUMBER < now {
+                                if start + T::AttestationExpiryBlockNumber::get() < now {
                                     expired_geodes.push(key);
                                 }
                             })
@@ -200,7 +209,7 @@ pub mod pallet {
                     // clean expired unknown geode
                     pallet_geode::UnknownGeodes::<T>::iter()
                         .map(|(key, start)| {
-                            if start + UNKNOWN_EXPIRY_BLOCK_NUMBER < now {
+                            if start + T::UnknownExpiryBlockNumber::get() < now {
                                 expired_geodes.push(key);
                             }
                         })
@@ -221,7 +230,7 @@ pub mod pallet {
                         let mut expired_degraded_geodes = Vec::<T::AccountId>::new();
                         pallet_geode::DegradedGeodes::<T>::iter()
                             .map(|(key, start)| {
-                                if start + DEGRADED_INSTANTIATED_EXPIRY_BLOCK_NUMBER < now {
+                                if start + T::DegradedInstantiatedExpiryBlockNumber::get() < now {
                                     expired_degraded_geodes.push(key);
                                 }
                             })
@@ -233,12 +242,13 @@ pub mod pallet {
                     }
                 }
 
+                debug!("what");
                 // clean expired attestors
                 {
                     let mut expired_attestors = Vec::<T::AccountId>::new();
                     pallet_attestor::AttestorLastNotify::<T>::iter()
                         .map(|(key, notify)| {
-                            if notify + ATTESTOR_NOTIFY_TIMEOUT_BLOCK_NUMBER < now {
+                            if notify + T::AttestorNotifyTimeoutBlockNumber::get() < now {
                                 expired_attestors.push(key);
                             }
                         })
@@ -348,7 +358,7 @@ pub mod pallet {
             if Percent::from_rational_approximation(
                 report.attestors.len(),
                 pallet_attestor::GeodeAttestors::<T>::get(&geode_id).len(),
-            ) >= REPORT_APPROVAL_RATIO
+            ) >= T::ReportApprovalRatio::get()
             {
                 // slash the geode
                 Self::slash_geode(&key.0);
@@ -720,7 +730,7 @@ pub mod pallet {
             }
 
             // reset MinAttestorNum
-            <MinAttestorNum<T>>::put(DEFAULT_MIN_ATTESTOR_NUM);
+            <MinAttestorNum<T>>::put(T::DefaultMinAttestorNum::get());
 
             // reset DegradeMode
             <DegradeMode<T>>::put(true);

@@ -6,6 +6,7 @@ use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
 };
+use primitives::BlockNumber;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -86,8 +87,17 @@ impl pallet_attestor::Config for Test {
     type Call = Call;
 }
 
+parameter_types! {
+    pub const DispatchConfirmationTimeout: BlockNumber = 12;
+    pub const PutOnlineTimeout: BlockNumber = 40;
+    pub const AttestationExpiryBlockNumber: BlockNumber = 30;
+}
+
 impl pallet_geode::Config for Test {
     type Event = Event;
+    type DispatchConfirmationTimeout = DispatchConfirmationTimeout;
+    type PutOnlineTimeout = PutOnlineTimeout;
+    type AttestationExpiryBlockNumber = AttestationExpiryBlockNumber;
 }
 
 // Build genesis storage according to the mock runtime.

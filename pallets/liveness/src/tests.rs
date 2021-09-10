@@ -1,5 +1,8 @@
 use crate::{mock::*, Error, ReportType};
 use frame_support::{assert_noop, assert_ok};
+use pallet_attestor::Attestor;
+
+
 
 #[test]
 fn it_works_attestor_attest_geode() {
@@ -95,6 +98,9 @@ fn it_works_report_misconduct() {
             report_type as u8,
             proof
         ));
+
+        let unknown_geode = GeodeModule::geodes(geode_account);
+        assert_eq!(unknown_geode.state, pallet_geode::GeodeState::Unknown);
     });
 }
 
@@ -170,3 +176,16 @@ fn it_report_misconduct_invalid_report_type() {
         );
     });
 }
+
+// #[test]
+// fn it_attestor_cleaned_after_expiration() {
+//     new_test_ext().execute_with(|| {
+//         let attestor_account = 1;
+//         register_attestor(attestor_account);
+
+//         run_to_block(AttestorNotifyTimeoutBlockNumber::get() + 1);
+
+//         assert_eq!(pallet_attestor::Attestors::<Test>::contains_key(attestor_account), false);
+
+//     })
+// }

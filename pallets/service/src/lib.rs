@@ -158,8 +158,8 @@ pub mod pallet {
 
                         let expected_promise = order.duration
                             + now
-                            + pallet_geode::PUT_ONLINE_TIMEOUT
-                            + pallet_geode::DISPATCH_CONFIRMATION_TIMEOUT;
+                            + T::PutOnlineTimeout::get()
+                            + T::DispatchConfirmationTimeout::get();
                         let promise;
                         if let Some(entry) = avail_geodes.range(expected_promise..).next() {
                             // try to find the smallest larger geode
@@ -215,7 +215,7 @@ pub mod pallet {
                     let mut expired = Vec::<T::AccountId>::new();
                     for (geode, (order_id, block_num, dispatch)) in <AwaitingDispatches<T>>::iter()
                     {
-                        if block_num + pallet_geode::DISPATCH_CONFIRMATION_TIMEOUT < now {
+                        if block_num + T::DispatchConfirmationTimeout::get() < now {
                             // put the order back to PendingDispatchesQueue
                             <PendingDispatchesQueue<T>>::insert(&dispatch, &order_id);
                             // change the dispatch state to Pending
@@ -246,7 +246,7 @@ pub mod pallet {
                     let mut expired = Vec::<T::AccountId>::new();
                     for (geode, (order_id, block_num, dispatch)) in <PreOnlineDispatches<T>>::iter()
                     {
-                        if block_num + pallet_geode::PUT_ONLINE_TIMEOUT < now {
+                        if block_num + T::PutOnlineTimeout::get() < now {
                             // put the order back to PendingDispatchesQueue
                             <PendingDispatchesQueue<T>>::insert(dispatch, &order_id);
                             let mut dispatch_use = <Dispatches<T>>::get(&dispatch);

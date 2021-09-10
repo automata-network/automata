@@ -1,10 +1,11 @@
 use crate as liveness;
-use frame_support::parameter_types;
+use frame_support::{parameter_types, traits::{OnFinalize, OnInitialize}};
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
+    Percent
 };
 use primitives::BlockNumber;
 
@@ -89,21 +90,39 @@ impl pallet_attestor::Config for Test {
     type Call = Call;
 }
 
-impl pallet_geode::Config for Test {
-    type Event = Event;
+parameter_types! {
+    pub const DispatchConfirmationTimeout: BlockNumber = 12;
+    pub const PutOnlineTimeout: BlockNumber = 40;
+    pub const AttestationExpiryBlockNumber: BlockNumber = 30;
 }
 
+impl pallet_geode::Config for Test {
+    type Event = Event;
+    type DispatchConfirmationTimeout = DispatchConfirmationTimeout;
+    type PutOnlineTimeout = PutOnlineTimeout;
+    type AttestationExpiryBlockNumber = AttestationExpiryBlockNumber;
+}
 impl pallet_service::Config for Test {
     type Event = Event;
 }
 
 parameter_types! {
     pub const ReportExpiryBlockNumber: BlockNumber = 10;
+    pub const ReportApprovalRatio: Percent = Percent::from_percent(50);
+    pub const UnknownExpiryBlockNumber: BlockNumber = 5760;
+    pub const DegradedInstantiatedExpiryBlockNumber: BlockNumber = 30;
+    pub const AttestorNotifyTimeoutBlockNumber: BlockNumber = 12;
+    pub const DefaultMinAttestorNum: u32 = 1;
 }
 
 impl liveness::Config for Test {
     type Event = Event;
     type ReportExpiryBlockNumber = ReportExpiryBlockNumber;
+    type ReportApprovalRatio = ReportApprovalRatio;
+    type UnknownExpiryBlockNumber = UnknownExpiryBlockNumber;
+    type DegradedInstantiatedExpiryBlockNumber = DegradedInstantiatedExpiryBlockNumber;
+    type AttestorNotifyTimeoutBlockNumber = AttestorNotifyTimeoutBlockNumber;
+    type DefaultMinAttestorNum = DefaultMinAttestorNum;
 }
 
 // Build genesis storage according to the mock runtime.
@@ -171,4 +190,14 @@ pub fn provider_register_geode(
     };
 
     GeodeModule::provider_register_geode(Origin::signed(provider), geode);
+}
+
+pub fn run_to_block(n: u32) {
+    while System::block_number() < n as u64 {
+        LivenessModule::on_finalize(System::block_number());
+        System::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        System::on_initialize(System::block_number());
+        LivenessModule::on_initialize(System::block_number());
+    }
 }
