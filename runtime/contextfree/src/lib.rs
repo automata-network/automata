@@ -76,6 +76,8 @@ use pallet_evm::{
     Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner,
 };
 
+pub use pallet_bridge;
+pub use pallet_bridgetransfer;
 // pub use pallet_transfer;
 
 pub use automata_primitives::*;
@@ -165,6 +167,8 @@ impl Filter<Call> for CallFilter {
             | Call::Staking(_)
             | Call::Session(_)
             | Call::Balances(_)
+            | Call::BridgeTransfer(_)
+            | Call::ChainBridge(_)
             | Call::Democracy(_)
             | Call::Council(_)
             | Call::TechnicalCommittee(_)
@@ -802,6 +806,32 @@ impl pallet_vesting::Config for Runtime {
 	type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const BridgeChainId: u8 = 86;
+    pub const ProposalLifetime: BlockNumber = 50400; // ~7 days
+}
+
+impl pallet_bridge::Config for Runtime {
+    type Event = Event;
+    type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
+    type Proposal = Call;
+    type BridgeChainId = BridgeChainId;
+    type ProposalLifetime = ProposalLifetime;
+}
+
+parameter_types! {
+    // bridge::derive_resource_id(1, &bridge::hashing::blake2_128(b"PHA"));
+    pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000000000008b857677f3fcaa404fd2d97f398cce9b00");
+}
+
+impl pallet_bridgetransfer::Config for Runtime {
+    type Event = Event;
+    type BridgeOrigin = pallet_bridge::EnsureBridge<Runtime>;
+    type Currency = Balances;
+    type BridgeTokenId = BridgeTokenId;
+    // type OnFeePay = Treasury;
+}
+
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
@@ -870,6 +900,8 @@ construct_runtime!(
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
         Utility: pallet_utility::{Module, Call, Event},
         Vesting: pallet_vesting::{Module, Call, Storage, Event<T>, Config<T>},
+        ChainBridge: pallet_bridge::{Module, Call, Storage, Event<T>},
+        BridgeTransfer: pallet_bridgetransfer::{Module, Call, Event<T>},
     }
 );
 

@@ -27,7 +27,8 @@ use sp_core::{
     sr25519, Pair, Public, H160, U256,
 };
 use sp_finality_grandpa::AuthorityId as GrandpaId;
-use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::traits::{AccountIdConversion, IdentifyAccount, Verify};
+use sp_runtime::ModuleId;
 
 #[cfg(feature = "contextfree")]
 pub type ContextFreeChainSpec =
@@ -507,6 +508,7 @@ fn testnet_genesis(
             get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+            ModuleId(*b"ata/brdg").into_account(), //5EYCAe5fjB53Kn9DfqH5G7M589vF4dQRbgAwwQs1fW7Wj1mY
         ]
     });
 
