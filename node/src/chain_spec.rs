@@ -2,7 +2,7 @@
 compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
 
 use automata_primitives::Block;
-pub use automata_primitives::{AccountId, Balance, Signature};
+pub use automata_primitives::{AccountId, Balance, Signature, BlockNumber};
 #[cfg(feature = "automata")]
 use automata_runtime::{
     constants::currency::*, opaque::SessionKeys, AuthorityDiscoveryConfig, BabeConfig,
@@ -361,19 +361,29 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
 //TODO: we need to update contextfree spec when we want to launch it officially
 #[cfg(feature = "contextfree")]
 fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig {
-    let mut endowed_accounts: Vec<AccountId> = vec![
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        get_account_id_from_seed::<sr25519::Public>("Bob"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie"),
-        get_account_id_from_seed::<sr25519::Public>("Dave"),
-        get_account_id_from_seed::<sr25519::Public>("Eve"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+    let mut endowed_accounts: Vec<(AccountId, u128)> = vec![
+        //Chainbridge pallet account
+        (AccountId::from_ss58check("5EYCAe5fjB53Kn9DfqH5G7M589vF4dQRbgAwwQs1fW7Wj1mY").unwrap(), 300700000 * DOLLARS),
+        //Team account
+        (AccountId::from_ss58check("5GrrQUqRj6bs7jo6Zr3HQLNskiK9aJLGiE8nHvf2GqKAX5uy").unwrap(), 150000000 * DOLLARS),
+        //Advisor account
+        (AccountId::from_ss58check("5EFBmzPQMAazvcEJYb6YknEvcQ9rstBbtX2riZxM5rkYFAm4").unwrap(), 50000000 * DOLLARS),
+        //Eco & Dev community account
+        (AccountId::from_ss58check("5FBqJZ78ahiL4Qkddw9BnW4Y5nUhxMhcgvEAdhguQayHDMU1").unwrap(), 220000000 * DOLLARS),
+        //Protocol Reserve account
+        (AccountId::from_ss58check("5FP2WtTuErG511qmXfnnaFpqMLsMYrnW9pbTDNZDFqTn79Fj").unwrap(), 279270000 * DOLLARS),
+        (get_account_id_from_seed::<sr25519::Public>("Alice//stash"), 10000 * DOLLARS),
+        (get_account_id_from_seed::<sr25519::Public>("Bob//stash"), 10000 * DOLLARS),
+    ];
+
+    let vesting_plans: Vec<(AccountId, BlockNumber, BlockNumber, Balance)> = vec![
+        //Team vesting plan
+        (
+            AccountId::from_ss58check("5GrrQUqRj6bs7jo6Zr3HQLNskiK9aJLGiE8nHvf2GqKAX5uy").unwrap(),//who
+            1,//begin
+            1000,//duration
+            50000000 * DOLLARS//not locked
+        )
     ];
 
     let initial_authorities: Vec<(
@@ -388,14 +398,8 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
         authority_keys_from_seed("Bob"),
     ];
 
-    let root_key: AccountId = hex![
-        // 5HGWsrBrgNxVTisu5DYjfGGbCf69VxtybSW8t36arFUabVtn
-        "e62f26bc433a9fa7679a284b1f85898739c32ab4b23246515be0ee339643003f"
-    ]
-    .into();
-    endowed_accounts.push(root_key.clone());
-
-    const ENDOWMENT: u128 = 1_000_000 * DOLLARS;
+    let root_key: AccountId = AccountId::from_ss58check("5DvRcnUacwiPoQZoatN79GjimNGqpaboTCde5tqHr5ujFqsh").unwrap();
+    endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
 
     contextfree::GenesisConfig {
         frame_system: Some(contextfree::SystemConfig {
@@ -408,7 +412,7 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
             balances: endowed_accounts
                 .iter()
                 .cloned()
-                .map(|k| (k, ENDOWMENT))
+                .map(|k| (k.0, k.1))
                 .collect(),
         }),
         pallet_indices: Some(contextfree::IndicesConfig { indices: vec![] }),
@@ -454,42 +458,17 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
             members: vec![],
             phantom: Default::default(),
         }),
-        pallet_elections_phragmen: Some(Default::default()),
-        pallet_membership_Instance1: Some(Default::default()),
-        pallet_treasury: Some(Default::default()),
-        pallet_evm: Some(contextfree::EVMConfig {
-            accounts: vec![
-                H160::from(hex_literal::hex![
-                    "18bD778c044F47d41CFabF336F2b1e06648e0771"
-                ]),
-                H160::from(hex_literal::hex![
-                    "b4b58365166402a78b4ac05e1b13b6d64fCcF60f"
-                ]),
-                H160::from(hex_literal::hex![
-                    "2CCDD9Fa13d97F6FAEC4B1D8085861AE57e1D9c9"
-                ]),
-                H160::from(hex_literal::hex![
-                    "3e29eF30D9836928DDc3667af68da02bAd913316"
-                ]),
-            ]
-            .into_iter()
-            .map(|x| {
-                (
-                    x,
-                    pallet_evm::GenesisAccount {
-                        balance: U256::from(ENDOWMENT),
-                        nonce: Default::default(),
-                        code: Default::default(),
-                        storage: Default::default(),
-                    },
-                )
-            })
-            .collect(),
-        }),
+        pallet_elections_phragmen: Some(contextfree::PhragmenElectionConfig::default()),
+        pallet_membership_Instance1: Some(contextfree::TechnicalMembershipConfig::default()),
+        pallet_treasury: Some(contextfree::TreasuryConfig::default()),
+        pallet_evm: Some(contextfree::EVMConfig::default()),
         pallet_ethereum: Some(contextfree::EthereumConfig {}),
         pallet_sudo: Some(contextfree::SudoConfig {
             // Assign network admin rights.
             key: root_key,
+        }),
+        pallet_vesting: Some(contextfree::VestingConfig {
+            vesting: vesting_plans
         }),
     }
 }

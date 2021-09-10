@@ -49,6 +49,7 @@ pallet-elections-phragmen = { default-features = false, version = '3.0.0' }
 pallet-membership = { default-features = false, version = '3.0.0' }
 pallet-treasury = { default-features = false, version = '3.0.0' }
 pallet-utility = { default-features = false, version = '3.0.0' }
+pallet-vesting = { default-features = false, version = '3.0.0' }
 sp-api = { default-features = false, version = '3.0.0' }
 sp-block-builder = { default-features = false, version = '3.0.0' }
 sp-consensus-aura = { default-features = false, version = '0.9.0' }
@@ -121,6 +122,7 @@ std = [
     'pallet-membership/std',
     'pallet-treasury/std',
     'pallet-utility/std',
+    'pallet-vesting/std',
     'serde',
     'sp-api/std',
     'sp-block-builder/std',

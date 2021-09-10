@@ -31,7 +31,7 @@ use sp_core::{
     OpaqueMetadata, H160, H256, U256,
 };
 use sp_runtime::traits::{
-    BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion, StaticLookup, Verify,
+    BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion, StaticLookup, Verify, Convert
 };
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
@@ -117,7 +117,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 119,
+    spec_version: 120,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -159,11 +159,8 @@ impl Filter<Call> for CallFilter {
             | Call::Babe(_)
             | Call::Offences(_)
             | Call::Sudo(_)
-            | Call::Timestamp(_) => true,
-
-            // These modules are not allowed to be called by transactions:
-            Call::EVM(_)
-            | Call::Ethereum(_)
+            | Call::Vesting(_)
+            | Call::Timestamp(_) 
             | Call::Utility(_)
             | Call::Staking(_)
             | Call::Session(_)
@@ -174,7 +171,11 @@ impl Filter<Call> for CallFilter {
             | Call::TechnicalMembership(_)
             | Call::Treasury(_)
             | Call::PhragmenElection(_)
-            | Call::Scheduler(_) => false,
+            | Call::Scheduler(_) => true,
+
+            // These modules are not allowed to be called by transactions:
+            Call::EVM(_)
+            | Call::Ethereum(_) => false,
         }
     }
 }
@@ -782,6 +783,25 @@ impl pallet_utility::Config for Runtime {
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+	pub const MinVestedTransfer: Balance = 100 * DOLLARS;
+}
+
+pub struct ConvertInto;
+impl<A, B: From<A>> Convert<A, B> for ConvertInto {
+	fn convert(a: A) -> B {
+		a.into()
+	}
+}
+
+impl pallet_vesting::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type BlockNumberToBalance = ConvertInto;
+	type MinVestedTransfer = MinVestedTransfer;
+	type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
+}
+
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
@@ -849,6 +869,7 @@ construct_runtime!(
         // TransferModule: pallet_transfer::{Module, Call, Storage, Event<T>, ValidateUnsigned},
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
         Utility: pallet_utility::{Module, Call, Event},
+        Vesting: pallet_vesting::{Module, Call, Storage, Event<T>, Config<T>},
     }
 );
 
