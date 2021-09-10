@@ -11,7 +11,7 @@ mod tests;
 #[frame_support::pallet]
 pub mod pallet {
     use core::convert::{TryFrom, TryInto};
-    use frame_support::{ensure, debug::debug};
+    use frame_support::{debug::debug, ensure};
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
     use frame_system::pallet_prelude::*;
     use primitives::BlockNumber;
@@ -242,7 +242,6 @@ pub mod pallet {
                     }
                 }
 
-                debug!("what");
                 // clean expired attestors
                 {
                     let mut expired_attestors = Vec::<T::AccountId>::new();
@@ -464,11 +463,14 @@ pub mod pallet {
             );
             let geode = pallet_geode::Geodes::<T>::get(geode);
             ensure!(geode.provider == who, pallet_geode::Error::<T>::NoRight);
-            if geode.state == pallet_geode::GeodeState::Instantiated || geode.state == pallet_geode::GeodeState::Degraded {
+            if geode.state == pallet_geode::GeodeState::Instantiated
+                || geode.state == pallet_geode::GeodeState::Degraded
+            {
                 ensure!(
                     geode.promise != 0
                         && geode.promise
-                            < <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>(),
+                            < <frame_system::Module<T>>::block_number()
+                                .saturated_into::<BlockNumber>(),
                     pallet_geode::Error::<T>::InvalidPromise
                 );
             }

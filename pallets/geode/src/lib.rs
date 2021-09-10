@@ -96,7 +96,10 @@ pub mod pallet {
                 let mut expired = Vec::<BlockNumber>::new();
                 for (promise, _geodes) in <PromisedGeodes<T>>::iter() {
                     if promise != 0
-                        && promise <= now + T::DispatchConfirmationTimeout::get() + T::PutOnlineTimeout::get()
+                        && promise
+                            <= now
+                                + T::DispatchConfirmationTimeout::get()
+                                + T::PutOnlineTimeout::get()
                     {
                         expired.push(promise);
                     } else {
@@ -214,7 +217,10 @@ pub mod pallet {
             if <Geodes<T>>::contains_key(&geode_record.id) {
                 let mut geode = <Geodes<T>>::get(geode_record.id);
                 ensure!(geode.provider == who, Error::<T>::NoRight);
-                ensure!(geode.state == GeodeState::Offline, Error::<T>::InvalidGeodeState);
+                ensure!(
+                    geode.state == GeodeState::Offline,
+                    Error::<T>::InvalidGeodeState
+                );
                 geode.order = None;
                 match Self::transit_state(&geode, GeodeState::Registered) {
                     true => {
@@ -306,7 +312,10 @@ pub mod pallet {
                 <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
             ensure!(
                 promise == 0
-                    || promise > block_number + T::DispatchConfirmationTimeout::get() + T::PutOnlineTimeout::get(),
+                    || promise
+                        > block_number
+                            + T::DispatchConfirmationTimeout::get()
+                            + T::PutOnlineTimeout::get(),
                 Error::<T>::InvalidPromise
             );
             // if the geode is instantiated, promise can only be extended
@@ -323,7 +332,9 @@ pub mod pallet {
             if geode_use.state == GeodeState::Attested {
                 // remove old record if there is
                 if geode_use.promise
-                    > block_number + T::DispatchConfirmationTimeout::get() + T::PutOnlineTimeout::get()
+                    > block_number
+                        + T::DispatchConfirmationTimeout::get()
+                        + T::PutOnlineTimeout::get()
                     || geode_use.promise == 0
                 {
                     let mut geodes = <PromisedGeodes<T>>::get(&geode_use.promise);
@@ -443,7 +454,8 @@ pub mod pallet {
 
         fn clean_from_promises(geode: &GeodeOf<T>, when: &BlockNumber) {
             // remove PromisedGeode record if there is
-            if geode.promise > when + T::DispatchConfirmationTimeout::get() + T::PutOnlineTimeout::get()
+            if geode.promise
+                > when + T::DispatchConfirmationTimeout::get() + T::PutOnlineTimeout::get()
                 || geode.promise == 0
             {
                 let mut geodes = <PromisedGeodes<T>>::get(&geode.promise);
@@ -461,7 +473,8 @@ pub mod pallet {
 
         pub fn add_to_promises(geode: &GeodeOf<T>, when: &BlockNumber) {
             // move into the PromisedGeodes for queueing for job
-            if geode.promise > when + T::DispatchConfirmationTimeout::get() + T::PutOnlineTimeout::get()
+            if geode.promise
+                > when + T::DispatchConfirmationTimeout::get() + T::PutOnlineTimeout::get()
                 || geode.promise == 0
             {
                 let mut promised_geodes = PromisedGeodes::<T>::get(&geode.promise);

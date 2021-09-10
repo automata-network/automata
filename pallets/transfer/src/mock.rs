@@ -1,7 +1,6 @@
-use crate as pallet_geode;
+use crate as transfer;
 use frame_support::parameter_types;
 use frame_system as system;
-use primitives::BlockNumber;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
@@ -22,8 +21,7 @@ frame_support::construct_runtime!(
     {
         System: frame_system::{Module, Call, Config, Storage, Event<T>},
         Balances: pallet_balances::{Module, Call, Storage, Event<T>},
-        AttestorModule: pallet_attestor::{Module, Call, Storage, Event<T>},
-        GeodeModule: pallet_geode::{Module, Call, Storage, Event<T>},
+        TransferModule: transfer::{Module, Call, Storage, Event<T>},
     }
 );
 
@@ -58,7 +56,7 @@ impl system::Config for Test {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 500;
+    pub const ExistentialDeposit: u128 = 10;
 }
 
 impl pallet_balances::Config for Test {
@@ -81,23 +79,10 @@ where
     type OverarchingCall = Call;
 }
 
-impl pallet_attestor::Config for Test {
+impl transfer::Config for Test {
     type Event = Event;
     type Currency = Balances;
     type Call = Call;
-}
-
-parameter_types! {
-    pub const DispatchConfirmationTimeout: BlockNumber = 12;
-    pub const PutOnlineTimeout: BlockNumber = 40;
-    pub const AttestationExpiryBlockNumber: BlockNumber = 30;
-}
-
-impl pallet_geode::Config for Test {
-    type Event = Event;
-    type DispatchConfirmationTimeout = DispatchConfirmationTimeout;
-    type PutOnlineTimeout = PutOnlineTimeout;
-    type AttestationExpiryBlockNumber = AttestationExpiryBlockNumber;
 }
 
 // Build genesis storage according to the mock runtime.
@@ -125,42 +110,4 @@ pub fn events() -> Vec<Event> {
     System::reset_events();
 
     evt
-}
-
-pub fn register_attestor(attestor_account: <Test as system::Config>::AccountId) {
-    let url = vec![1];
-    let pubkey = vec![2];
-    let min_stake = 100;
-    let attestor_account = 1;
-
-    // set the min stake balance
-    AttestorModule::set_att_stake_min(Origin::root(), min_stake);
-
-    // successfully call register
-    AttestorModule::attestor_register(
-        Origin::signed(attestor_account),
-        url.clone(),
-        pubkey.clone(),
-    );
-}
-
-pub fn provider_register_geode(
-    provider: <Test as system::Config>::AccountId,
-    geode_id: <Test as system::Config>::AccountId,
-) {
-    let geode: pallet_geode::Geode<
-        <Test as system::Config>::AccountId,
-        <Test as system::Config>::Hash,
-    > = pallet_geode::Geode {
-        id: geode_id,
-        provider: provider,
-        order: None,
-        ip: vec![],
-        dns: vec![],
-        props: Default::default(),
-        state: Default::default(),
-        promise: Default::default(),
-    };
-
-    GeodeModule::provider_register_geode(Origin::signed(provider), geode);
 }

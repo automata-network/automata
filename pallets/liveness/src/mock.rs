@@ -1,13 +1,16 @@
 use crate as liveness;
-use frame_support::{parameter_types, traits::{OnFinalize, OnInitialize}};
+use frame_support::{
+    parameter_types,
+    traits::{OnFinalize, OnInitialize},
+};
 use frame_system as system;
+use primitives::BlockNumber;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Percent
+    Percent,
 };
-use primitives::BlockNumber;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
