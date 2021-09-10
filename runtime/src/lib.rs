@@ -30,7 +30,7 @@ use sp_runtime::traits::{
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult,
+    ApplyExtrinsicResult, Percent
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -391,17 +391,36 @@ impl pallet_attestor::Config for Runtime {
     type Call = Call;
 }
 
+parameter_types! {
+    pub const DispatchConfirmationTimeout: BlockNumber = 12;
+    pub const PutOnlineTimeout: BlockNumber = 40;
+    pub const AttestationExpiryBlockNumber: BlockNumber = 30;
+}
+
 impl pallet_geode::Config for Runtime {
     type Event = Event;
+    type DispatchConfirmationTimeout = DispatchConfirmationTimeout;
+    type PutOnlineTimeout = PutOnlineTimeout;
+    type AttestationExpiryBlockNumber = AttestationExpiryBlockNumber;
 }
 
 parameter_types! {
     pub const ReportExpiryBlockNumber: BlockNumber = 10;
+    pub const ReportApprovalRatio: Percent = Percent::from_percent(50);
+    pub const UnknownExpiryBlockNumber: BlockNumber = 5760;
+    pub const DegradedInstantiatedExpiryBlockNumber: BlockNumber = 30;
+    pub const AttestorNotifyTimeoutBlockNumber: BlockNumber = 12;
+    pub const DefaultMinAttestorNum: u32 = 1;
 }
 
 impl pallet_liveness::Config for Runtime {
     type Event = Event;
     type ReportExpiryBlockNumber = ReportExpiryBlockNumber;
+    type ReportApprovalRatio = ReportApprovalRatio;
+    type UnknownExpiryBlockNumber = UnknownExpiryBlockNumber;
+    type DegradedInstantiatedExpiryBlockNumber = DegradedInstantiatedExpiryBlockNumber;
+    type AttestorNotifyTimeoutBlockNumber = AttestorNotifyTimeoutBlockNumber;
+    type DefaultMinAttestorNum = DefaultMinAttestorNum;
 }
 
 impl pallet_service::Config for Runtime {
