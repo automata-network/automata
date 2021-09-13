@@ -37,8 +37,8 @@ pallet-transaction-payment-rpc = '3.0.0'
 sc-light = '3.0.0'
 hex = '0.4.3'
 sp-std = '3.0.0'
-frame-system-rpc-runtime-api = { default-features = false, version = '3.0.0' }
-sp-core = { features = ["full_crypto"], version = '3.0.0' }
+frame-system-rpc-runtime-api = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev='4d28ebeb8b027ca0227fe7779c5beb70a7b56467' }
+sp-core = { features = ["full_crypto"], git = 'https://github.com/paritytech/substrate.git', rev='4d28ebeb8b027ca0227fe7779c5beb70a7b56467' }
 
 # local dependencies
 automata-primitives = { path = "../primitives" }

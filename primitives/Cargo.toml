@@ -7,10 +7,10 @@ license = "Apache-2.0"
 
 [dependencies]
 codec = { default-features = false, features = ['derive'], package = 'parity-scale-codec', version = '2.0.0' }
-frame-system = { default-features = false, version = '3.0.0' }
-sp-application-crypto = { default-features = false, version = '3.0.0' }
-sp-core = { default-features = false, version = '3.0.0' }
-sp-runtime = { default-features = false, version = '3.0.0' }
+frame-system = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev='4d28ebeb8b027ca0227fe7779c5beb70a7b56467' }
+sp-application-crypto = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev='4d28ebeb8b027ca0227fe7779c5beb70a7b56467' }
+sp-core = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev='4d28ebeb8b027ca0227fe7779c5beb70a7b56467' }
+sp-runtime = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev='4d28ebeb8b027ca0227fe7779c5beb70a7b56467' }
 
 [features]
 default = ["std"]
