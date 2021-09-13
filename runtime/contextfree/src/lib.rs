@@ -820,8 +820,8 @@ impl pallet_bridge::Config for Runtime {
 }
 
 parameter_types! {
-    // bridge::derive_resource_id(1, &bridge::hashing::blake2_128(b"PHA"));
     pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000000000008b857677f3fcaa404fd2d97f398cce9b00");
+    pub const EnableFee: bool = true;
 }
 
 impl pallet_bridgetransfer::Config for Runtime {
@@ -829,7 +829,8 @@ impl pallet_bridgetransfer::Config for Runtime {
     type BridgeOrigin = pallet_bridge::EnsureBridge<Runtime>;
     type Currency = Balances;
     type BridgeTokenId = BridgeTokenId;
-    // type OnFeePay = Treasury;
+    type OnFeePay = Treasury;
+    type EnableFee = EnableFee;
 }
 
 pub struct TransactionConverter;
