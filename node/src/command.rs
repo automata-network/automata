@@ -56,7 +56,8 @@ impl SubstrateCli for Cli {
             #[cfg(feature = "automata")]
             "staging" => Box::new(chain_spec::staging_testnet_config()?),
             #[cfg(feature = "contextfree")]
-            "contextfree" => Box::new(chain_spec::contextfree_testnet_config()?),
+            "contextfree" => Box::new(chain_spec::contextfree_chain_spec()?),
+            // "contextfree" => Box::new(chain_spec::contextfree_testnet_config()?),
             path => Box::new(chain_spec::ChainSpec::from_json_file(
                 std::path::PathBuf::from(path),
             )?),
