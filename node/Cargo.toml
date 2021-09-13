@@ -68,7 +68,7 @@ automata-primitives = { path = "../primitives" }
 automata-rpc = { path = "../rpc", package = "automata-rpc", optional = true, features=["automata"]}
 contextfree-rpc = { path = "../rpc", package = "automata-rpc", optional = true, features=["contextfree"]}
 
-pallet-evm = { default-features = false, git = 'https://github.com/paritytech/substrate.git', rev='4d28ebeb8b027ca0227fe7779c5beb70a7b56467'}
+pallet-evm = { default-features = false, version = '3.0.0'}
 pallet-ethereum = { default-features = false, version = '1.0.0'}
 fc-rpc = { default-features = false, version = '1.0.0'}
 fp-rpc = { default-features = false, version = '1.0.0'}
