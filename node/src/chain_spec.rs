@@ -61,6 +61,11 @@ fn get_properties() -> Option<Properties> {
     Some(properties)
 }
 
+#[cfg(feature = "contextfree")]
+pub fn contextfree_chain_spec() -> Result<ContextFreeChainSpec, String> {
+    ContextFreeChainSpec::from_json_bytes(&include_bytes!("../../assets/chain_spec_testnet_raw.json")[..])
+}
+
 #[cfg(feature = "automata")]
 fn get_session_keys(
     grandpa: GrandpaId,
@@ -372,19 +377,7 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
         //Eco & Dev community account
         (AccountId::from_ss58check("5FBqJZ78ahiL4Qkddw9BnW4Y5nUhxMhcgvEAdhguQayHDMU1").unwrap(), 220000000 * DOLLARS),
         //Protocol Reserve account
-        (AccountId::from_ss58check("5FP2WtTuErG511qmXfnnaFpqMLsMYrnW9pbTDNZDFqTn79Fj").unwrap(), 279270000 * DOLLARS),
-        (get_account_id_from_seed::<sr25519::Public>("Alice//stash"), 10000 * DOLLARS),
-        (get_account_id_from_seed::<sr25519::Public>("Bob//stash"), 10000 * DOLLARS),
-    ];
-
-    let vesting_plans: Vec<(AccountId, BlockNumber, BlockNumber, Balance)> = vec![
-        //Team vesting plan
-        (
-            AccountId::from_ss58check("5GrrQUqRj6bs7jo6Zr3HQLNskiK9aJLGiE8nHvf2GqKAX5uy").unwrap(),//who
-            1,//begin
-            1000,//duration
-            50000000 * DOLLARS//not locked
-        )
+        (AccountId::from_ss58check("5FP2WtTuErG511qmXfnnaFpqMLsMYrnW9pbTDNZDFqTn79Fj").unwrap(), 279250000 * DOLLARS),
     ];
 
     let initial_authorities: Vec<(
@@ -395,9 +388,83 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
         ImOnlineId,
         AuthorityDiscoveryId,
     )> = vec![
-        authority_keys_from_seed("Alice"),
-        authority_keys_from_seed("Bob"),
+        (
+            // 5EpoJPebo3FWWahy6i9dcNzjzyTNe1J5zwsQu5NEmg4Yr9PQ
+            hex!["7a1996d0fc27b5a0b8c8292ab10e3311045f3bb9ee52353ba93060d0fe433076"].into(),
+            // 5CACY4gkbkiKh2BWNHaqKMFBhreKFi119aokLTjwe6Wj2dha
+            hex!["0430c51a3882a8d9d4d6ecc04f9058e96690aca93cb145b1e1b0b6a010222e0f"].into(),
+            // 5FEQBJZuHQidTV2Y1PjJR2SipmDgtYc9PnULS39Fzg1JuMdF
+            hex!["8c19a47f493eb8135b010ff1e12d3bf920f66de2d84d0104a409b3947204329c"]
+                .unchecked_into(),
+            // 5GzqxNzhJspoNAhT6AswEwbH6b5AsJumWPuxVRVLk3QLFnux
+            hex!["da3b7291438a4d373623628d116f0407f6d957c5956e6da15cfb01d50a63777d"]
+                .unchecked_into(),
+            // 5GzqxNzhJspoNAhT6AswEwbH6b5AsJumWPuxVRVLk3QLFnux
+            hex!["da3b7291438a4d373623628d116f0407f6d957c5956e6da15cfb01d50a63777d"]
+                .unchecked_into(),
+            // 5GzqxNzhJspoNAhT6AswEwbH6b5AsJumWPuxVRVLk3QLFnux
+            hex!["da3b7291438a4d373623628d116f0407f6d957c5956e6da15cfb01d50a63777d"]
+                .unchecked_into(),
+        ),
+        (
+            // 5Cw8TCFEp6KJaEDh1zYYcguptz7NMDt4owqEBr9v1253Jv99
+            hex!["267510b720ec2bbccd97c2f87a12c433d72dc3fb1febaae8307f462717ac7f32"].into(),
+            // 5H1Cf9tqnLKDShc2fncftqZhNmHRSEbBH6SQxjScuBkG7wZc
+            hex!["da8123da17c37a4af164516d9d5322ba7c806be0096d5112d929cb90ae875537"].into(),
+            // 5EmXdcsvanPK8GtkgVN2s6n1jq3NchGmDunFx5quQu6b2sHA
+            hex!["779b1bacb9605c61b2ac687ef835e2c99b6a5f8746f6549c109f22faddb8a100"]
+                .unchecked_into(),
+            // 5HatiikkNpBtfgyMXhrteSG2wUfasqcYS4xFdjzYarMU8y9W
+            hex!["f43318eee81b201bbda6f3eea82736cbf39c80292e52dbfe2586504b80ce4137"]
+                .unchecked_into(),
+            // 5HatiikkNpBtfgyMXhrteSG2wUfasqcYS4xFdjzYarMU8y9W
+            hex!["f43318eee81b201bbda6f3eea82736cbf39c80292e52dbfe2586504b80ce4137"]
+                .unchecked_into(),
+            // 5HatiikkNpBtfgyMXhrteSG2wUfasqcYS4xFdjzYarMU8y9W
+            hex!["f43318eee81b201bbda6f3eea82736cbf39c80292e52dbfe2586504b80ce4137"]
+                .unchecked_into(),
+        ),
+        (
+            // 5HigvfW7JfXig7MXpCAhnu1quSWRU96CzaRDAoS4nFYuMTUT
+            hex!["fa255bb650e8b3c88b74cd546b6f51d20764f8e207e6822e8c41a727d1176928"].into(),
+            // 5FZPXATdvPQJoAwqsj4QaX36X4nGavRVXiEbDn1M4J8Gqoob
+            hex!["9a951775099769f02bebcdceb66791566ec65d710ff87fc8845b1c51e9147f73"].into(),
+            // 5Fw4twqFtEKvap9LUEBo8JgDYz9P5EvCNH7MpN9NYLRjhGhd
+            hex!["ab1dcb89190c264527d9ba9645035fa6a7dbe71fa1ab28a0803f5fbc097a9c63"]
+                .unchecked_into(),
+            // 5DCSE99RB1YZ22ntanKrzgZsWiGLYY5LXXJU9iNPVWgC7oLw
+            hex!["3221950754289dcba6ad9b2a84aee41b5cbe8aa72f64677ca01826b17580c95c"]
+                .unchecked_into(),
+            // 5DCSE99RB1YZ22ntanKrzgZsWiGLYY5LXXJU9iNPVWgC7oLw
+            hex!["3221950754289dcba6ad9b2a84aee41b5cbe8aa72f64677ca01826b17580c95c"]
+                .unchecked_into(),
+            // 5DCSE99RB1YZ22ntanKrzgZsWiGLYY5LXXJU9iNPVWgC7oLw
+            hex!["3221950754289dcba6ad9b2a84aee41b5cbe8aa72f64677ca01826b17580c95c"]
+                .unchecked_into(),
+        ),
+        (
+            // 5DPaPfAoEqwNvHtd3Wv34ZKqYoXLdpR95LPq8ZzAnHMGRv7q
+            hex!["3aa0c3af40b7d3d428aac90fccc0687372688d01c1843744d59055d2f735a431"].into(),
+            // 5FhmA2hoGahobxhDumWG7uJt81bzbucoyfjt7UMdWBmq5gcY
+            hex!["a0f7e30a0ec26590ec3976fe3369ae3bdb326410813c79bf18a241bf1bd31d57"].into(),
+            // 5GJFSUuHFWDC21ShQ8tvZG2n8UDF5xuY8dkc1G4yL31LnyiW
+            hex!["bb45711e96f16cf7341d2dad00a5b177a1347b0131f56fa3f837e9dcb46a61d4"]
+                .unchecked_into(),
+            // 5CuC84fjuaLvZzoRXGsNNJHTUgPR8JjvqnrqNwfVjeTESNHK
+            hex!["24faede9dc6c3eb99771d470de6ab76cd103fc8af275e33ce38ca887ee49e97a"]
+                .unchecked_into(),
+            // 5CuC84fjuaLvZzoRXGsNNJHTUgPR8JjvqnrqNwfVjeTESNHK
+            hex!["24faede9dc6c3eb99771d470de6ab76cd103fc8af275e33ce38ca887ee49e97a"]
+                .unchecked_into(),
+            // 5CuC84fjuaLvZzoRXGsNNJHTUgPR8JjvqnrqNwfVjeTESNHK
+            hex!["24faede9dc6c3eb99771d470de6ab76cd103fc8af275e33ce38ca887ee49e97a"]
+                .unchecked_into(),
+        ),
     ];
+
+    initial_authorities.iter().for_each(|x| {
+        endowed_accounts.push((x.0.clone(), 10000 * DOLLARS))
+    });
 
     let root_key: AccountId = AccountId::from_ss58check("5DvRcnUacwiPoQZoatN79GjimNGqpaboTCde5tqHr5ujFqsh").unwrap();
     endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
@@ -468,9 +535,7 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
             // Assign network admin rights.
             key: root_key,
         }),
-        pallet_vesting: Some(contextfree::VestingConfig {
-            vesting: vesting_plans
-        }),
+        pallet_vesting: Some(contextfree::VestingConfig::default()),
     }
 }
 

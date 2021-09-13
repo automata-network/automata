@@ -32,7 +32,7 @@ RUN --mount=type=cache,target=/root/.cache/sccache \
 	--mount=type=cache,target=/usr/local/cargo/registry/index \
 	--mount=type=cache,target=/usr/local/cargo/registry/cache \
 	--mount=type=cache,target=/usr/local/cargo/git/db \
-	cargo build --$PROFILE --bin automata && \
+	cargo build --$PROFILE --bin automata --features contextfree && \
 	cp /automata/target/${PROFILE}/automata /usr/local/bin/automata && \
 	mkdir /etc/automata && \
 	cp -R /automata/assets /etc/automata/
