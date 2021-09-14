@@ -226,7 +226,7 @@ where
         network,
         SubscriptionManager::<HexEncodedIdProvider>::with_id_provider(
             HexEncodedIdProvider::default(),
-            Arc::new(subscription_task_executor),
+            Arc::new(subscription_task_executor.clone()),
         ),
     )));
 
@@ -236,6 +236,7 @@ where
 
     io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
         client.clone(),
+        SubscriptionManager::new(Arc::new(subscription_task_executor)),
     )));
 
     io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(
