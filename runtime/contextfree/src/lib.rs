@@ -38,7 +38,7 @@ use sp_runtime::{
     transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
     ApplyExtrinsicResult,
 };
-use sp_runtime::{ModuleId, Perquintill};
+use sp_runtime::Perquintill;
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -59,7 +59,7 @@ pub use frame_support::{
         constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
         DispatchClass, IdentityFee, Weight,
     },
-    StorageValue,
+    StorageValue, PalletId
 };
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
@@ -282,6 +282,62 @@ impl pallet_session::historical::Config for Runtime {
     type FullIdentificationOf = pallet_staking::ExposureOf<Runtime>;
 }
 
+parameter_types! {
+	pub const SignedPhase: u32 = EPOCH_DURATION_IN_SLOTS / 4;
+	pub const UnsignedPhase: u32 = EPOCH_DURATION_IN_SLOTS / 4;
+	pub const SignedMaxSubmissions: u32 = 16;
+	pub const SignedDepositBase: Balance = deposit(2, 0);
+	pub const SignedDepositByte: Balance = deposit(0, 10) / 1024;
+	pub SignedRewardBase: Balance = 1 * DOLLARS;
+	pub SolutionImprovementThreshold: Perbill = Perbill::from_rational(5u32, 10_000);
+	pub OffchainRepeat: BlockNumber = 5;
+}
+
+sp_npos_elections::generate_solution_type!(
+	#[compact]
+	pub struct NposCompactSolution16::<
+		VoterIndex = u32,
+		TargetIndex = u16,
+		Accuracy = sp_runtime::PerU16,
+	>(16)
+);
+
+impl pallet_election_provider_multi_phase::Config for Runtime {
+    type Event = Event;
+	type Currency = Balances;
+	type EstimateCallFee = TransactionPayment;
+	type SignedPhase = SignedPhase;
+	type UnsignedPhase = UnsignedPhase;
+	type SignedMaxSubmissions = SignedMaxSubmissions;
+	type SignedRewardBase = SignedRewardBase;
+	type SignedDepositBase = SignedDepositBase;
+	type SignedDepositByte = SignedDepositByte;
+	type SignedDepositWeight = ();
+	type SignedMaxWeight = Self::MinerMaxWeight;
+	type SlashHandler = Treasury;
+	type RewardHandler = ();
+	type SolutionImprovementThreshold = SolutionImprovementThreshold;
+	type MinerMaxWeight = OffchainSolutionWeightLimit;
+	type MinerMaxLength = OffchainSolutionLengthLimit;
+	type OffchainRepeat = OffchainRepeat;
+	type MinerTxPriority = NposSolutionPriority;
+	type DataProvider = Staking;
+	type Solution = NposCompactSolution16;
+	type Fallback = pallet_election_provider_multi_phase::NoFallback<Self>;
+	type Solver = frame_election_provider_support::SequentialPhragmen<
+		AccountId,
+		pallet_election_provider_multi_phase::SolutionAccuracyOf<Self>,
+		runtime_common::elections::OffchainRandomBalancing,
+	>;
+	type BenchmarkingConfig = runtime_common::elections::BenchmarkConfig;
+	type ForceOrigin = EnsureOneOf<
+		AccountId,
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionAtLeast<_2, _3, AccountId, CouncilCollective>,
+	>;
+	type WeightInfo = weights::pallet_election_provider_multi_phase::WeightInfo<Self>;
+}
+
 // pallet_staking_reward_curve::build! {
 //     // 4.5% min, 27.5% max, 50% ideal stake
 //     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
@@ -330,6 +386,7 @@ type SlashCancelOrigin = EnsureOneOf<
 >;
 
 impl pallet_staking::Config for Runtime {
+    const MAX_NOMINATIONS: u32 = <NposCompactSolution16 as sp_npos_elections::NposSolution>::LIMIT as u32;
     type Currency = Balances;
     type UnixTime = Timestamp;
     type CurrencyToVote = U128CurrencyToVote;
@@ -342,16 +399,12 @@ impl pallet_staking::Config for Runtime {
     type SlashDeferDuration = SlashDeferDuration;
     type SlashCancelOrigin = SlashCancelOrigin;
     type SessionInterface = Self;
-    type RewardCurve = RewardCurve;
+    type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
     type NextNewSession = Session;
-    type ElectionLookahead = ElectionLookahead;
-    type Call = Call;
-    type MaxIterations = MaxIterations;
-    type MinSolutionScoreBump = MinSolutionScoreBump;
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
-    type UnsignedPriority = StakingUnsignedPriority;
+    type ElectionProvider = ElectionProviderMultiPhase;
+    type GenesisElectionProvider = frame_election_provider_support::onchain::OnChainSequentialPhragmen<Runtime>;
     type WeightInfo = pallet_staking::weights::SubstrateWeight<Runtime>;
-    type OffchainSolutionWeightLimit = OffchainSolutionWeightLimit;
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -471,7 +524,7 @@ where
         );
         let raw_payload = SignedPayload::new(call, extra)
             .map_err(|e| {
-                debug::warn!("Unable to create signed payload: {:?}", e);
+                debug("Unable to create signed payload");
             })
             .ok()?;
         let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
@@ -630,14 +683,14 @@ parameter_types! {
     pub const TermDuration: BlockNumber = 5 * MINUTES;
     pub const DesiredMembers: u32 = 13;
     pub const DesiredRunnersUp: u32 = 20;
-    pub const PhragmenElectionModuleId: LockIdentifier = *b"phrelect";
+    pub const PhragmenElectionPalletId: LockIdentifier = *b"phrelect";
 }
 
 const_assert!(DesiredMembers::get() <= CouncilMaxMembers::get());
 
 impl pallet_elections_phragmen::Config for Runtime {
     type Event = Event;
-    type ModuleId = PhragmenElectionModuleId;
+    type PalletId = PhragmenElectionPalletId;
     type Currency = Balances;
     type ChangeMembers = Council;
     type InitializeMembers = Council;
@@ -693,7 +746,7 @@ parameter_types! {
     pub const ProposalBondMinimum: Balance = 100 * DOLLARS;
     pub const SpendPeriod: BlockNumber = 5 * MINUTES;
     pub const Burn: Permill = Permill::from_percent(1);
-    pub const TreasuryModuleId: ModuleId = ModuleId(*b"ct/trsry");
+    pub const TreasuryPalletId: PalletId = PalletId(*b"ct/trsry");
 }
 
 type ApproveOrigin = EnsureOneOf<
@@ -703,7 +756,7 @@ type ApproveOrigin = EnsureOneOf<
 >;
 
 impl pallet_treasury::Config for Runtime {
-    type ModuleId = TreasuryModuleId;
+    type PalletId = TreasuryPalletId;
     type Currency = Balances;
     type ApproveOrigin = ApproveOrigin;
     type RejectOrigin = MoreThanHalfCouncil;
@@ -875,42 +928,43 @@ construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic
     {
         //Basic
-        System: frame_system::{Module, Call, Config, Storage, Event<T>},
-        RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Storage},
-        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
-        TransactionPayment: pallet_transaction_payment::{Module, Storage},
-        Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>},
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Indices: pallet_indices::{Pallet, Call, Storage, Config<T>, Event<T>},
+        TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
+        Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>},
         //Consensus
         //Babe must be before session
-        Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
-        Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event, ValidateUnsigned},
-        Staking: pallet_staking::{Module, Call, Storage, Config<T>, Event<T>, ValidateUnsigned},
-        Session: pallet_session::{Module, Call, Storage, Event, Config<T>},
-        Historical: pallet_session_historical::{Module},
-        Offences: pallet_offences::{Module, Call, Storage, Event},
-        ImOnline: pallet_im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
-        Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
-        AuthorityDiscovery: pallet_authority_discovery::{Module, Config},
+        Babe: pallet_babe::{Pallet, Call, Storage, Config, ValidateUnsigned},
+        Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event, ValidateUnsigned},
+        Staking: pallet_staking::{Pallet, Call, Storage, Config<T>, Event<T>},
+        ElectionProviderMultiPhase: pallet_election_provider_multi_phase::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
+        Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
+        Historical: pallet_session_historical::{Pallet},
+        Offences: pallet_offences::{Pallet, Storage, Event},
+        ImOnline: pallet_im_online::{Pallet, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
+        Authorship: pallet_authorship::{Pallet, Call, Storage},
+        AuthorityDiscovery: pallet_authority_discovery::{Pallet, Config},
 
         //Governance
-        Democracy: pallet_democracy::{Module, Call, Storage, Config, Event<T>},
-        Council: pallet_collective::<Instance1>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>},
-        TechnicalCommittee: pallet_collective::<Instance2>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>},
-        PhragmenElection: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>},
-        TechnicalMembership: pallet_membership::<Instance1>::{Module, Call, Storage, Event<T>, Config<T>},
-        Treasury: pallet_treasury::{Module, Call, Storage, Config, Event<T>},
+        Democracy: pallet_democracy::{Pallet, Call, Storage, Config, Event<T>},
+        Council: pallet_collective::<Instance1>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>},
+        TechnicalCommittee: pallet_collective::<Instance2>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>},
+        PhragmenElection: pallet_elections_phragmen::{Pallet, Call, Storage, Event<T>, Config<T>},
+        TechnicalMembership: pallet_membership::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>},
         // EVM
-        EVM: pallet_evm::{Module, Call, Storage, Config, Event<T>},
-        Ethereum: pallet_ethereum::{Module, Call, Storage, Event, Config, ValidateUnsigned},
+        EVM: pallet_evm::{Pallet, Call, Storage, Config, Event<T>},
+        Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event, Config, ValidateUnsigned},
 
-        // TransferModule: pallet_transfer::{Module, Call, Storage, Event<T>, ValidateUnsigned},
-        Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
-        Utility: pallet_utility::{Module, Call, Event},
-        Vesting: pallet_vesting::{Module, Call, Storage, Event<T>, Config<T>},
-        ChainBridge: pallet_bridge::{Module, Call, Storage, Event<T>},
-        BridgeTransfer: pallet_bridgetransfer::{Module, Call, Event<T>},
+        // TransferModule: pallet_transfer::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
+        Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
+        Utility: pallet_utility::{Pallet, Call, Event},
+        Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
+        ChainBridge: pallet_bridge::{Pallet, Call, Storage, Event<T>},
+        BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Event<T>},
     }
 );
 

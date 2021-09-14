@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use codec::{Decode, Encode};
-use frame_support::traits::Vec;
 use sp_runtime::{Perbill, RuntimeDebug};
 use sp_std::prelude::*;
 

@@ -158,7 +158,7 @@ pub mod pallet {
                         .priority(UNSIGNED_TXS_PRIORITY)
                         .and_provides((
                             attestor,
-                            <frame_system::Module<T>>::block_number()
+                            <frame_system::Pallet<T>>::block_number()
                                 .saturated_into::<BlockNumber>(),
                         ))
                         .longevity(3)
@@ -201,7 +201,7 @@ pub mod pallet {
             <Attestors<T>>::insert(&who, attestor);
 
             let block_number =
-                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+                <frame_system::Pallet<T>>::block_number().saturated_into::<BlockNumber>();
             <AttestorLastNotify<T>>::insert(&who, block_number);
 
             <AttestorNum<T>>::put(<AttestorNum<T>>::get() + 1);
@@ -253,7 +253,7 @@ pub mod pallet {
             );
 
             let block_number =
-                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+                <frame_system::Pallet<T>>::block_number().saturated_into::<BlockNumber>();
             <AttestorLastNotify<T>>::insert(&acc, block_number);
 
             Ok(().into())

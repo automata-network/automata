@@ -11,7 +11,7 @@ mod tests;
 #[frame_support::pallet]
 pub mod pallet {
     use core::convert::{TryFrom, TryInto};
-    use frame_support::{debug::native::debug, ensure};
+    use frame_support::{debug, ensure};
     use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
     use frame_system::pallet_prelude::*;
     use primitives::BlockNumber;
@@ -157,7 +157,7 @@ pub mod pallet {
                     && pallet_attestor::AttestorNum::<T>::get() >= <MinAttestorNum<T>>::get()
                 {
                     // reset all the start block num for degraded geode
-                    <pallet_geode::Module<T>>::reset_degraded_block_num();
+                    <pallet_geode::Pallet<T>>::reset_degraded_block_num();
                     <DegradeMode<T>>::put(false);
                 }
 
@@ -196,13 +196,13 @@ pub mod pallet {
                     .all(|_| true);
 
                 for key in expired_geodes {
-                    <pallet_geode::Module<T>>::detach_geode(
+                    <pallet_geode::Pallet<T>>::detach_geode(
                         pallet_geode::DetachOption::Remove,
                         key,
                         None,
                     )
                     .map_err(|e| {
-                        debug!("{:?}", e);
+                        debug(&e);
                     })
                     .ok();
                 }
@@ -219,13 +219,13 @@ pub mod pallet {
                         .all(|_| true);
 
                     for key in expired_degraded_geodes {
-                        <pallet_geode::Module<T>>::detach_geode(
+                        <pallet_geode::Pallet<T>>::detach_geode(
                             pallet_geode::DetachOption::Unknown,
                             key,
                             None,
                         )
                         .map_err(|e| {
-                            debug!("{:?}", e);
+                            debug(&e);
                         })
                         .ok();
                     }
@@ -288,7 +288,7 @@ pub mod pallet {
                 report.attestors.insert(who.clone());
             } else {
                 report.attestors.insert(who.clone());
-                let block_number = <frame_system::Module<T>>::block_number();
+                let block_number = <frame_system::Pallet<T>>::block_number();
                 report.start = block_number.saturated_into::<BlockNumber>();
             }
 
@@ -365,7 +365,7 @@ pub mod pallet {
                 pallet_geode::RegisteredGeodes::<T>::remove(&geode);
 
                 // move into pallet_geode::AttestedGeodes
-                let block_number = <frame_system::Module<T>>::block_number();
+                let block_number = <frame_system::Pallet<T>>::block_number();
                 pallet_geode::AttestedGeodes::<T>::insert(
                     &geode,
                     block_number.saturated_into::<BlockNumber>(),
@@ -415,13 +415,13 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Slash geode including update storage and penalty related logics
         fn slash_geode(key: &T::AccountId) {
-            <pallet_geode::Module<T>>::detach_geode(
+            <pallet_geode::Pallet<T>>::detach_geode(
                 pallet_geode::DetachOption::Unknown,
                 key.to_owned(),
                 None,
             )
             .map_err(|e| {
-                debug!("{:?}", e);
+                debug(&e);
             })
             .ok();
 
@@ -444,7 +444,7 @@ pub mod pallet {
                 }
 
                 if <MinAttestorNum<T>>::get() > attestors.len() as u32 {
-                    <pallet_geode::Module<T>>::degrade_geode(geode);
+                    <pallet_geode::Pallet<T>>::degrade_geode(geode);
                 } else {
                     // because GeodeUpdateCounters will be updated in degrade_geode
                     pallet_geode::GeodeUpdateCounters::<T>::insert(
@@ -476,7 +476,7 @@ pub mod pallet {
             // reset DegradeMode
             <DegradeMode<T>>::put(true);
 
-            <pallet_geode::Module<T>>::clean_storage();
+            <pallet_geode::Pallet<T>>::clean_storage();
 
             <pallet_attestor::Module<T>>::clean_storage();
         }
