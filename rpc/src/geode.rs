@@ -6,7 +6,7 @@ use pallet_geode::{Geode, GeodeState};
 use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
 use sp_api::ProvideRuntimeApi;
 use sp_runtime::{traits::Block as BlockT, RuntimeDebug};
-use sp_std::{collections::btree_map::BTreeMap, prelude::*};
+use sp_std::{collections::{btree_map::BTreeMap, btree_set::BTreeSet}, prelude::*};
 use std::sync::Arc;
 
 use jsonrpc_pubsub::{typed::Subscriber, SubscriptionId, manager::SubscriptionManager};
@@ -15,6 +15,7 @@ use sp_utils::mpsc::{tracing_unbounded, TracingUnboundedReceiver, TracingUnbound
 use parking_lot::Mutex;
 use futures::{FutureExt, TryFutureExt, TryStreamExt, StreamExt};
 use jsonrpc_core::futures::{
+    stream,
 	sink::Sink as Sink01,
 	stream::Stream as Stream01,
 	future::Future as Future01,
@@ -26,6 +27,75 @@ use sp_runtime::print;
 use serde::{Deserialize, Serialize};
 
 const RUNTIME_ERROR: i64 = 1;
+
+type GeodeId = [u8; 32];
+type SubscriberId = u64;
+
+pub struct GeodeStateNotifications {
+    next_id: SubscriberId,
+    listeners: BTreeMap<GeodeId, BTreeSet<SubscriberId>>,
+    sinks: BTreeMap<SubscriberId, GeodeStateSender>,
+}
+
+impl GeodeStateNotifications {
+    pub fn new() -> Self {
+        GeodeStateNotifications {
+            next_id: 0,
+            listeners: BTreeMap::new(),
+            sinks: BTreeMap::new(),
+        }
+    }
+
+    // Start subscribtion for changes in state of a particular geode
+    pub fn subscribe(&mut self, geode_id: GeodeId) -> GeodeStateStream {
+        self.next_id += 1;
+        let subscriber_id = self.next_id;
+
+        match self.listeners.get_mut(&geode_id) {
+            Some(subscribers) => {
+                subscribers.insert(subscriber_id);
+            },
+            None => {
+                let mut subscribers = BTreeSet::new();
+                subscribers.insert(subscriber_id);
+                self.listeners.insert(geode_id, subscribers);
+            }
+        };
+
+        // insert sink
+        let (tx, rx) = tracing_unbounded("mpsc_geode_state_notification_items");
+        self.sinks.insert(subscriber_id, tx);
+
+
+        // if let Some(m) = self.metrics.as_ref() {
+        //     m.with_label_values(&[&"added"]).inc();
+        // }
+
+        rx
+    }
+
+    // Trigger notification to all listeners
+    pub fn trigger(&mut self, id: GeodeId, new_state: GeodeState) {
+        // get the subscribers interested in the geode whose state is changing
+        let subscribers = match self.listeners.get_mut(&id) {
+            Some(subscribers) => subscribers,
+            None => return,
+        };
+        let mut to_remove = vec!();
+        for sub_id in subscribers.iter() {
+            let sink = self.sinks.get_mut(&sub_id).unwrap();
+            match sink.unbounded_send(new_state.clone()) {
+                Ok(_) => (),
+                Err(_) => to_remove.push(sub_id.clone()),
+            };
+        }
+
+        for id in to_remove {
+            subscribers.remove(&id);
+            self.sinks.remove(&id);
+        }
+    }
+}
 
 #[rpc]
 /// Geode RPC methods
@@ -52,7 +122,7 @@ pub trait GeodeServer<BlockHash> {
         subscribe,
         name = "geode_subscribeState",
      )]
-     fn subscribe_geode_state(&self, _: Self::Metadata, _: Subscriber<String>);
+     fn subscribe_geode_state(&self, _: Self::Metadata, _: Subscriber<GeodeState>, id: GeodeId);
  
      /// Unsubscribe from geode state subscription.
      #[pubsub(
@@ -103,30 +173,22 @@ impl From<Geode<AccountId, Hash>> for WrappedGeode<Hash> {
 /// An implementation of geode specific RPC methods.
 pub struct GeodeApi<C> {
     client: Arc<C>,
-    subscribers: SharedGeodeStateSenders,
+    notifications: Mutex<GeodeStateNotifications>,
     manager: SubscriptionManager,
 }
 
-type GeodeStateStream = TracingUnboundedReceiver<String>;
-type SharedGeodeStateSenders = Arc<Mutex<Vec<GeodeStateSender>>>;
-type GeodeStateSender = TracingUnboundedSender<String>;
+type GeodeStateStream = TracingUnboundedReceiver<GeodeState>;
+type GeodeStateSender = TracingUnboundedSender<GeodeState>;
 
 impl<C> GeodeApi<C> {
     /// Create new `Geode` with the given reference to the client.
     pub fn new(client: Arc<C>, manager: SubscriptionManager,) -> Self {
         GeodeApi { 
             client,
-            subscribers: Arc::new(Mutex::new(vec![])),
+            notifications: Mutex::new(GeodeStateNotifications::new()),
             manager,
         }
     }
-
-    /// Subscribe to a channel through which updates are sent
-	pub fn subscribe(&self) -> GeodeStateStream {
-		let (sender, receiver) = tracing_unbounded("mpsc_geode_state_notification_stream");
-		self.subscribers.lock().push(sender);
-		receiver
-	}
 }
 
 impl<C> GeodeServer<<Block as BlockT>::Hash> for GeodeApi<C>
@@ -209,30 +271,34 @@ where
     fn subscribe_geode_state(
 		&self,
 		_metadata: Self::Metadata,
-		subscriber: Subscriber<String>,
+		subscriber: Subscriber<GeodeState>,
+        id: GeodeId,
 	) {
         print("subscribe_geode_state called");
-        let stream = self.subscribe()
-			.map(|x| Ok::<_,()>(String::from(x)))
+        let initial = match self.geode_state(id.clone()) {
+            Ok(state) => match state {
+                Some(initial) => Ok(initial),
+                None => {
+                    Ok(GeodeState::Registered)
+                    // let _ = subscriber.reject(Error::invalid_params("no such geode"));
+				    // return
+                },
+            }
+            Err(e) => Err(e),
+        };
+
+        let stream = self.notifications.lock().subscribe(id)
+			.map(|x| Ok::<_,()>(GeodeState::from(x)))
 			.map_err(|e| warn!("Notification stream error: {:?}", e))
 			.compat();
 
         self.manager.add(subscriber, |sink| {
 			let stream = stream.map(|res| Ok(res));
 			sink.sink_map_err(|e| warn!("Error sending notifications: {:?}", e))
-				.send_all(stream)
+				.send_all(stream::iter_result(vec![Ok(initial)])
+                    .chain(stream))
 				.map(|_| ())
 		});
-		// let stream = self
-		// 	// .justification_stream
-		// 	.subscribe_custom()
-		// 	.map(|x| Ok(Ok::<_, jsonrpc_core::Error>(String::from(x))));
-
-		// self.manager.add(subscriber, |sink| {
-		// 	stream
-		// 		.forward(sink.sink_map_err(|e| warn!("Error sending notifications: {:?}", e)))
-		// 		.map(|_| ())
-		// });
 	}
 
 	fn unsubscribe_geode_state(
