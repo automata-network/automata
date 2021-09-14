@@ -62,6 +62,7 @@ sp-npos-elections = { default-features = false, git = 'https://github.com/parity
 sp-staking = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-session = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-std = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.10' }
+sp-io = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-transaction-pool = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-authority-discovery = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-version = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.10' }
@@ -69,6 +70,7 @@ pallet-ethereum = { default-features = false, git = 'https://github.com/parityte
 pallet-evm-precompile-simple = { default-features = false, git = 'https://github.com/paritytech/frontier', branch='master' }
 fp-rpc = { default-features = false, git = 'https://github.com/paritytech/frontier', branch='master'}
 pallet-indices = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.10' }
+frame-election-provider-support = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.10' }
 static_assertions = "1.1.0"
 
 # local dependencies
@@ -146,4 +148,5 @@ std = [
     'pallet-scheduler/std',
     'pallet-bridge/std',
     'pallet-bridgetransfer/std',
+    'frame-election-provider-support/std',
 ]
