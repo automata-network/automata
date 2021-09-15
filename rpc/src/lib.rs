@@ -13,7 +13,7 @@ use automata_runtime::apis::{
 };
 #[cfg(feature = "contextfree")]
 use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
-use fc_rpc::{SchemaV1Override, StorageOverride};
+use fc_rpc::{SchemaV1Override, StorageOverride, OverrideHandle, RuntimeApiStorageOverride};
 use fc_rpc_core::types::PendingTransactions;
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use pallet_ethereum::EthereumStorageSchema;
@@ -34,7 +34,7 @@ use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::traits::BlakeTwo256;
-use sp_transaction_pool::TransactionPool;
+use sc_transaction_pool_api::TransactionPool;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -93,6 +93,8 @@ pub struct FullDeps<C, P, B, SC> {
     pub babe: BabeDeps,
     /// GRANDPA specific dependencies.
     pub grandpa: GrandpaDeps<B>,
+    /// Maximum number of logs in a query.
+    pub max_past_logs: u32
 }
 
 /// Instantiate all full RPC extensions.
@@ -100,11 +102,11 @@ pub struct FullDeps<C, P, B, SC> {
 pub fn create_full<C, P, BE, B, SC>(
     deps: FullDeps<C, P, B, SC>,
     subscription_task_executor: SubscriptionTaskExecutor,
-) -> jsonrpc_core::IoHandler<sc_rpc::Metadata>
+) -> Result<jsonrpc_core::IoHandler<sc_rpc::Metadata>, Box<dyn std::error::Error + Send + Sync>>
 where
     BE: Backend<Block> + 'static,
     BE::State: StateBackend<BlakeTwo256>,
-    C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + sc_client_api::AuxStore,
+    C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + sc_client_api::backend::AuxStore,
     C: BlockchainEvents<Block>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     C: Send + Sync + 'static,
@@ -119,18 +121,18 @@ where
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
     SC: sp_consensus::SelectChain<Block> + 'static,
 {
-    create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor)
+    Ok(create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor))
 }
 
 #[cfg(feature = "automata")]
 pub fn create_full<C, P, BE, B, SC>(
     deps: FullDeps<C, P, B, SC>,
     subscription_task_executor: SubscriptionTaskExecutor,
-) -> jsonrpc_core::IoHandler<sc_rpc::Metadata>
+) -> Result<jsonrpc_core::IoHandler<sc_rpc::Metadata>, Box<dyn std::error::Error + Send + Sync>>
 where
     BE: Backend<Block> + 'static,
     BE::State: StateBackend<BlakeTwo256>,
-    C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + sc_client_api::AuxStore,
+    C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + sc_client_api::backend::AuxStore,
     C: BlockchainEvents<Block>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     C: Send + Sync + 'static,
@@ -163,7 +165,7 @@ where
         client.clone(),
     )));
 
-    io
+    Ok(io)
 }
 
 pub fn create_full_base<C, P, BE, B, SC>(
@@ -173,7 +175,7 @@ pub fn create_full_base<C, P, BE, B, SC>(
 where
     BE: Backend<Block> + 'static,
     BE::State: StateBackend<BlakeTwo256>,
-    C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + sc_client_api::AuxStore,
+    C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + sc_client_api::backend::AuxStore,
     C: BlockchainEvents<Block>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     C: Send + Sync + 'static,
@@ -220,6 +222,7 @@ where
         select_chain,
         babe,
         grandpa,
+        max_past_logs,
     } = deps;
 
     let BabeDeps {
@@ -263,6 +266,11 @@ where
             as Box<dyn StorageOverride<_> + Send + Sync>,
     );
 
+    let overrides = Arc::new(OverrideHandle {
+		schemas: overrides_map,
+		fallback: Box::new(RuntimeApiStorageOverride::new(client.clone())),
+	});
+
     io.extend_with(EthApiServer::to_delegate(EthApi::new(
         client.clone(),
         pool.clone(),
@@ -273,14 +281,16 @@ where
         network.clone(),
         pending_transactions,
         signers,
-        overrides_map,
+        overrides.clone(),
         backend,
         is_authority,
+        max_past_logs,
     )));
 
     io.extend_with(NetApiServer::to_delegate(NetApi::new(
         client.clone(),
         network.clone(),
+        true
     )));
 
     io.extend_with(Web3ApiServer::to_delegate(Web3Api::new(client.clone())));
@@ -314,6 +324,7 @@ where
             HexEncodedIdProvider::default(),
             Arc::new(subscription_task_executor),
         ),
+        overrides
     )));
 
     io

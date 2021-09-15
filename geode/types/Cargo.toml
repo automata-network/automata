@@ -39,8 +39,8 @@ ring                  = { optional = true, version = "0.16.13" }
 cmac                  = { optional = true, version = "0.2.0" }
 aes                   = { optional = true, version = "0.3.2" }
 
-sp-std                = { optional = true, version = "2.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
-sp-core               = { version = "2.0.0", default-features = false, features = ["full_crypto"], git = "https://github.com/paritytech/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-std                = { optional = true, version = "2.0.0", default-features = false, git = "https://github.com/automata-network/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
+sp-core               = { version = "2.0.0", default-features = false, features = ["full_crypto"], git = "https://github.com/automata-network/substrate.git", rev = "4888ac68c8f451b5843ff17135a34ae0f137dabc" }
 
 schnorrkel            = { version = "0.9.1", default-features = false }
 curve25519-dalek      = { version = "2.1.0", default-features = false, features = ["u64_backend"]}
