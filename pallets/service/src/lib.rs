@@ -156,10 +156,8 @@ pub mod pallet {
 
                         let geode;
 
-                        let expected_promise = order.duration
-                            + now
-                            + T::PutOnlineTimeout::get()
-                            + T::DispatchConfirmationTimeout::get();
+                        let min_promise = now + T::PutOnlineTimeout::get() + T::DispatchConfirmationTimeout::get();
+                        let expected_promise = min_promise + order.duration;
                         let promise;
                         if let Some(entry) = avail_geodes.range(expected_promise..).next() {
                             // try to find the smallest larger geode
@@ -167,7 +165,7 @@ pub mod pallet {
                         } else if avail_geodes.contains_key(&0) {
                             promise = 0;
                         } else {
-                            if let Some(entry) = avail_geodes.range(..expected_promise).last() {
+                            if let Some(entry) = avail_geodes.range(min_promise..expected_promise).last() {
                                 // else find the largest smaller geode
                                 promise = *entry.0;
                             } else {

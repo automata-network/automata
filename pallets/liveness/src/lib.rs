@@ -257,6 +257,50 @@ pub mod pallet {
                         Self::do_attestor_exit(&key);
                     }
                 }
+
+                {
+                    // clean expired promised geodes
+                    let mut expired = Vec::<BlockNumber>::new();
+                    for (promise, geodes) in pallet_geode::PromisedGeodes::<T>::iter() {
+                        if promise != 0
+                            && promise
+                                <= now
+                                    + T::DispatchConfirmationTimeout::get()
+                                    + T::PutOnlineTimeout::get()
+                        {
+                            expired.push(promise);
+                            // remove geode from service if there is
+                            for geode in geodes {
+                                let geode_record = pallet_geode::Geodes::<T>::get(geode);
+                                
+                                match geode_record.state {
+                                    pallet_geode::GeodeState::Instantiated => {
+                                        Self::detach_geode_services_dispatches(&geode_record);
+                                        <pallet_geode::Module<T>>::transit_state(
+                                            &geode_record,
+                                            pallet_geode::GeodeState::Attested,
+                                        );
+                                    },
+                                    pallet_geode::GeodeState::Degraded => {
+                                        Self::detach_geode_services_dispatches(&geode_record);
+                                        <pallet_geode::Module<T>>::transit_state(
+                                            &geode_record,
+                                            pallet_geode::GeodeState::Registered,
+                                        );
+                                    },
+                                    _ => {
+                                        // do nothing
+                                    }
+                                }
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    for promise in expired {
+                        pallet_geode::PromisedGeodes::<T>::remove(promise);
+                    }
+                }
             }
             0
         }

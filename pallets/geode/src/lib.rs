@@ -89,29 +89,29 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        /// 1. At every block, check if any promise already expired
-        fn on_initialize(block_number: T::BlockNumber) -> Weight {
-            if let Ok(now) = TryInto::<BlockNumber>::try_into(block_number) {
-                // clean expired promised geodes
-                let mut expired = Vec::<BlockNumber>::new();
-                for (promise, _geodes) in <PromisedGeodes<T>>::iter() {
-                    if promise != 0
-                        && promise
-                            <= now
-                                + T::DispatchConfirmationTimeout::get()
-                                + T::PutOnlineTimeout::get()
-                    {
-                        expired.push(promise);
-                    } else {
-                        break;
-                    }
-                }
-                for promise in expired {
-                    <PromisedGeodes<T>>::remove(promise);
-                }
-            }
-            0
-        }
+        // /// 1. At every block, check if any promise already expired
+        // fn on_initialize(block_number: T::BlockNumber) -> Weight {
+        //     if let Ok(now) = TryInto::<BlockNumber>::try_into(block_number) {
+        //         // clean expired promised geodes
+        //         let mut expired = Vec::<BlockNumber>::new();
+        //         for (promise, _geodes) in <PromisedGeodes<T>>::iter() {
+        //             if promise != 0
+        //                 && promise
+        //                     <= now
+        //                         + T::DispatchConfirmationTimeout::get()
+        //                         + T::PutOnlineTimeout::get()
+        //             {
+        //                 expired.push(promise);
+        //             } else {
+        //                 break;
+        //             }
+        //         }
+        //         for promise in expired {
+        //             <PromisedGeodes<T>>::remove(promise);
+        //         }
+        //     }
+        //     0
+        // }
     }
 
     #[pallet::event]
