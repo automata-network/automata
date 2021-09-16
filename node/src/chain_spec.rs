@@ -8,7 +8,7 @@ use automata_runtime::{
     constants::currency::*, opaque::SessionKeys, AuthorityDiscoveryConfig, BabeConfig,
     BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig,
     IndicesConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
-    WASM_BINARY,
+    WASM_BINARY, BABE_GENESIS_EPOCH_CONFIG
 };
 #[cfg(feature = "contextfree")]
 use contextfree_runtime as contextfree;
@@ -593,21 +593,21 @@ fn testnet_genesis(
     }
 
     GenesisConfig {
-        frame_system: Some(SystemConfig {
+        system: SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
             changes_trie_config: Default::default(),
-        }),
-        pallet_balances: Some(BalancesConfig {
+        },
+        balances: BalancesConfig {
             // Configure endowed accounts with initial balance of 1 << 60.
             balances: endowed_accounts
                 .iter()
                 .cloned()
                 .map(|k| (k, ENDOWMENT))
                 .collect(),
-        }),
-        pallet_indices: Some(IndicesConfig { indices: vec![] }),
-        pallet_session: Some(SessionConfig {
+        },
+        indices: IndicesConfig { indices: vec![] },
+        session: SessionConfig {
             keys: initial_authorities
                 .iter()
                 .map(|x| {
@@ -623,8 +623,8 @@ fn testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
-        }),
-        pallet_staking: Some(StakingConfig {
+        },
+        staking: StakingConfig {
             validator_count: initial_authorities.len() as u32 * 2,
             minimum_validator_count: initial_authorities.len() as u32,
             stakers: initial_authorities
@@ -641,26 +641,27 @@ fn testnet_genesis(
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
             ..Default::default()
-        }),
-        pallet_babe: Some(BabeConfig {
+        },
+        babe: BabeConfig {
             authorities: vec![],
-        }),
-        pallet_grandpa: Some(GrandpaConfig {
+            epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
+        },
+        grandpa: GrandpaConfig {
             authorities: vec![],
-        }),
-        pallet_authority_discovery: Some(AuthorityDiscoveryConfig { keys: vec![] }),
-        pallet_im_online: Some(ImOnlineConfig { keys: vec![] }),
+        },
+        authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
+        im_online: ImOnlineConfig { keys: vec![] },
         // pallet_grandpa: Some(GrandpaConfig {
         //     authorities: initial_authorities
         //         .iter()
         //         .map(|x| (x.2.clone(), 1))
         //         .collect(),
         // }),
-        pallet_sudo: Some(SudoConfig {
+        sudo: SudoConfig {
             // Assign network admin rights.
             key: root_key,
-        }),
-        pallet_evm: Some(EVMConfig {
+        },
+        evm: EVMConfig {
             accounts: vec![
                 H160::from(hex_literal::hex![
                     "18bD778c044F47d41CFabF336F2b1e06648e0771"
@@ -688,7 +689,7 @@ fn testnet_genesis(
                 )
             })
             .collect(),
-        }),
-        pallet_ethereum: Some(EthereumConfig {}),
+        },
+        ethereum: EthereumConfig::default(),
     }
 }

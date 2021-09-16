@@ -150,6 +150,8 @@ where
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
     SC: sp_consensus::SelectChain<Block> + 'static,
 {
+    use transfer::TransferServer;
+
     let client = deps.client.clone();
     let mut io = create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor);
 
@@ -206,8 +208,6 @@ where
     use sc_consensus_babe_rpc::BabeRpcHandler;
     use sc_finality_grandpa_rpc::GrandpaRpcHandler;
     use substrate_frame_rpc_system::{FullSystem, SystemApi};
-    #[cfg(feature = "automata")]
-    use transfer::TransferServer;
 
     let mut io = jsonrpc_core::IoHandler::default();
     let FullDeps {

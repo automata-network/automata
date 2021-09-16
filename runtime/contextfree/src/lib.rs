@@ -36,9 +36,8 @@ use sp_runtime::traits::{
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult,
+    ApplyExtrinsicResult, Perquintill
 };
-use sp_runtime::Perquintill;
 use sp_std::{prelude::*, marker::PhantomData};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -138,7 +137,7 @@ pub fn native_version() -> NativeVersion {
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
 pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
-sp_consensus_babe::BabeEpochConfiguration {
+    sp_consensus_babe::BabeEpochConfiguration {
 		c: PRIMARY_PROBABILITY,
 		allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryVRFSlots,
 	};
@@ -1256,7 +1255,7 @@ impl_runtime_apis! {
         }
 
         fn author() -> H160 {
-            <pallet_evm::Module<Runtime>>::find_author()
+            <pallet_evm::Pallet<Runtime>>::find_author()
         }
 
         fn storage_at(address: H160, index: U256) -> H256 {
