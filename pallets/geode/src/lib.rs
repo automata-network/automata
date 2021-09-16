@@ -189,7 +189,7 @@ pub mod pallet {
             let geode = geode_record.id.clone();
             ensure!(!<Geodes<T>>::contains_key(&geode), Error::<T>::AlreadyGeode);
 
-            let block_number = <frame_system::Module<T>>::block_number();
+            let block_number = <frame_system::Pallet<T>>::block_number();
             geode_record.state = GeodeState::Registered;
             geode_record.provider = who.clone();
 
@@ -259,7 +259,7 @@ pub mod pallet {
             let who = ensure_signed(origin)?;
             let mut geode_use = <Geodes<T>>::get(&geode);
             ensure!(geode_use.provider == who, Error::<T>::NoRight);
-            let block_number = <frame_system::Module<T>>::block_number();
+            let block_number = <frame_system::Pallet<T>>::block_number();
             ensure!(
                 promise == 0 || promise > block_number.saturated_into::<BlockNumber>(),
                 Error::<T>::InvalidInput
@@ -302,7 +302,7 @@ pub mod pallet {
             geode_use.state = GeodeState::Registered;
             <Geodes<T>>::insert(&geode, &geode_use);
 
-            let block_number = <frame_system::Module<T>>::block_number();
+            let block_number = <frame_system::Pallet<T>>::block_number();
             <RegisteredGeodes<T>>::insert(&geode, block_number.saturated_into::<BlockNumber>());
 
             <OfflineGeodes<T>>::remove(&geode);
@@ -376,7 +376,7 @@ pub mod pallet {
             <Geodes<T>>::insert(&geode, geode_record);
             <GeodeUpdateCounters<T>>::insert(&geode, <GeodeUpdateCounters<T>>::get(&geode) + 1);
             let block_number =
-                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+                <frame_system::Pallet<T>>::block_number().saturated_into::<BlockNumber>();
             match to_state {
                 GeodeState::Registered => {
                     <RegisteredGeodes<T>>::insert(&geode, block_number);
@@ -390,7 +390,7 @@ pub mod pallet {
 
         pub fn reset_degraded_block_num() {
             let block_number =
-                <frame_system::Module<T>>::block_number().saturated_into::<BlockNumber>();
+                <frame_system::Pallet<T>>::block_number().saturated_into::<BlockNumber>();
             // reset Registered
             let mut registered_geodes = Vec::new();
             <RegisteredGeodes<T>>::iter()
@@ -446,7 +446,7 @@ pub mod pallet {
                         );
                         geode_use.state = GeodeState::Offline;
                         <Geodes<T>>::insert(&geode, &geode_use);
-                        let block_number = <frame_system::Module<T>>::block_number();
+                        let block_number = <frame_system::Pallet<T>>::block_number();
                         <OfflineGeodes<T>>::insert(
                             &geode,
                             block_number.saturated_into::<BlockNumber>(),
@@ -463,7 +463,7 @@ pub mod pallet {
                     DetachOption::Unknown => {
                         geode_use.state = GeodeState::Unknown;
                         <Geodes<T>>::insert(&geode, &geode_use);
-                        let block_number = <frame_system::Module<T>>::block_number();
+                        let block_number = <frame_system::Pallet<T>>::block_number();
                         <UnknownGeodes<T>>::insert(
                             &geode,
                             block_number.saturated_into::<BlockNumber>(),

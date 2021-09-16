@@ -8,7 +8,7 @@ use automata_runtime::{
     constants::currency::*, opaque::SessionKeys, AuthorityDiscoveryConfig, BabeConfig,
     BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig,
     IndicesConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
-    WASM_BINARY,
+    WASM_BINARY, BABE_GENESIS_EPOCH_CONFIG
 };
 #[cfg(feature = "contextfree")]
 use contextfree_runtime as contextfree;
@@ -28,7 +28,7 @@ use sp_core::{
 };
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{AccountIdConversion, IdentifyAccount, Verify};
-use sp_runtime::ModuleId;
+use frame_support::PalletId;
 
 #[cfg(feature = "contextfree")]
 pub type ContextFreeChainSpec =
@@ -470,35 +470,36 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
     endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
 
     contextfree::GenesisConfig {
-        frame_system: Some(contextfree::SystemConfig {
+        system: contextfree::SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
             changes_trie_config: Default::default(),
-        }),
-        pallet_balances: Some(contextfree::BalancesConfig {
+        },
+        balances: contextfree::BalancesConfig {
             // Configure endowed accounts with initial balance of 1 << 60.
             balances: endowed_accounts
                 .iter()
                 .cloned()
                 .map(|k| (k.0, k.1))
                 .collect(),
-        }),
-        pallet_indices: Some(contextfree::IndicesConfig { indices: vec![] }),
-        pallet_babe: Some(contextfree::BabeConfig {
+        },
+        indices: contextfree::IndicesConfig { indices: vec![] },
+        babe: contextfree::BabeConfig {
             authorities: vec![],
-        }),
-        pallet_grandpa: Some(contextfree::GrandpaConfig {
+            epoch_config: Some(contextfree::BABE_GENESIS_EPOCH_CONFIG),
+        },
+        grandpa: contextfree::GrandpaConfig {
             authorities: vec![],
-        }),
-        pallet_staking: Some(contextfree::StakingConfig {
+        },
+        staking: contextfree::StakingConfig {
             validator_count: 4,
             minimum_validator_count: 2,
             stakers: vec![],
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
             ..Default::default()
-        }),
-        pallet_session: Some(contextfree::SessionConfig {
+        },
+        session: contextfree::SessionConfig {
             keys: initial_authorities
                 .iter()
                 .map(|x| {
@@ -514,28 +515,28 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
                     )
                 })
                 .collect::<Vec<_>>(),
-        }),
-        pallet_im_online: Some(contextfree::ImOnlineConfig { keys: vec![] }),
-        pallet_authority_discovery: Some(contextfree::AuthorityDiscoveryConfig { keys: vec![] }),
-        pallet_democracy: Some(contextfree::DemocracyConfig::default()),
-        pallet_collective_Instance1: Some(contextfree::CouncilConfig {
+        },
+        im_online: contextfree::ImOnlineConfig { keys: vec![] },
+        authority_discovery: contextfree::AuthorityDiscoveryConfig { keys: vec![] },
+        democracy: contextfree::DemocracyConfig::default(),
+        council: contextfree::CouncilConfig {
             members: vec![],
             phantom: Default::default(),
-        }),
-        pallet_collective_Instance2: Some(contextfree::TechnicalCommitteeConfig {
+        },
+        technical_committee: contextfree::TechnicalCommitteeConfig {
             members: vec![],
             phantom: Default::default(),
-        }),
-        pallet_elections_phragmen: Some(contextfree::PhragmenElectionConfig::default()),
-        pallet_membership_Instance1: Some(contextfree::TechnicalMembershipConfig::default()),
-        pallet_treasury: Some(contextfree::TreasuryConfig::default()),
-        pallet_evm: Some(contextfree::EVMConfig::default()),
-        pallet_ethereum: Some(contextfree::EthereumConfig {}),
-        pallet_sudo: Some(contextfree::SudoConfig {
+        },
+        phragmen_election: contextfree::PhragmenElectionConfig::default(),
+        technical_membership: contextfree::TechnicalMembershipConfig::default(),
+        treasury: contextfree::TreasuryConfig::default(),
+        evm: contextfree::EVMConfig::default(),
+        ethereum: contextfree::EthereumConfig::default(),
+        sudo: contextfree::SudoConfig {
             // Assign network admin rights.
             key: root_key,
-        }),
-        pallet_vesting: Some(contextfree::VestingConfig::default()),
+        },
+        vesting: contextfree::VestingConfig::default(),
     }
 }
 
@@ -573,7 +574,7 @@ fn testnet_genesis(
             get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-            ModuleId(*b"ata/brdg").into_account(), //5EYCAe5fjB53Kn9DfqH5G7M589vF4dQRbgAwwQs1fW7Wj1mY
+            PalletId(*b"ata/brdg").into_account(), //5EYCAe5fjB53Kn9DfqH5G7M589vF4dQRbgAwwQs1fW7Wj1mY
         ]
     });
 
@@ -592,21 +593,21 @@ fn testnet_genesis(
     }
 
     GenesisConfig {
-        frame_system: Some(SystemConfig {
+        system: SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
             changes_trie_config: Default::default(),
-        }),
-        pallet_balances: Some(BalancesConfig {
+        },
+        balances: BalancesConfig {
             // Configure endowed accounts with initial balance of 1 << 60.
             balances: endowed_accounts
                 .iter()
                 .cloned()
                 .map(|k| (k, ENDOWMENT))
                 .collect(),
-        }),
-        pallet_indices: Some(IndicesConfig { indices: vec![] }),
-        pallet_session: Some(SessionConfig {
+        },
+        indices: IndicesConfig { indices: vec![] },
+        session: SessionConfig {
             keys: initial_authorities
                 .iter()
                 .map(|x| {
@@ -622,8 +623,8 @@ fn testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
-        }),
-        pallet_staking: Some(StakingConfig {
+        },
+        staking: StakingConfig {
             validator_count: initial_authorities.len() as u32 * 2,
             minimum_validator_count: initial_authorities.len() as u32,
             stakers: initial_authorities
@@ -640,26 +641,27 @@ fn testnet_genesis(
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
             ..Default::default()
-        }),
-        pallet_babe: Some(BabeConfig {
+        },
+        babe: BabeConfig {
             authorities: vec![],
-        }),
-        pallet_grandpa: Some(GrandpaConfig {
+            epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
+        },
+        grandpa: GrandpaConfig {
             authorities: vec![],
-        }),
-        pallet_authority_discovery: Some(AuthorityDiscoveryConfig { keys: vec![] }),
-        pallet_im_online: Some(ImOnlineConfig { keys: vec![] }),
+        },
+        authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
+        im_online: ImOnlineConfig { keys: vec![] },
         // pallet_grandpa: Some(GrandpaConfig {
         //     authorities: initial_authorities
         //         .iter()
         //         .map(|x| (x.2.clone(), 1))
         //         .collect(),
         // }),
-        pallet_sudo: Some(SudoConfig {
+        sudo: SudoConfig {
             // Assign network admin rights.
             key: root_key,
-        }),
-        pallet_evm: Some(EVMConfig {
+        },
+        evm: EVMConfig {
             accounts: vec![
                 H160::from(hex_literal::hex![
                     "18bD778c044F47d41CFabF336F2b1e06648e0771"
@@ -687,7 +689,7 @@ fn testnet_genesis(
                 )
             })
             .collect(),
-        }),
-        pallet_ethereum: Some(EthereumConfig {}),
+        },
+        ethereum: EthereumConfig::default(),
     }
 }

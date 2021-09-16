@@ -11,34 +11,35 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 serde_json = { version = "1" }
 serde = { version = "1.0.119", features = ["derive"] }
-jsonrpc-core = '15.1.0'
+jsonrpc-core = '15.0.0'
 jsonrpc-derive = '15.0.0'
 jsonrpc-core-client = "15.0.0"
-sp-api = '3.0.0'
-sp-blockchain = '3.0.0'
-sp-block-builder = '3.0.0'
-sc-rpc-api = '0.9.0'
-sp-transaction-pool = '3.0.0'
-sc-network = '0.9.0'
-sc-consensus-babe = '0.9.0'
-sc-consensus-babe-rpc = { version = "0.9.0" }
-sc-finality-grandpa = '0.9.0'
-sc-finality-grandpa-rpc = { version = "0.9.0" }
-sc-consensus-epochs = { version = "0.9.0" }
-jsonrpc-pubsub = "15.1.0"
-sc-rpc = '3.0.0'
-sc-client-api = '3.0.0'
-sp-runtime = '3.0.0'
-sp-keystore = { version = "0.9.0" }
-sp-consensus = '0.9.0'
-sp-consensus-babe = '0.9.0'
-substrate-frame-rpc-system = '3.0.0'
-pallet-transaction-payment-rpc = '3.0.0'
-sc-light = '3.0.0'
+jsonrpc-pubsub = '15.0.0'
+sp-api = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sp-blockchain = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sp-block-builder = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sc-rpc-api = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sp-transaction-pool = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sc-network = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sc-consensus-babe = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sc-consensus-babe-rpc = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sc-finality-grandpa = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sc-finality-grandpa-rpc = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sc-consensus-epochs = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sc-rpc = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sc-client-api = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sc-transaction-pool-api = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sp-runtime = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sp-keystore = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sp-consensus = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sp-consensus-babe = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+substrate-frame-rpc-system = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-transaction-payment-rpc = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sc-light = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 hex = '0.4.3'
-sp-std = '3.0.0'
-frame-system-rpc-runtime-api = { default-features = false, version = '3.0.0' }
-sp-core = { features = ["full_crypto"], version = '3.0.0' }
+sp-std = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+frame-system-rpc-runtime-api = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sp-core = { features = ["full_crypto"], git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 
 # local dependencies
 automata-primitives = { path = "../primitives" }
@@ -47,11 +48,11 @@ contextfree-runtime = { path = '../runtime/contextfree', optional = true }
 pallet-geode = { path = "../pallets/geode" }
 pallet-transfer = { path = "../pallets/transfer" }
 
-fc-rpc = { default-features = false, version = '1.0.0'}
-fc-rpc-core = { default-features = false, version = '1.0.0'}
-fc-db = { default-features = false, version = '1.0.0'}
-fp-rpc = { default-features = false, version = '1.0.0'}
-pallet-ethereum = { default-features = false, version = '1.0.0'}
+fc-rpc = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
+fc-rpc-core = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
+fc-db = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
+fp-rpc = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
+pallet-ethereum = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
 
 [features]
 default = ["contextfree-runtime"]

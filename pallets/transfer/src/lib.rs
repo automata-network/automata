@@ -14,7 +14,7 @@ pub mod pallet {
     use blake2::VarBlake2b;
     use frame_support::{
         pallet_prelude::*,
-        traits::{Currency, ExistenceRequirement, Vec},
+        traits::{Currency, ExistenceRequirement},
         unsigned::ValidateUnsigned,
     };
     use frame_system::{
@@ -25,7 +25,7 @@ pub mod pallet {
     use sp_core::{ecdsa, H160, U256};
     use sp_io::{crypto::secp256k1_ecdsa_recover, hashing::keccak_256};
     use sp_runtime::{traits::UniqueSaturatedInto, SaturatedConversion};
-    use sp_std::str;
+    use sp_std::{str, vec::Vec};
 
     /// Type alias for currency balance.
     type BalanceOf<T> =
@@ -106,7 +106,7 @@ pub mod pallet {
                     }
 
                     let real_nonce: T::Index =
-                        frame_system::Module::<T>::account_nonce(&source_account_id);
+                        frame_system::Pallet::<T>::account_nonce(&source_account_id);
                     if nonce != real_nonce {
                         return InvalidTransaction::Custom(3u8).into();
                     }
@@ -184,7 +184,7 @@ pub mod pallet {
 
             ensure!(address == source_address, Error::<T>::SignatureMismatch);
 
-            let real_nonce: T::Index = frame_system::Module::<T>::account_nonce(&source_account_id);
+            let real_nonce: T::Index = frame_system::Pallet::<T>::account_nonce(&source_account_id);
             ensure!(nonce == real_nonce, Error::<T>::IncorrectNonce);
 
             T::Currency::transfer(
@@ -200,7 +200,7 @@ pub mod pallet {
                 value.saturated_into(),
             ));
 
-            frame_system::Module::<T>::inc_account_nonce(&source_account_id);
+            frame_system::Pallet::<T>::inc_account_nonce(&source_account_id);
             Ok(().into())
         }
     }
