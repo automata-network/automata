@@ -919,31 +919,32 @@ impl pallet_vesting::Config for Runtime {
 	type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
 }
 
-// parameter_types! {
-//     pub const BridgeChainId: u8 = 86;
-//     pub const ProposalLifetime: BlockNumber = 50400; // ~7 days
-// }
+parameter_types! {
+    pub const BridgeChainId: u8 = 255;
+    pub const ProposalLifetime: BlockNumber = 50400; // ~7 days
+}
 
-// impl pallet_bridge::Config for Runtime {
-//     type Event = Event;
-//     type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
-//     type Proposal = Call;
-//     type BridgeChainId = BridgeChainId;
-//     type ProposalLifetime = ProposalLifetime;
-// }
+impl pallet_bridge::Config for Runtime {
+    type Event = Event;
+    type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
+    type Proposal = Call;
+    type BridgeChainId = BridgeChainId;
+    type ProposalLifetime = ProposalLifetime;
+}
 
-// parameter_types! {
-//     // bridge::derive_resource_id(1, &bridge::hashing::blake2_128(b"PHA"));
-//     pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000000000008b857677f3fcaa404fd2d97f398cce9b00");
-// }
+parameter_types! {
+    pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000000000008b857677f3fcaa404fd2d97f398cce9b00");
+    pub const EnableFee: bool = true;
+}
 
-// impl pallet_bridgetransfer::Config for Runtime {
-//     type Event = Event;
-//     type BridgeOrigin = pallet_bridge::EnsureBridge<Runtime>;
-//     type Currency = Balances;
-//     type BridgeTokenId = BridgeTokenId;
-//     // type OnFeePay = Treasury;
-// }
+impl pallet_bridgetransfer::Config for Runtime {
+    type Event = Event;
+    type BridgeOrigin = pallet_bridge::EnsureBridge<Runtime>;
+    type Currency = Balances;
+    type BridgeTokenId = BridgeTokenId;
+    type OnFeePay = Treasury;
+    type EnableFee = EnableFee;
+}
 
 pub struct TransactionConverter;
 
@@ -1013,8 +1014,8 @@ construct_runtime!(
         Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
         Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
-        // ChainBridge: pallet_bridge::{Pallet, Call, Storage, Event<T>},
-        // BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Event<T>},
+        ChainBridge: pallet_bridge::{Pallet, Call, Storage, Event<T>},
+        BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Event<T>},
     }
 );
 
