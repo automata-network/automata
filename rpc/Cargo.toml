@@ -45,8 +45,8 @@ sp-core = { features = ["full_crypto"], git = 'https://github.com/automata-netwo
 automata-primitives = { path = "../primitives" }
 automata-runtime = { path = '../runtime/automata', optional = true }
 contextfree-runtime = { path = '../runtime/contextfree', optional = true }
-pallet-geode = { path = "../pallets/geode" }
-pallet-transfer = { path = "../pallets/transfer" }
+pallet-geode = { git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
+pallet-transfer = { git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 
 fc-rpc = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
 fc-rpc-core = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}

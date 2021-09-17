@@ -74,12 +74,12 @@ frame-election-provider-support = { default-features = false, git = 'https://git
 static_assertions = "1.1.0"
 
 # local dependencies
-pallet-attestor = { default-features = false, path = '../../pallets/attestor', version = '0.1.0' }
-pallet-geode = { default-features = false, path = '../../pallets/geode', version = '0.1.0' }
-pallet-transfer = { default-features = false, path = '../../pallets/transfer', version = '0.1.0' }
-pallet-liveness = { default-features = false, path = '../../pallets/liveness', version = '0.1.0' }
-pallet-bridge = { default-features = false, path = '../../pallets/bridge', version = '0.0.2'}
-pallet-bridgetransfer = { default-features = false, path = '../../pallets/bridgetransfer', version = '0.0.1'}
+pallet-attestor = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
+pallet-geode = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
+pallet-transfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
+pallet-liveness = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
+pallet-bridge = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
+pallet-bridgetransfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 automata-primitives = { default-features = false, path = "../../primitives" }
 
 [features]
