@@ -13,21 +13,21 @@ codec = { package = "parity-scale-codec", version = "2.0.0", default-features = 
 serde = { version = "1.0.101", optional = true }
 
 # primitives
-sp-std = { version = "3.0.0", default-features = false }
-sp-runtime = { version = "3.0.0", default-features = false }
-sp-io = { version = "3.0.0", default-features = false }
-sp-core = { version = "3.0.0", default-features = false }
-sp-arithmetic = { version = "3.0.0", default-features = false }
+sp-std = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10', default-features = false }
+sp-runtime = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10', default-features = false }
+sp-io = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10', default-features = false }
+sp-core = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10', default-features = false }
+sp-arithmetic = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10', default-features = false }
 
 # frame dependencies
-frame-support = { version = "3.0.0", default-features = false }
-frame-system = { version = "3.0.0", default-features = false }
+frame-support = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10', default-features = false }
+frame-system = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10', default-features = false }
 
 pallet-bridge = { path = "../bridge", default-features = false}
 hex = { version = "0.4", default-features = false }
 
 [dev-dependencies]
-pallet-balances = { version = "3.0.0", default-features = false }
+pallet-balances = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10', default-features = false }
 
 [build-dependencies]
 wasm-builder-runner = { version = "2.0.0", package = "substrate-wasm-builder-runner" }
