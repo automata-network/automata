@@ -66,13 +66,12 @@ fp-rpc = { default-features = false, git = 'https://github.com/automata-network/
 pallet-indices = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 
 # local dependencies
-pallet-template = { default-features = false, path = '../../pallets/template', version = '3.0.0' }
-pallet-attestor = { default-features = false, path = '../../pallets/attestor', version = '0.1.0' }
-pallet-geode = { default-features = false, path = '../../pallets/geode', version = '0.1.0' }
-pallet-transfer = { default-features = false, path = '../../pallets/transfer', version = '0.1.0' }
-pallet-liveness = { default-features = false, path = '../../pallets/liveness', version = '0.1.0' }
-pallet-bridge = { default-features = false, path = '../../pallets/bridge', version = '0.0.2'}
-pallet-bridgetransfer = { default-features = false, path = '../../pallets/bridgetransfer', version = '0.0.1'}
+pallet-attestor = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
+pallet-geode = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
+pallet-transfer = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
+pallet-liveness = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
+pallet-bridge = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
+pallet-bridgetransfer = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 automata-primitives = { default-features = false, path = "../../primitives" }
 
 [features]
@@ -84,7 +83,6 @@ runtime-benchmarks = [
     'frame-system/runtime-benchmarks',
     
     'pallet-balances/runtime-benchmarks',
-    'pallet-template/runtime-benchmarks',
     'pallet-attestor/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
@@ -108,7 +106,6 @@ std = [
     "pallet-authority-discovery/std",
     'pallet-staking/std',
     "pallet-session/std",
-    'pallet-template/std',
     'pallet-attestor/std',
     'pallet-attestor/full_crypto',
     'pallet-timestamp/std',
