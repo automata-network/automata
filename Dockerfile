@@ -33,9 +33,7 @@ RUN --mount=type=cache,target=/root/.cache/sccache \
 	--mount=type=cache,target=/usr/local/cargo/registry/cache \
 	--mount=type=cache,target=/usr/local/cargo/git/db \
 	cargo build --$PROFILE --bin automata --features contextfree && \
-	cp /automata/target/${PROFILE}/automata /usr/local/bin/automata && \
-	mkdir /etc/automata && \
-	cp -R /automata/assets /etc/automata/
+	cp /automata/target/${PROFILE}/automata /usr/local/bin/automata
 
 # ===== SECOND STAGE ======
 
@@ -43,7 +41,6 @@ FROM debian:buster-slim as app
 LABEL maintainer "Automata Team"
 
 COPY --from=builder /usr/local/bin/automata /usr/local/bin/automata
-COPY --from=builder /etc/automata/assets /etc/automata/assets
 
 RUN	useradd -m -u 1000 -U -s /bin/sh -d /automata automata && \
 	mkdir -p /automata/.local/share/automata && \
