@@ -151,7 +151,7 @@ parameter_types! {
     // Maximum block length: 5MB
     pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
         ::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
-    pub const SS58Prefix: u8 = 42;
+    pub const SS58Prefix: u16 = 11820;
 }
 
 pub struct CallFilter;
@@ -933,7 +933,7 @@ impl pallet_bridge::Config for Runtime {
 }
 
 parameter_types! {
-    pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000000000008b857677f3fcaa404fd2d97f398cce9b00");
+    pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000a2120b9e674d3fc3875f415a7df52e382f14122502");
     pub const EnableFee: bool = true;
 }
 
