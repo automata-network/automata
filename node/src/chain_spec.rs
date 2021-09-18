@@ -74,7 +74,7 @@ fn get_properties() -> Option<Properties> {
 
 #[cfg(feature = "contextfree")]
 pub fn contextfree_chain_spec() -> Result<ContextFreeChainSpec, String> {
-    ContextFreeChainSpec::from_json_bytes(&include_bytes!("../../assets/chain_spec_testnet_raw.json")[..])
+    ContextFreeChainSpec::from_json_bytes(&include_bytes!("../../assets/chain_spec_contextfree.json")[..])
 }
 
 #[cfg(feature = "automata")]
