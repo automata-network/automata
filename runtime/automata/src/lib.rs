@@ -168,7 +168,7 @@ parameter_types! {
         ::with_sensible_defaults(2 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
     pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
         ::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
-    pub const SS58Prefix: u8 = 42;
+    pub const SS58Prefix: u16 = 2349;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -685,7 +685,7 @@ impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConve
 }
 
 parameter_types! {
-    pub const BridgeChainId: u8 = 86;
+    pub const BridgeChainId: u8 = 0;
     pub const ProposalLifetime: BlockNumber = 50400; // ~7 days
 }
 

@@ -54,10 +54,21 @@ pub struct Extensions {
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
+#[cfg(feature = "automata")]
 fn get_properties() -> Option<Properties> {
     let mut properties = Properties::new();
     properties.insert("tokenSymbol".into(), "ATA".into());
     properties.insert("tokenDecimals".into(), 18.into());
+    properties.insert("ss58Format".into(), 2349.into());
+    Some(properties)
+}
+
+#[cfg(feature = "contextfree")]
+fn get_properties() -> Option<Properties> {
+    let mut properties = Properties::new();
+    properties.insert("tokenSymbol".into(), "CTX".into());
+    properties.insert("tokenDecimals".into(), 18.into());
+    properties.insert("ss58Format".into(), 11820.into());
     Some(properties)
 }
 
