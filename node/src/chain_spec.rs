@@ -382,13 +382,13 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
         //Chainbridge pallet account
         (AccountId::from_ss58check("5EYCAe5fjB53Kn9DfqH5G7M589vF4dQRbgAwwQs1fW7Wj1mY").unwrap(), 300700000 * DOLLARS),
         //Team account
-        (AccountId::from_ss58check("5GrrQUqRj6bs7jo6Zr3HQLNskiK9aJLGiE8nHvf2GqKAX5uy").unwrap(), 150000000 * DOLLARS),
+        (AccountId::from_ss58check("a7SvNLeY4LLRvUzmgEEBQwmdMExW5ZpPqBEvDDuB65nHF9hTk").unwrap(), 150000000 * DOLLARS),
         //Advisor account
-        (AccountId::from_ss58check("5EFBmzPQMAazvcEJYb6YknEvcQ9rstBbtX2riZxM5rkYFAm4").unwrap(), 50000000 * DOLLARS),
+        (AccountId::from_ss58check("a7QJhiA62xQR4HsCtCyEgJDVQ6eLnsQFAMXpHeYUQtoict1Zy").unwrap(), 50000000 * DOLLARS),
         //Eco & Dev community account
-        (AccountId::from_ss58check("5FBqJZ78ahiL4Qkddw9BnW4Y5nUhxMhcgvEAdhguQayHDMU1").unwrap(), 220000000 * DOLLARS),
+        (AccountId::from_ss58check("a7RFMEiomBwYPRfjDJKHKKwK1a2fdwsmB9w1bZgCyDXwMrCUa").unwrap(), 220000000 * DOLLARS),
         //Protocol Reserve account
-        (AccountId::from_ss58check("5FP2WtTuErG511qmXfnnaFpqMLsMYrnW9pbTDNZDFqTn79Fj").unwrap(), 279250000 * DOLLARS),
+        (AccountId::from_ss58check("a7RSYT4AXr668NGpMC3vv7h5Jqb4HYNr4cqNt9M5H4nRrjz3b").unwrap(), 279250000 * DOLLARS),
     ];
 
     let initial_authorities: Vec<(
@@ -477,7 +477,7 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
         endowed_accounts.push((x.0.clone(), 10000 * DOLLARS))
     });
 
-    let root_key: AccountId = AccountId::from_ss58check("5DvRcnUacwiPoQZoatN79GjimNGqpaboTCde5tqHr5ujFqsh").unwrap();
+    let root_key: AccountId = AccountId::from_ss58check("a7PywYxBDEBYTAfYPFGWEghzCFcTmp6fMvDR51sMMf2sotgAX").unwrap();
     endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
 
     contextfree::GenesisConfig {

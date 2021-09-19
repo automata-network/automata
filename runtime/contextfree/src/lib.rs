@@ -166,25 +166,25 @@ impl Contains<Call> for CallFilter {
             | Call::Indices(_)
             | Call::Babe(_)
             | Call::Sudo(_)
-            | Call::Timestamp(_)
-            | Call::Staking(_)
-            | Call::ElectionProviderMultiPhase(_)
-            | Call::Session(_)
-            | Call::Balances(_)
-            | Call::BridgeTransfer(_)
-            | Call::ChainBridge(_)
-            | Call::Vesting(_) 
-            | Call::Utility(_)            
+            | Call::Timestamp(_) => true,
+
+            // These modules are not allowed to be called by transactions:
+            Call::EVM(_)
             | Call::Democracy(_)
             | Call::Council(_)
             | Call::TechnicalCommittee(_)
             | Call::TechnicalMembership(_)
             | Call::Treasury(_)
             | Call::PhragmenElection(_)
-            | Call::Scheduler(_) => true,
-
-            // These modules are not allowed to be called by transactions:
-            Call::EVM(_)
+            | Call::Scheduler(_)
+            | Call::Balances(_)
+            | Call::BridgeTransfer(_)
+            | Call::ChainBridge(_)
+            | Call::Vesting(_)
+            | Call::Staking(_)
+            | Call::ElectionProviderMultiPhase(_)
+            | Call::Session(_)
+            | Call::Utility(_)  
             | Call::Ethereum(_) => false,
         }
     }

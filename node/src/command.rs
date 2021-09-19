@@ -79,6 +79,20 @@ impl SubstrateCli for Cli {
     }
 }
 
+fn set_default_ss58_version(spec: &Box<dyn sc_service::ChainSpec>) {
+	use sp_core::crypto::Ss58AddressFormat;
+
+	let ss58_version = if spec.is_automata() {
+		Ss58AddressFormat::Automata
+	} else if spec.is_contextfree() {
+		Ss58AddressFormat::ContextFree
+	} else {
+		Ss58AddressFormat::SubstrateAccount
+	};
+
+	sp_core::crypto::set_default_ss58_version(ss58_version);
+}
+
 /// Parse and run command line arguments
 pub fn run() -> sc_cli::Result<()> {
     let cli = Cli::from_args();
@@ -91,6 +105,9 @@ pub fn run() -> sc_cli::Result<()> {
         }
         Some(Subcommand::CheckBlock(cmd)) => {
             let runner = cli.create_runner(cmd)?;
+            let chain_spec = &runner.config().chain_spec;
+
+            set_default_ss58_version(chain_spec);
 
             runner.async_run(|config| {
                 let PartialComponents {
@@ -104,6 +121,9 @@ pub fn run() -> sc_cli::Result<()> {
         }
         Some(Subcommand::ExportBlocks(cmd)) => {
             let runner = cli.create_runner(cmd)?;
+            let chain_spec = &runner.config().chain_spec;
+
+            set_default_ss58_version(chain_spec);
 
             runner.async_run(|config| {
                 let PartialComponents {
@@ -116,6 +136,9 @@ pub fn run() -> sc_cli::Result<()> {
         }
         Some(Subcommand::ExportState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
+            let chain_spec = &runner.config().chain_spec;
+
+            set_default_ss58_version(chain_spec);
 
             runner.async_run(|config| {
                 let PartialComponents {
@@ -128,6 +151,9 @@ pub fn run() -> sc_cli::Result<()> {
         }
         Some(Subcommand::ImportBlocks(cmd)) => {
             let runner = cli.create_runner(cmd)?;
+            let chain_spec = &runner.config().chain_spec;
+
+            set_default_ss58_version(chain_spec);
 
             runner.async_run(|config| {
                 let PartialComponents {
@@ -145,6 +171,9 @@ pub fn run() -> sc_cli::Result<()> {
         }
         Some(Subcommand::Revert(cmd)) => {
             let runner = cli.create_runner(cmd)?;
+            let chain_spec = &runner.config().chain_spec;
+
+            set_default_ss58_version(chain_spec);
 
             runner.async_run(|config| {
                 let PartialComponents {
@@ -159,6 +188,9 @@ pub fn run() -> sc_cli::Result<()> {
         Some(Subcommand::Benchmark(cmd)) => {
             if cfg!(feature = "runtime-benchmarks") {
                 let runner = cli.create_runner(cmd)?;
+                let chain_spec = &runner.config().chain_spec;
+
+                set_default_ss58_version(chain_spec);
 
                 runner.sync_run(|config| cmd.run::<Block, service::Executor>(config))
             } else {
@@ -172,6 +204,9 @@ pub fn run() -> sc_cli::Result<()> {
         }
         None => {
             let runner = cli.create_runner(&cli.run)?;
+            let chain_spec = &runner.config().chain_spec;
+
+            set_default_ss58_version(chain_spec);
 
             runner.run_node_until_exit(|config| async move {
                 match config.role {
