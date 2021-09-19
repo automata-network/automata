@@ -310,7 +310,7 @@ parameter_types! {
 		.saturating_sub(BlockExecutionWeight::get());
     pub NposSolutionPriority: TransactionPriority =
 		Perbill::from_percent(90) * TransactionPriority::max_value();
-    pub ElectionFallback: pallet_election_provider_multi_phase::FallbackStrategy = pallet_election_provider_multi_phase::FallbackStrategy::Nothing;
+    pub ElectionFallback: pallet_election_provider_multi_phase::FallbackStrategy = pallet_election_provider_multi_phase::FallbackStrategy::OnChain;
 }
 
 sp_npos_elections::generate_solution_type!(
