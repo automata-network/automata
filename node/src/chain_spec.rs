@@ -2,18 +2,19 @@
 compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
 
 use automata_primitives::Block;
-pub use automata_primitives::{AccountId, Balance, Signature, BlockNumber};
+pub use automata_primitives::{AccountId, Balance, BlockNumber, Signature};
 #[cfg(feature = "automata")]
 use automata_runtime::{
     constants::currency::*, opaque::SessionKeys, AuthorityDiscoveryConfig, BabeConfig,
     BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig,
     IndicesConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
-    WASM_BINARY, BABE_GENESIS_EPOCH_CONFIG
+    BABE_GENESIS_EPOCH_CONFIG, WASM_BINARY,
 };
 #[cfg(feature = "contextfree")]
 use contextfree_runtime as contextfree;
 #[cfg(feature = "contextfree")]
 use contextfree_runtime::{constants::currency::*, GenesisConfig, StakerStatus};
+use frame_support::PalletId;
 use hex_literal::hex;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -28,7 +29,6 @@ use sp_core::{
 };
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{AccountIdConversion, IdentifyAccount, Verify};
-use frame_support::PalletId;
 
 #[cfg(feature = "contextfree")]
 pub type ContextFreeChainSpec =
@@ -74,7 +74,9 @@ fn get_properties() -> Option<Properties> {
 
 #[cfg(feature = "contextfree")]
 pub fn contextfree_chain_spec() -> Result<ContextFreeChainSpec, String> {
-    ContextFreeChainSpec::from_json_bytes(&include_bytes!("../../assets/chain_spec_contextfree.json")[..])
+    ContextFreeChainSpec::from_json_bytes(
+        &include_bytes!("../../assets/chain_spec_contextfree.json")[..],
+    )
 }
 
 #[cfg(feature = "automata")]
@@ -380,15 +382,30 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
 fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig {
     let mut endowed_accounts: Vec<(AccountId, u128)> = vec![
         //Chainbridge pallet account
-        (AccountId::from_ss58check("5EYCAe5fjB53Kn9DfqH5G7M589vF4dQRbgAwwQs1fW7Wj1mY").unwrap(), 300700000 * DOLLARS),
+        (
+            AccountId::from_ss58check("5EYCAe5fjB53Kn9DfqH5G7M589vF4dQRbgAwwQs1fW7Wj1mY").unwrap(),
+            300700000 * DOLLARS,
+        ),
         //Team account
-        (AccountId::from_ss58check("a7SvNLeY4LLRvUzmgEEBQwmdMExW5ZpPqBEvDDuB65nHF9hTk").unwrap(), 150000000 * DOLLARS),
+        (
+            AccountId::from_ss58check("a7SvNLeY4LLRvUzmgEEBQwmdMExW5ZpPqBEvDDuB65nHF9hTk").unwrap(),
+            150000000 * DOLLARS,
+        ),
         //Advisor account
-        (AccountId::from_ss58check("a7QJhiA62xQR4HsCtCyEgJDVQ6eLnsQFAMXpHeYUQtoict1Zy").unwrap(), 50000000 * DOLLARS),
+        (
+            AccountId::from_ss58check("a7QJhiA62xQR4HsCtCyEgJDVQ6eLnsQFAMXpHeYUQtoict1Zy").unwrap(),
+            50000000 * DOLLARS,
+        ),
         //Eco & Dev community account
-        (AccountId::from_ss58check("a7RFMEiomBwYPRfjDJKHKKwK1a2fdwsmB9w1bZgCyDXwMrCUa").unwrap(), 220000000 * DOLLARS),
+        (
+            AccountId::from_ss58check("a7RFMEiomBwYPRfjDJKHKKwK1a2fdwsmB9w1bZgCyDXwMrCUa").unwrap(),
+            220000000 * DOLLARS,
+        ),
         //Protocol Reserve account
-        (AccountId::from_ss58check("a7RSYT4AXr668NGpMC3vv7h5Jqb4HYNr4cqNt9M5H4nRrjz3b").unwrap(), 279250000 * DOLLARS),
+        (
+            AccountId::from_ss58check("a7RSYT4AXr668NGpMC3vv7h5Jqb4HYNr4cqNt9M5H4nRrjz3b").unwrap(),
+            279250000 * DOLLARS,
+        ),
     ];
 
     let initial_authorities: Vec<(
@@ -473,11 +490,12 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
         ),
     ];
 
-    initial_authorities.iter().for_each(|x| {
-        endowed_accounts.push((x.0.clone(), 10000 * DOLLARS))
-    });
+    initial_authorities
+        .iter()
+        .for_each(|x| endowed_accounts.push((x.0.clone(), 10000 * DOLLARS)));
 
-    let root_key: AccountId = AccountId::from_ss58check("a7PywYxBDEBYTAfYPFGWEghzCFcTmp6fMvDR51sMMf2sotgAX").unwrap();
+    let root_key: AccountId =
+        AccountId::from_ss58check("a7PywYxBDEBYTAfYPFGWEghzCFcTmp6fMvDR51sMMf2sotgAX").unwrap();
     endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
 
     contextfree::GenesisConfig {

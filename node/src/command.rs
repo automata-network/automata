@@ -80,17 +80,17 @@ impl SubstrateCli for Cli {
 }
 
 fn set_default_ss58_version(spec: &Box<dyn sc_service::ChainSpec>) {
-	use sp_core::crypto::Ss58AddressFormat;
+    use sp_core::crypto::Ss58AddressFormat;
 
-	let ss58_version = if spec.is_automata() {
-		Ss58AddressFormat::Automata
-	} else if spec.is_contextfree() {
-		Ss58AddressFormat::ContextFree
-	} else {
-		Ss58AddressFormat::SubstrateAccount
-	};
+    let ss58_version = if spec.is_automata() {
+        Ss58AddressFormat::Automata
+    } else if spec.is_contextfree() {
+        Ss58AddressFormat::ContextFree
+    } else {
+        Ss58AddressFormat::SubstrateAccount
+    };
 
-	sp_core::crypto::set_default_ss58_version(ss58_version);
+    sp_core::crypto::set_default_ss58_version(ss58_version);
 }
 
 /// Parse and run command line arguments
