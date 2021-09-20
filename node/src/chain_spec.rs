@@ -383,7 +383,7 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
     let mut endowed_accounts: Vec<(AccountId, u128)> = vec![
         //Chainbridge pallet account
         (
-            AccountId::from_ss58check("5EYCAe5fjB53Kn9DfqH5G7M589vF4dQRbgAwwQs1fW7Wj1mY").unwrap(),
+            AccountId::from_ss58check("a7Qbi6onJLQu6h37oLDRCoYbYcQ7B49Tz4gxNsPP5UT5bMy4B").unwrap(),
             300700000 * DOLLARS,
         ),
         //Team account
@@ -417,10 +417,11 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
         AuthorityDiscoveryId,
     )> = vec![
         (
-            // 5EpoJPebo3FWWahy6i9dcNzjzyTNe1J5zwsQu5NEmg4Yr9PQ
-            hex!["7a1996d0fc27b5a0b8c8292ab10e3311045f3bb9ee52353ba93060d0fe433076"].into(),
-            // 5CACY4gkbkiKh2BWNHaqKMFBhreKFi119aokLTjwe6Wj2dha
-            hex!["0430c51a3882a8d9d4d6ecc04f9058e96690aca93cb145b1e1b0b6a010222e0f"].into(),
+                  
+            // a7PJf9QzaZpBxcZc1xwxCtXmexowt4i15zKDRmS3dr6cAmbjf
+            hex!["34320a13ec8008a9b735f9acc991a1c54c399c377696f38661aa3c5fcb86f714"].into(),
+            // a7SiPCDWkTpvmw7iWRyxpL9YKZnnHLFoYFvECBRzNFnkGsUzS
+            hex!["fd228af7d2948a0687b75fb377cfadced418f2494b9811d7cff3bf82d31431ac"].into(),
             // 5FEQBJZuHQidTV2Y1PjJR2SipmDgtYc9PnULS39Fzg1JuMdF
             hex!["8c19a47f493eb8135b010ff1e12d3bf920f66de2d84d0104a409b3947204329c"]
                 .unchecked_into(),
@@ -435,10 +436,10 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
                 .unchecked_into(),
         ),
         (
-            // 5Cw8TCFEp6KJaEDh1zYYcguptz7NMDt4owqEBr9v1253Jv99
-            hex!["267510b720ec2bbccd97c2f87a12c433d72dc3fb1febaae8307f462717ac7f32"].into(),
-            // 5H1Cf9tqnLKDShc2fncftqZhNmHRSEbBH6SQxjScuBkG7wZc
-            hex!["da8123da17c37a4af164516d9d5322ba7c806be0096d5112d929cb90ae875537"].into(),
+            // a7TXW1KoxRsDwZoGKY9jhFKFLvp1VB2mSony3mftp1P6F1txD
+            hex!["xeeee65b0e5fd2a934353083cf31e0737ebd161a27cf9312be07177ad4ee0fb7e"].into(),
+            // a7RLS2NBBmYkT3PFdjxwRSVkVGJJaANJqCCHyouBwxcwyMenA
+            hex!["8e04d37a3692c00496060e068dd0b3933a5e98ab6abca77488637972b4ab0421"].into(),
             // 5EmXdcsvanPK8GtkgVN2s6n1jq3NchGmDunFx5quQu6b2sHA
             hex!["779b1bacb9605c61b2ac687ef835e2c99b6a5f8746f6549c109f22faddb8a100"]
                 .unchecked_into(),
@@ -453,10 +454,10 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
                 .unchecked_into(),
         ),
         (
-            // 5HigvfW7JfXig7MXpCAhnu1quSWRU96CzaRDAoS4nFYuMTUT
-            hex!["fa255bb650e8b3c88b74cd546b6f51d20764f8e207e6822e8c41a727d1176928"].into(),
-            // 5FZPXATdvPQJoAwqsj4QaX36X4nGavRVXiEbDn1M4J8Gqoob
-            hex!["9a951775099769f02bebcdceb66791566ec65d710ff87fc8845b1c51e9147f73"].into(),
+            // a7R5AVrzThhEZvJfuvDvvMz6Qmeurty6JVH6gWPvPoTgHMqM1
+            hex!["825fe14fb483fa0339f45afa8e1784495803d4e6f1ce4c829765de41785b8457"].into(),
+            // a7SqTMTAdzuutGopTNwQ5xAS81itXuuEW8rZ9X6WXRTyWCS5K
+            hex!["d063a67ac0be52e416ca9786372ff92b86b5337381cf8750dc89ca657c14f02a"].into(),
             // 5Fw4twqFtEKvap9LUEBo8JgDYz9P5EvCNH7MpN9NYLRjhGhd
             hex!["ab1dcb89190c264527d9ba9645035fa6a7dbe71fa1ab28a0803f5fbc097a9c63"]
                 .unchecked_into(),
@@ -471,10 +472,10 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
                 .unchecked_into(),
         ),
         (
-            // 5DPaPfAoEqwNvHtd3Wv34ZKqYoXLdpR95LPq8ZzAnHMGRv7q
-            hex!["3aa0c3af40b7d3d428aac90fccc0687372688d01c1843744d59055d2f735a431"].into(),
-            // 5FhmA2hoGahobxhDumWG7uJt81bzbucoyfjt7UMdWBmq5gcY
-            hex!["a0f7e30a0ec26590ec3976fe3369ae3bdb326410813c79bf18a241bf1bd31d57"].into(),
+            // a7QaE42qjki7qtMbc9pATT7UNE6j2UovqoRr2KL8NnSsb2KrG
+            hex!["6c4dbabb5e92a381eace2fee7177095e7acb8a269062f2b55b6800d09e925841"].into(),
+            // a7QAKxRxbSe5NerRFKo6AzpSpabvCnXA68qd5z4W1ZXHKg722
+            hex!["5a13b660b947e70438b6d658db6fe3cf2ad2eb4ab0844f5c58c5056e8301da01"].into(),
             // 5GJFSUuHFWDC21ShQ8tvZG2n8UDF5xuY8dkc1G4yL31LnyiW
             hex!["bb45711e96f16cf7341d2dad00a5b177a1347b0131f56fa3f837e9dcb46a61d4"]
                 .unchecked_into(),
@@ -492,7 +493,10 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
 
     initial_authorities
         .iter()
-        .for_each(|x| endowed_accounts.push((x.0.clone(), 10000 * DOLLARS)));
+        .for_each(|x| {
+            endowed_accounts.push((x.0.clone(), 9000 * DOLLARS));
+            endowed_accounts.push((x.1.clone(), 1000 * DOLLARS));
+        });
 
     let root_key: AccountId =
         AccountId::from_ss58check("a7PywYxBDEBYTAfYPFGWEghzCFcTmp6fMvDR51sMMf2sotgAX").unwrap();
@@ -526,6 +530,7 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
             stakers: vec![],
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
+            force_era: pallet_staking::Forcing::ForceNone,
             ..Default::default()
         },
         session: contextfree::SessionConfig {

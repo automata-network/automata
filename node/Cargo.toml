@@ -33,6 +33,7 @@ frame-system-rpc-runtime-api = { git = 'https://github.com/automata-network/subs
 pallet-transaction-payment-rpc = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 pallet-transaction-payment-rpc-runtime-api = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 pallet-grandpa = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-staking = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sc-basic-authorship = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sc-cli = { features = ['wasmtime'], git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sc-client-api = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
