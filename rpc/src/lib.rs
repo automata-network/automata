@@ -13,7 +13,7 @@ use automata_runtime::apis::{
 };
 #[cfg(feature = "contextfree")]
 use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
-use fc_rpc::{SchemaV1Override, StorageOverride, OverrideHandle, RuntimeApiStorageOverride};
+use fc_rpc::{OverrideHandle, RuntimeApiStorageOverride, SchemaV1Override, StorageOverride};
 use fc_rpc_core::types::PendingTransactions;
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use pallet_ethereum::EthereumStorageSchema;
@@ -29,12 +29,12 @@ use sc_finality_grandpa::{
 use sc_network::NetworkService;
 use sc_rpc::SubscriptionTaskExecutor;
 pub use sc_rpc_api::DenyUnsafe;
+use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::traits::BlakeTwo256;
-use sc_transaction_pool_api::TransactionPool;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -94,7 +94,7 @@ pub struct FullDeps<C, P, B, SC> {
     /// GRANDPA specific dependencies.
     pub grandpa: GrandpaDeps<B>,
     /// Maximum number of logs in a query.
-    pub max_past_logs: u32
+    pub max_past_logs: u32,
 }
 
 /// Instantiate all full RPC extensions.
@@ -121,7 +121,10 @@ where
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
     SC: sp_consensus::SelectChain<Block> + 'static,
 {
-    Ok(create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor))
+    Ok(create_full_base::<C, P, BE, B, SC>(
+        deps,
+        subscription_task_executor,
+    ))
 }
 
 #[cfg(feature = "automata")]
@@ -267,9 +270,9 @@ where
     );
 
     let overrides = Arc::new(OverrideHandle {
-		schemas: overrides_map,
-		fallback: Box::new(RuntimeApiStorageOverride::new(client.clone())),
-	});
+        schemas: overrides_map,
+        fallback: Box::new(RuntimeApiStorageOverride::new(client.clone())),
+    });
 
     io.extend_with(EthApiServer::to_delegate(EthApi::new(
         client.clone(),
@@ -290,7 +293,7 @@ where
     io.extend_with(NetApiServer::to_delegate(NetApi::new(
         client.clone(),
         network.clone(),
-        true
+        true,
     )));
 
     io.extend_with(Web3ApiServer::to_delegate(Web3Api::new(client.clone())));
@@ -324,7 +327,7 @@ where
             HexEncodedIdProvider::default(),
             Arc::new(subscription_task_executor),
         ),
-        overrides
+        overrides,
     )));
 
     io

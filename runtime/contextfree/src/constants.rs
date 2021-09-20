@@ -17,10 +17,10 @@ pub mod currency {
 pub mod time {
     use automata_primitives::BlockNumber;
 
-    pub const MILLISECS_PER_BLOCK: u64 = 5000;
+    pub const MILLISECS_PER_BLOCK: u64 = 15000;
     pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 
-    pub const EPOCH_DURATION_IN_SLOTS: BlockNumber = 2 * MINUTES;
+    pub const EPOCH_DURATION_IN_SLOTS: BlockNumber = 4 * HOURS;
 
     // Time is measured by number of blocks.
     pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);

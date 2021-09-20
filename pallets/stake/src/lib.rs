@@ -17,7 +17,7 @@ pub mod pallet {
     use codec::{Decode, Encode};
     use dispatch::DispatchResult;
     use frame_support::pallet_prelude::*;
-    use frame_support::traits::{OnUnbalanced};
+    use frame_support::traits::OnUnbalanced;
     use frame_support::{
         dispatch, ensure,
         traits::{
