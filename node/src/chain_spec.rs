@@ -420,7 +420,7 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
             // a7PJf9QzaZpBxcZc1xwxCtXmexowt4i15zKDRmS3dr6cAmbjf
             hex!["34320a13ec8008a9b735f9acc991a1c54c399c377696f38661aa3c5fcb86f714"].into(),
             // a7SiPCDWkTpvmw7iWRyxpL9YKZnnHLFoYFvECBRzNFnkGsUzS
-            hex!["fd228af7d2948a0687b75fb377cfadced418f2494b9811d7cff3bf82d31431ac"].into(),
+            hex!["cafeee6712174eb1aca3a417917e2ec2c48ac95dd2f1e86d362d801fbe2d2b65"].into(),
             // a7TjXAbsJ8H7hjjDr9CTiEhQqYfzbQEFkBMceDpjcHDDz6M2A
             hex!["f8193f2ed5a172117e517da0847f1056c0dc10b3df8695f78d91bc03c2a7a0f9"]
                 .unchecked_into(),
