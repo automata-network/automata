@@ -123,7 +123,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 122,
+    spec_version: 119,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -697,7 +697,7 @@ impl pallet_democracy::Config for Runtime {
 }
 
 parameter_types! {
-    pub const CouncilMotionDuration: BlockNumber = 5 * MINUTES;
+    pub const CouncilMotionDuration: BlockNumber = 7 * DAYS;
     pub const CouncilMaxProposals: u32 = 100;
     pub const CouncilMaxMembers: u32 = 100;
 }
@@ -718,7 +718,7 @@ parameter_types! {
     pub const CandidacyBond: Balance = 100 * DOLLARS;
     pub const VotingBondBase: Balance = deposit(1, 64);
     pub const VotingBondFactor: Balance = deposit(0, 32);
-    pub const TermDuration: BlockNumber = 5 * MINUTES;
+    pub const TermDuration: BlockNumber = 7 * DAYS;
     pub const DesiredMembers: u32 = 13;
     pub const DesiredRunnersUp: u32 = 20;
     pub const PhragmenElectionPalletId: LockIdentifier = *b"phrelect";
@@ -745,7 +745,7 @@ impl pallet_elections_phragmen::Config for Runtime {
 }
 
 parameter_types! {
-    pub const TechnicalMotionDuration: BlockNumber = 5 * MINUTES;
+    pub const TechnicalMotionDuration: BlockNumber = 7 * DAYS;
     pub const TechnicalMaxProposals: u32 = 100;
     pub const TechnicalMaxMembers: u32 = 100;
 }
@@ -784,7 +784,7 @@ impl pallet_membership::Config<pallet_membership::Instance1> for Runtime {
 parameter_types! {
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub const ProposalBondMinimum: Balance = 100 * DOLLARS;
-    pub const SpendPeriod: BlockNumber = 5 * MINUTES;
+    pub const SpendPeriod: BlockNumber = 7 * DAYS;
     pub const Burn: Permill = Permill::from_percent(1);
     pub const TreasuryPalletId: PalletId = PalletId(*b"ct/trsry");
     pub const MaxApprovals: u32 = 100;
