@@ -81,6 +81,7 @@ pallet-liveness = { default-features = false, git = 'https://github.com/automata
 pallet-bridge = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 pallet-bridgetransfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 automata-primitives = { default-features = false, path = "../../primitives" }
+automata-runtime-common = { path = "../common", default-features = false }
 
 [features]
 default = ['std']
@@ -149,4 +150,5 @@ std = [
     'pallet-bridge/std',
     'pallet-bridgetransfer/std',
     'frame-election-provider-support/std',
+    'automata-runtime-common/std',
 ]
