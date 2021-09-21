@@ -1,0 +1,30 @@
+[package]
+authors = ["Automata Team"]
+edition = '2018'
+homepage = 'https://www.ata.network/'
+license = 'Apache-2.0'
+name = 'automata-runtime-common'
+repository = "https://github.com/automata-network/automata"
+version = '0.1.0'
+
+[dependencies]
+frame-support = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-balances = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+frame-system = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+sp-std = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-authorship = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-treasury = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+
+automata-primitives = { default-features = false, path = "../../primitives" }
+
+[features]
+default = ["std"]
+no_std = []
+std = [ 
+	"frame-support/std",
+    "frame-system/std",
+    "pallet-balances/std",
+    "sp-std/std",
+    "pallet-authorship/std",
+    "pallet-treasury/std",
+]
