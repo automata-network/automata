@@ -6,96 +6,30 @@ use pallet_geode::{Geode, GeodeState};
 use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
 use sp_api::ProvideRuntimeApi;
 use sp_runtime::{traits::Block as BlockT, RuntimeDebug};
-use sp_std::{collections::{btree_map::BTreeMap, btree_set::BTreeSet}, prelude::*};
+use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 use std::sync::Arc;
+
+use sp_core::{twox_128, blake2_128};
+use codec::{Encode, Decode};
+use sc_client_api::BlockchainEvents;
+use sp_core::storage::{StorageKey};
+use sc_client_api::StorageChangeSet;
 
 use jsonrpc_pubsub::{typed::Subscriber, SubscriptionId, manager::SubscriptionManager};
 use log::warn;
-use sp_utils::mpsc::{tracing_unbounded, TracingUnboundedReceiver, TracingUnboundedSender};
-use parking_lot::Mutex;
-use futures::{FutureExt, TryFutureExt, TryStreamExt, StreamExt};
+use futures::{TryStreamExt, StreamExt};
 use jsonrpc_core::futures::{
     stream,
 	sink::Sink as Sink01,
 	stream::Stream as Stream01,
 	future::Future as Future01,
-	future::Executor as Executor01,
 };
-use sp_runtime::print;
 
-// #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
 const RUNTIME_ERROR: i64 = 1;
 
 type GeodeId = [u8; 32];
-type SubscriberId = u64;
-
-pub struct GeodeStateNotifications {
-    next_id: SubscriberId,
-    listeners: BTreeMap<GeodeId, BTreeSet<SubscriberId>>,
-    sinks: BTreeMap<SubscriberId, GeodeStateSender>,
-}
-
-impl GeodeStateNotifications {
-    pub fn new() -> Self {
-        GeodeStateNotifications {
-            next_id: 0,
-            listeners: BTreeMap::new(),
-            sinks: BTreeMap::new(),
-        }
-    }
-
-    // Start subscribtion for changes in state of a particular geode
-    pub fn subscribe(&mut self, geode_id: GeodeId) -> GeodeStateStream {
-        self.next_id += 1;
-        let subscriber_id = self.next_id;
-
-        match self.listeners.get_mut(&geode_id) {
-            Some(subscribers) => {
-                subscribers.insert(subscriber_id);
-            },
-            None => {
-                let mut subscribers = BTreeSet::new();
-                subscribers.insert(subscriber_id);
-                self.listeners.insert(geode_id, subscribers);
-            }
-        };
-
-        // insert sink
-        let (tx, rx) = tracing_unbounded("mpsc_geode_state_notification_items");
-        self.sinks.insert(subscriber_id, tx);
-
-
-        // if let Some(m) = self.metrics.as_ref() {
-        //     m.with_label_values(&[&"added"]).inc();
-        // }
-
-        rx
-    }
-
-    // Trigger notification to all listeners
-    pub fn trigger(&mut self, id: GeodeId, new_state: GeodeState) {
-        // get the subscribers interested in the geode whose state is changing
-        let subscribers = match self.listeners.get_mut(&id) {
-            Some(subscribers) => subscribers,
-            None => return,
-        };
-        let mut to_remove = vec!();
-        for sub_id in subscribers.iter() {
-            let sink = self.sinks.get_mut(&sub_id).unwrap();
-            match sink.unbounded_send(new_state.clone()) {
-                Ok(_) => (),
-                Err(_) => to_remove.push(sub_id.clone()),
-            };
-        }
-
-        for id in to_remove {
-            subscribers.remove(&id);
-            self.sinks.remove(&id);
-        }
-    }
-}
 
 #[rpc]
 /// Geode RPC methods
@@ -173,19 +107,14 @@ impl From<Geode<AccountId, Hash>> for WrappedGeode<Hash> {
 /// An implementation of geode specific RPC methods.
 pub struct GeodeApi<C> {
     client: Arc<C>,
-    notifications: Mutex<GeodeStateNotifications>,
     manager: SubscriptionManager,
 }
-
-type GeodeStateStream = TracingUnboundedReceiver<GeodeState>;
-type GeodeStateSender = TracingUnboundedSender<GeodeState>;
 
 impl<C> GeodeApi<C> {
     /// Create new `Geode` with the given reference to the client.
     pub fn new(client: Arc<C>, manager: SubscriptionManager,) -> Self {
         GeodeApi { 
             client,
-            notifications: Mutex::new(GeodeStateNotifications::new()),
             manager,
         }
     }
@@ -194,7 +123,7 @@ impl<C> GeodeApi<C> {
 impl<C> GeodeServer<<Block as BlockT>::Hash> for GeodeApi<C>
 where
     C: Send + Sync + 'static,
-    C: ProvideRuntimeApi<Block> + HeaderBackend<Block>,
+    C: ProvideRuntimeApi<Block> + HeaderBackend<Block> + BlockchainEvents<Block>,
     C::Api: GeodeRuntimeApi<Block>,
 {
     type Metadata = sc_rpc::Metadata;
@@ -274,23 +203,34 @@ where
 		subscriber: Subscriber<GeodeState>,
         id: GeodeId,
 	) {
-        print("subscribe_geode_state called");
+        // get the current state of the geode
+        // if the geode does not exist, reject the subscription
         let initial = match self.geode_state(id.clone()) {
             Ok(state) => match state {
                 Some(initial) => Ok(initial),
                 None => {
-                    Ok(GeodeState::Registered)
-                    // let _ = subscriber.reject(Error::invalid_params("no such geode"));
-				    // return
+                    let _ = subscriber.reject(Error::invalid_params("no such geode"));
+				    return
                 },
             }
             Err(e) => Err(e),
         };
+        let key: StorageKey = StorageKey(build_storage_key(id.clone()));
+        let keys = Into::<Option<Vec<_>>>::into(vec!(key));
+		let stream = match self.client.storage_changes_notification_stream(
+			keys.as_ref().map(|x| &**x),
+			None
+		) {
+			Ok(stream) => stream,
+			Err(err) => {
+				let _ = subscriber.reject(client_err(err).into());
+				return;
+			},
+		};
 
-        let stream = self.notifications.lock().subscribe(id)
-			.map(|x| Ok::<_,()>(GeodeState::from(x)))
-			.map_err(|e| warn!("Notification stream error: {:?}", e))
-			.compat();
+        let stream = stream
+            .map(|(_block, changes)| Ok::<_, ()>(get_geode_state(changes)))
+            .compat();    
 
         self.manager.add(subscriber, |sink| {
 			let stream = stream.map(|res| Ok(res));
@@ -306,7 +246,48 @@ where
 		_metadata: Option<Self::Metadata>,
 		id: SubscriptionId,
 	) -> Result<bool> {
-        print("unsubscribe_geode_state called");
 		Ok(self.manager.cancel(id))
 	}
+}
+
+fn build_storage_key(id: GeodeId) -> Vec<u8> {
+    let geode_module = twox_128(b"GeodeModule");
+    let geodes = twox_128(b"Geodes");
+    let geode: AccountId = id.into();
+    let geode = blake2_128_concat(&geode.encode());
+
+    let mut param = vec!();
+    param.extend(geode_module);
+    param.extend(geodes);
+    param.extend(geode);
+    param
+}
+
+fn blake2_128_concat(d: &[u8]) -> Vec<u8> {
+	let mut v = blake2_128(d).to_vec();
+	v.extend_from_slice(d);
+	v
+}
+
+fn get_geode_state(changes: StorageChangeSet) -> GeodeState {
+    for (_, _, data) in changes.iter() {
+        match data {
+            Some(data) => {
+                let mut value: &[u8] = &data.0.clone();
+                match GeodeState::decode(&mut value) {
+                    Ok(state) => {
+                        return state;
+                    },
+                    Err(_) => warn!("cannot decode GeodeState")
+                }
+            },
+            None => warn!("data was none"),
+        };
+    }
+    GeodeState::Null
+}
+
+fn client_err(_: sp_blockchain::Error) -> Error {
+	Error::invalid_request()
+    // Client(Box::new(err))
 }
