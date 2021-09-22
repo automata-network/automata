@@ -20,9 +20,9 @@ use log::warn;
 use futures::{TryStreamExt, StreamExt};
 use jsonrpc_core::futures::{
     stream,
-	sink::Sink as Sink01,
-	stream::Stream as Stream01,
-	future::Future as Future01,
+    sink::Sink as Sink01,
+    stream::Stream as Stream01,
+    future::Future as Future01,
 };
 
 use serde::{Deserialize, Serialize};
@@ -35,7 +35,7 @@ type GeodeId = [u8; 32];
 /// Geode RPC methods
 pub trait GeodeServer<BlockHash> {
     /// RPC Metadata
-	type Metadata;
+    type Metadata;
 
     /// return the registered geode list
     #[rpc(name = "registered_geodes")]
@@ -198,11 +198,11 @@ where
     }
 
     fn subscribe_geode_state(
-		&self,
-		_metadata: Self::Metadata,
-		subscriber: Subscriber<GeodeState>,
+        &self,
+        _metadata: Self::Metadata,
+        subscriber: Subscriber<GeodeState>,
         id: GeodeId,
-	) {
+    ) {
         // get the current state of the geode
         // if the geode does not exist, reject the subscription
         let initial = match self.geode_state(id.clone()) {
@@ -210,44 +210,44 @@ where
                 Some(initial) => Ok(initial),
                 None => {
                     let _ = subscriber.reject(Error::invalid_params("no such geode"));
-				    return
+                    return
                 },
             }
             Err(e) => Err(e),
         };
         let key: StorageKey = StorageKey(build_storage_key(id.clone()));
         let keys = Into::<Option<Vec<_>>>::into(vec!(key));
-		let stream = match self.client.storage_changes_notification_stream(
-			keys.as_ref().map(|x| &**x),
-			None
-		) {
-			Ok(stream) => stream,
-			Err(err) => {
-				let _ = subscriber.reject(client_err(err).into());
-				return;
-			},
-		};
+        let stream = match self.client.storage_changes_notification_stream(
+            keys.as_ref().map(|x| &**x),
+            None
+        ) {
+            Ok(stream) => stream,
+            Err(err) => {
+                let _ = subscriber.reject(client_err(err).into());
+                return;
+            },
+        };
 
         let stream = stream
             .map(|(_block, changes)| Ok::<_, ()>(get_geode_state(changes)))
             .compat();    
 
         self.manager.add(subscriber, |sink| {
-			let stream = stream.map(|res| Ok(res));
-			sink.sink_map_err(|e| warn!("Error sending notifications: {:?}", e))
-				.send_all(stream::iter_result(vec![Ok(initial)])
+            let stream = stream.map(|res| Ok(res));
+            sink.sink_map_err(|e| warn!("Error sending notifications: {:?}", e))
+                .send_all(stream::iter_result(vec![Ok(initial)])
                     .chain(stream))
-				.map(|_| ())
-		});
-	}
+                .map(|_| ())
+        });
+    }
 
-	fn unsubscribe_geode_state(
-		&self,
-		_metadata: Option<Self::Metadata>,
-		id: SubscriptionId,
-	) -> Result<bool> {
-		Ok(self.manager.cancel(id))
-	}
+    fn unsubscribe_geode_state(
+        &self,
+        _metadata: Option<Self::Metadata>,
+        id: SubscriptionId,
+    ) -> Result<bool> {
+        Ok(self.manager.cancel(id))
+    }
 }
 
 fn build_storage_key(id: GeodeId) -> Vec<u8> {
@@ -264,9 +264,9 @@ fn build_storage_key(id: GeodeId) -> Vec<u8> {
 }
 
 fn blake2_128_concat(d: &[u8]) -> Vec<u8> {
-	let mut v = blake2_128(d).to_vec();
-	v.extend_from_slice(d);
-	v
+    let mut v = blake2_128(d).to_vec();
+    v.extend_from_slice(d);
+    v
 }
 
 fn get_geode_state(changes: StorageChangeSet) -> GeodeState {
@@ -278,16 +278,15 @@ fn get_geode_state(changes: StorageChangeSet) -> GeodeState {
                     Ok(state) => {
                         return state;
                     },
-                    Err(_) => warn!("cannot decode GeodeState")
+                    Err(_) => warn!("unable to decode GeodeState")
                 }
             },
-            None => warn!("data was none"),
+            None => warn!("empty change set"),
         };
     }
     GeodeState::Null
 }
 
 fn client_err(_: sp_blockchain::Error) -> Error {
-	Error::invalid_request()
-    // Client(Box::new(err))
+    Error::invalid_request()
 }

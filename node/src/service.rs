@@ -235,6 +235,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
     let is_authority = role.is_authority();
     let subscription_task_executor =
         sc_rpc::SubscriptionTaskExecutor::new(task_manager.spawn_handle());
+    let geode_subscription_executor = sc_rpc::SubscriptionTaskExecutor::new(task_manager.spawn_handle());
     let babe_config = babe_link.config().clone();
     let shared_epoch_changes = babe_link.epoch_changes().clone();
     let justification_stream = grandpa_link.justification_stream();
@@ -277,7 +278,11 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
                 },
             };
 
-            automata_rpc::create_full(deps, subscription_task_executor.clone())
+            automata_rpc::create_full(
+                deps, 
+                subscription_task_executor.clone(),
+                geode_subscription_executor.clone(),
+            )
         })
     };
 

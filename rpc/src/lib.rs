@@ -90,6 +90,7 @@ pub struct FullDeps<C, P, B, SC> {
 pub fn create_full<C, P, BE, B, SC>(
     deps: FullDeps<C, P, B, SC>,
     subscription_task_executor: SubscriptionTaskExecutor,
+    geode_subscription_executor: SubscriptionTaskExecutor,
 ) -> jsonrpc_core::IoHandler<sc_rpc::Metadata>
 where
     BE: Backend<Block> + 'static,
@@ -226,7 +227,7 @@ where
         network,
         SubscriptionManager::<HexEncodedIdProvider>::with_id_provider(
             HexEncodedIdProvider::default(),
-            Arc::new(subscription_task_executor.clone()),
+            Arc::new(subscription_task_executor),
         ),
     )));
 
@@ -236,7 +237,7 @@ where
 
     io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
         client.clone(),
-        SubscriptionManager::new(Arc::new(subscription_task_executor)),
+        SubscriptionManager::new(Arc::new(geode_subscription_executor)),
     )));
 
     io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(
