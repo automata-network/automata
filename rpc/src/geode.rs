@@ -9,21 +9,18 @@ use sp_runtime::{traits::Block as BlockT, RuntimeDebug};
 use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 use std::sync::Arc;
 
-use sp_core::{twox_128, blake2_128};
-use codec::{Encode, Decode};
+use codec::{Decode, Encode};
 use sc_client_api::BlockchainEvents;
-use sp_core::storage::{StorageKey};
 use sc_client_api::StorageChangeSet;
+use sp_core::storage::StorageKey;
+use sp_core::{blake2_128, twox_128};
 
-use jsonrpc_pubsub::{typed::Subscriber, SubscriptionId, manager::SubscriptionManager};
-use log::warn;
-use futures::{TryStreamExt, StreamExt};
+use futures::{StreamExt, TryStreamExt};
 use jsonrpc_core::futures::{
-    stream,
-    sink::Sink as Sink01,
-    stream::Stream as Stream01,
-    future::Future as Future01,
+    future::Future as Future01, sink::Sink as Sink01, stream, stream::Stream as Stream01,
 };
+use jsonrpc_pubsub::{manager::SubscriptionManager, typed::Subscriber, SubscriptionId};
+use log::warn;
 
 use serde::{Deserialize, Serialize};
 
@@ -51,20 +48,17 @@ pub trait GeodeServer<BlockHash> {
     fn geode_state(&self, geode: [u8; 32]) -> Result<Option<GeodeState>>;
 
     /// Geode state subscription
+    #[pubsub(subscription = "geode_state", subscribe, name = "geode_subscribeState")]
+    fn subscribe_geode_state(&self, _: Self::Metadata, _: Subscriber<GeodeState>, id: GeodeId);
+
+    /// Unsubscribe from geode state subscription.
     #[pubsub(
         subscription = "geode_state",
-        subscribe,
-        name = "geode_subscribeState",
-     )]
-     fn subscribe_geode_state(&self, _: Self::Metadata, _: Subscriber<GeodeState>, id: GeodeId);
- 
-     /// Unsubscribe from geode state subscription.
-     #[pubsub(
-         subscription = "geode_state",
-         unsubscribe,
-         name = "geode_unsubscribeState"
-     )]
-     fn unsubscribe_geode_state(&self, _: Option<Self::Metadata>, _: SubscriptionId) -> Result<bool>;
+        unsubscribe,
+        name = "geode_unsubscribeState"
+    )]
+    fn unsubscribe_geode_state(&self, _: Option<Self::Metadata>, _: SubscriptionId)
+        -> Result<bool>;
 }
 
 /// The geode struct shows its status
@@ -112,11 +106,8 @@ pub struct GeodeApi<C> {
 
 impl<C> GeodeApi<C> {
     /// Create new `Geode` with the given reference to the client.
-    pub fn new(client: Arc<C>, manager: SubscriptionManager,) -> Self {
-        GeodeApi { 
-            client,
-            manager,
-        }
+    pub fn new(client: Arc<C>, manager: SubscriptionManager) -> Self {
+        GeodeApi { client, manager }
     }
 }
 
@@ -210,33 +201,32 @@ where
                 Some(initial) => Ok(initial),
                 None => {
                     let _ = subscriber.reject(Error::invalid_params("no such geode"));
-                    return
-                },
-            }
+                    return;
+                }
+            },
             Err(e) => Err(e),
         };
         let key: StorageKey = StorageKey(build_storage_key(id.clone()));
-        let keys = Into::<Option<Vec<_>>>::into(vec!(key));
-        let stream = match self.client.storage_changes_notification_stream(
-            keys.as_ref().map(|x| &**x),
-            None
-        ) {
+        let keys = Into::<Option<Vec<_>>>::into(vec![key]);
+        let stream = match self
+            .client
+            .storage_changes_notification_stream(keys.as_ref().map(|x| &**x), None)
+        {
             Ok(stream) => stream,
             Err(err) => {
                 let _ = subscriber.reject(client_err(err).into());
                 return;
-            },
+            }
         };
 
         let stream = stream
             .map(|(_block, changes)| Ok::<_, ()>(get_geode_state(changes)))
-            .compat();    
+            .compat();
 
         self.manager.add(subscriber, |sink| {
             let stream = stream.map(|res| Ok(res));
             sink.sink_map_err(|e| warn!("Error sending notifications: {:?}", e))
-                .send_all(stream::iter_result(vec![Ok(initial)])
-                    .chain(stream))
+                .send_all(stream::iter_result(vec![Ok(initial)]).chain(stream))
                 .map(|_| ())
         });
     }
@@ -256,7 +246,7 @@ fn build_storage_key(id: GeodeId) -> Vec<u8> {
     let geode: AccountId = id.into();
     let geode = blake2_128_concat(&geode.encode());
 
-    let mut param = vec!();
+    let mut param = vec![];
     param.extend(geode_module);
     param.extend(geodes);
     param.extend(geode);
@@ -277,10 +267,10 @@ fn get_geode_state(changes: StorageChangeSet) -> GeodeState {
                 match GeodeState::decode(&mut value) {
                     Ok(state) => {
                         return state;
-                    },
-                    Err(_) => warn!("unable to decode GeodeState")
+                    }
+                    Err(_) => warn!("unable to decode GeodeState"),
                 }
-            },
+            }
             None => warn!("empty change set"),
         };
     }
