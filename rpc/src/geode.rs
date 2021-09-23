@@ -15,10 +15,8 @@ use sc_client_api::StorageChangeSet;
 use sp_core::storage::StorageKey;
 use sp_core::{blake2_128, twox_128};
 
-use futures::{StreamExt, TryStreamExt};
-use jsonrpc_core::futures::{
-    future::Future as Future01, sink::Sink as Sink01, stream, stream::Stream as Stream01,
-};
+use futures::{future, StreamExt, TryStreamExt};
+use jsonrpc_core::futures::{future::Future, sink::Sink, stream, stream::Stream};
 use jsonrpc_pubsub::{manager::SubscriptionManager, typed::Subscriber, SubscriptionId};
 use log::warn;
 
@@ -220,13 +218,16 @@ where
         };
 
         let stream = stream
-            .map(|(_block, changes)| Ok::<_, ()>(get_geode_state(changes)))
+            .filter_map(move |(_block, changes)| match get_geode_state(changes) {
+                Ok(state) => future::ready(Some(Ok::<_, ()>(Ok(state)))),
+                Err(_) => future::ready(None),
+            })
             .compat();
 
         self.manager.add(subscriber, |sink| {
-            let stream = stream.map(|res| Ok(res));
             sink.sink_map_err(|e| warn!("Error sending notifications: {:?}", e))
                 .send_all(stream::iter_result(vec![Ok(initial)]).chain(stream))
+                // we ignore the resulting Stream (if the first stream is over we are unsubscribed)
                 .map(|_| ())
         });
     }
@@ -259,22 +260,22 @@ fn blake2_128_concat(d: &[u8]) -> Vec<u8> {
     v
 }
 
-fn get_geode_state(changes: StorageChangeSet) -> GeodeState {
+fn get_geode_state(changes: StorageChangeSet) -> Result<GeodeState> {
     for (_, _, data) in changes.iter() {
         match data {
             Some(data) => {
                 let mut value: &[u8] = &data.0.clone();
-                match GeodeState::decode(&mut value) {
-                    Ok(state) => {
-                        return state;
+                match Geode::<AccountId, Hash>::decode(&mut value) {
+                    Ok(geode) => {
+                        return Ok(geode.state);
                     }
-                    Err(_) => warn!("unable to decode GeodeState"),
+                    Err(_) => warn!("unable to decode Geode"),
                 }
             }
             None => warn!("empty change set"),
         };
     }
-    GeodeState::Null
+    Err(Error::internal_error())
 }
 
 fn client_err(_: sp_blockchain::Error) -> Error {
