@@ -9,14 +9,29 @@ use sp_runtime::{traits::Block as BlockT, RuntimeDebug};
 use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 use std::sync::Arc;
 
-// #[cfg(feature = "std")]
+use codec::{Decode, Encode};
+use sc_client_api::BlockchainEvents;
+use sc_client_api::StorageChangeSet;
+use sp_core::storage::StorageKey;
+use sp_core::{blake2_128, twox_128};
+
+use futures::{future, StreamExt, TryStreamExt};
+use jsonrpc_core::futures::{future::Future, sink::Sink, stream, stream::Stream};
+use jsonrpc_pubsub::{manager::SubscriptionManager, typed::Subscriber, SubscriptionId};
+use log::warn;
+
 use serde::{Deserialize, Serialize};
 
 const RUNTIME_ERROR: i64 = 1;
 
+type GeodeId = [u8; 32];
+
 #[rpc]
 /// Geode RPC methods
 pub trait GeodeServer<BlockHash> {
+    /// RPC Metadata
+    type Metadata;
+
     /// return the registered geode list
     #[rpc(name = "registered_geodes")]
     fn registered_geodes(&self) -> Result<Vec<WrappedGeode<Hash>>>;
@@ -29,6 +44,19 @@ pub trait GeodeServer<BlockHash> {
     /// Return the current state of a geode
     #[rpc(name = "geode_state")]
     fn geode_state(&self, geode: [u8; 32]) -> Result<Option<GeodeState>>;
+
+    /// Geode state subscription
+    #[pubsub(subscription = "geode_state", subscribe, name = "geode_subscribeState")]
+    fn subscribe_geode_state(&self, _: Self::Metadata, _: Subscriber<GeodeState>, id: GeodeId);
+
+    /// Unsubscribe from geode state subscription.
+    #[pubsub(
+        subscription = "geode_state",
+        unsubscribe,
+        name = "geode_unsubscribeState"
+    )]
+    fn unsubscribe_geode_state(&self, _: Option<Self::Metadata>, _: SubscriptionId)
+        -> Result<bool>;
 }
 
 /// The geode struct shows its status
@@ -71,21 +99,24 @@ impl From<Geode<AccountId, Hash>> for WrappedGeode<Hash> {
 /// An implementation of geode specific RPC methods.
 pub struct GeodeApi<C> {
     client: Arc<C>,
+    manager: SubscriptionManager,
 }
 
 impl<C> GeodeApi<C> {
     /// Create new `Geode` with the given reference to the client.
-    pub fn new(client: Arc<C>) -> Self {
-        GeodeApi { client }
+    pub fn new(client: Arc<C>, manager: SubscriptionManager) -> Self {
+        GeodeApi { client, manager }
     }
 }
 
 impl<C> GeodeServer<<Block as BlockT>::Hash> for GeodeApi<C>
 where
     C: Send + Sync + 'static,
-    C: ProvideRuntimeApi<Block> + HeaderBackend<Block>,
+    C: ProvideRuntimeApi<Block> + HeaderBackend<Block> + BlockchainEvents<Block>,
     C::Api: GeodeRuntimeApi<Block>,
 {
+    type Metadata = sc_rpc::Metadata;
+
     /// get registered geode list
     fn registered_geodes(&self) -> Result<Vec<WrappedGeode<Hash>>> {
         let api = self.client.runtime_api();
@@ -154,4 +185,99 @@ where
 
         Ok(geode_state)
     }
+
+    fn subscribe_geode_state(
+        &self,
+        _metadata: Self::Metadata,
+        subscriber: Subscriber<GeodeState>,
+        id: GeodeId,
+    ) {
+        // get the current state of the geode
+        // if the geode does not exist, reject the subscription
+        let initial = match self.geode_state(id.clone()) {
+            Ok(state) => match state {
+                Some(initial) => Ok(initial),
+                None => {
+                    let _ = subscriber.reject(Error::invalid_params("no such geode"));
+                    return;
+                }
+            },
+            Err(e) => Err(e),
+        };
+        let key: StorageKey = StorageKey(build_storage_key(id.clone()));
+        let keys = Into::<Option<Vec<_>>>::into(vec![key]);
+        let stream = match self
+            .client
+            .storage_changes_notification_stream(keys.as_ref().map(|x| &**x), None)
+        {
+            Ok(stream) => stream,
+            Err(err) => {
+                let _ = subscriber.reject(client_err(err).into());
+                return;
+            }
+        };
+
+        let stream = stream
+            .filter_map(move |(_block, changes)| match get_geode_state(changes) {
+                Ok(state) => future::ready(Some(Ok::<_, ()>(Ok(state)))),
+                Err(_) => future::ready(None),
+            })
+            .compat();
+
+        self.manager.add(subscriber, |sink| {
+            sink.sink_map_err(|e| warn!("Error sending notifications: {:?}", e))
+                .send_all(stream::iter_result(vec![Ok(initial)]).chain(stream))
+                // we ignore the resulting Stream (if the first stream is over we are unsubscribed)
+                .map(|_| ())
+        });
+    }
+
+    fn unsubscribe_geode_state(
+        &self,
+        _metadata: Option<Self::Metadata>,
+        id: SubscriptionId,
+    ) -> Result<bool> {
+        Ok(self.manager.cancel(id))
+    }
+}
+
+fn build_storage_key(id: GeodeId) -> Vec<u8> {
+    let geode_module = twox_128(b"GeodeModule");
+    let geodes = twox_128(b"Geodes");
+    let geode: AccountId = id.into();
+    let geode = blake2_128_concat(&geode.encode());
+
+    let mut param = vec![];
+    param.extend(geode_module);
+    param.extend(geodes);
+    param.extend(geode);
+    param
+}
+
+fn blake2_128_concat(d: &[u8]) -> Vec<u8> {
+    let mut v = blake2_128(d).to_vec();
+    v.extend_from_slice(d);
+    v
+}
+
+fn get_geode_state(changes: StorageChangeSet) -> Result<GeodeState> {
+    for (_, _, data) in changes.iter() {
+        match data {
+            Some(data) => {
+                let mut value: &[u8] = &data.0.clone();
+                match Geode::<AccountId, Hash>::decode(&mut value) {
+                    Ok(geode) => {
+                        return Ok(geode.state);
+                    }
+                    Err(_) => warn!("unable to decode Geode"),
+                }
+            }
+            None => warn!("empty change set"),
+        };
+    }
+    Err(Error::internal_error())
+}
+
+fn client_err(_: sp_blockchain::Error) -> Error {
+    Error::invalid_request()
 }
