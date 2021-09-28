@@ -490,12 +490,10 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
         ),
     ];
 
-    initial_authorities
-        .iter()
-        .for_each(|x| {
-            endowed_accounts.push((x.0.clone(), 9000 * DOLLARS));
-            endowed_accounts.push((x.1.clone(), 1000 * DOLLARS));
-        });
+    initial_authorities.iter().for_each(|x| {
+        endowed_accounts.push((x.0.clone(), 9000 * DOLLARS));
+        endowed_accounts.push((x.1.clone(), 1000 * DOLLARS));
+    });
 
     let root_key: AccountId =
         AccountId::from_ss58check("a7PywYxBDEBYTAfYPFGWEghzCFcTmp6fMvDR51sMMf2sotgAX").unwrap();

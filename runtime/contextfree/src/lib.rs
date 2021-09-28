@@ -86,7 +86,7 @@ pub use pallet_bridgetransfer;
 
 pub use automata_primitives::*;
 
-use automata_runtime_common::{impls::DealWithFees};
+use automata_runtime_common::impls::DealWithFees;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -189,9 +189,7 @@ impl Contains<Call> for CallFilter {
             | Call::Timestamp(_) => true,
 
             // These modules are not allowed to be called by transactions:
-            Call::EVM(_)
-            | Call::Vesting(_)
-            | Call::Ethereum(_) => false,
+            Call::EVM(_) | Call::Vesting(_) | Call::Ethereum(_) => false,
         }
     }
 }
