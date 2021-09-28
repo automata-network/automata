@@ -41,8 +41,11 @@ pub mod pallet {
         #[pallet::constant]
         type BridgeTokenId: Get<ResourceId>;
 
-        // /// The handler to absorb the fee.
-        // type OnFeePay: OnUnbalanced<NegativeImbalanceOf<Self>>;
+        /// The handler to absorb the fee.
+        type OnFeePay: OnUnbalanced<NegativeImbalanceOf<Self>>;
+
+        #[pallet::constant]
+        type EnableFee: Get<bool>;
     }
 
     #[pallet::event]
@@ -102,27 +105,32 @@ pub mod pallet {
                 Error::<T>::InvalidTransfer
             );
             let bridge_id = <bridge::Pallet<T>>::account_id();
-            // ensure!(
-            // 	BridgeFee::<T>::contains_key(&dest_id),
-            // 	Error::<T>::FeeOptionsMissing
-            // );
-            // let (min_fee, fee_scale) = Self::bridge_fee(dest_id);
-            // let fee_estimated = amount * fee_scale.into() / 1000u32.into();
-            // let fee = if fee_estimated > min_fee {
-            // 	fee_estimated
-            // } else {
-            // 	min_fee
-            // };
-            // let free_balance = T::Currency::free_balance(&source);
-            // ensure!(free_balance >= (amount + fee), Error::<T>::InsufficientBalance);
+            if T::EnableFee::get() {
+                ensure!(
+                    BridgeFee::<T>::contains_key(&dest_id),
+                    Error::<T>::FeeOptionsMissing
+                );
+                let (min_fee, fee_scale) = Self::bridge_fee(dest_id);
+                let fee_estimated = amount * fee_scale.into() / 1000u32.into();
+                let fee = if fee_estimated > min_fee {
+                    fee_estimated
+                } else {
+                    min_fee
+                };
+                let free_balance = T::Currency::free_balance(&source);
+                ensure!(
+                    free_balance >= (amount + fee),
+                    Error::<T>::InsufficientBalance
+                );
 
-            // let imbalance = T::Currency::withdraw(
-            // 	&source,
-            // 	fee,
-            // 	WithdrawReasons::FEE,
-            // 	ExistenceRequirement::AllowDeath,
-            // )?;
-            // T::OnFeePay::on_unbalanced(imbalance);
+                let imbalance = T::Currency::withdraw(
+                    &source,
+                    fee,
+                    WithdrawReasons::FEE,
+                    ExistenceRequirement::AllowDeath,
+                )?;
+                T::OnFeePay::on_unbalanced(imbalance);
+            }
             <T as Config>::Currency::transfer(
                 &source,
                 &bridge_id,

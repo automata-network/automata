@@ -1,5 +1,11 @@
+#[cfg(all(feature = "automata", feature = "contextfree"))]
+compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
+
 use automata_primitives::{AccountId, Block, BlockId, Index};
+#[cfg(feature = "automata")]
 use automata_runtime::apis::TransferApi as TransferRuntimeApi;
+#[cfg(feature = "contextfree")]
+use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
 use fp_rpc::EthereumRuntimeRPCApi;
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use jsonrpc_core::{Error, ErrorCode, Result};

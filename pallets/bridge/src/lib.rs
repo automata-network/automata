@@ -8,15 +8,15 @@ pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
     use codec::{Decode, Encode, EncodeLike};
-    pub use frame_support::{pallet_prelude::*, weights::GetDispatchInfo, Parameter};
+    pub use frame_support::{pallet_prelude::*, weights::GetDispatchInfo, PalletId, Parameter};
     use frame_system::{self as system, pallet_prelude::*};
     pub use sp_core::U256;
     use sp_runtime::traits::{AccountIdConversion, Dispatchable};
-    use sp_runtime::{ModuleId, RuntimeDebug};
+    use sp_runtime::RuntimeDebug;
     use sp_std::prelude::*;
 
     const DEFAULT_RELAYER_THRESHOLD: u32 = 1;
-    const MODULE_ID: ModuleId = ModuleId(*b"ata/brdg");
+    const MODULE_ID: PalletId = PalletId(*b"ata/brdg");
 
     pub type BridgeChainId = u8;
     pub type DepositNonce = u64;
