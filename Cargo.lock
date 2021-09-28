@@ -477,9 +477,9 @@ dependencies = [
  "jsonrpc-derive 15.1.0",
  "jsonrpc-pubsub 15.1.0",
  "pallet-ethereum",
- "pallet-geode 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-geode",
  "pallet-transaction-payment-rpc",
- "pallet-transfer 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-transfer",
  "sc-client-api",
  "sc-consensus-babe",
  "sc-consensus-babe-rpc",
@@ -520,22 +520,22 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal",
- "pallet-attestor 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-attestor",
  "pallet-authority-discovery",
  "pallet-authorship",
  "pallet-babe",
  "pallet-balances",
- "pallet-bridge 0.1.0",
- "pallet-bridgetransfer 0.1.0",
+ "pallet-bridge",
+ "pallet-bridgetransfer",
  "pallet-election-provider-multi-phase",
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-precompile-simple",
- "pallet-geode 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-geode",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-indices",
- "pallet-liveness 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-liveness",
  "pallet-offences",
  "pallet-randomness-collective-flip",
  "pallet-session",
@@ -545,7 +545,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
- "pallet-transfer 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-transfer",
  "pallet-utility",
  "parity-scale-codec",
  "serde",
@@ -566,6 +566,19 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
+]
+
+[[package]]
+name = "automata-runtime-common"
+version = "0.1.0"
+dependencies = [
+ "automata-primitives 0.1.0",
+ "frame-support",
+ "frame-system",
+ "pallet-authorship",
+ "pallet-balances",
+ "pallet-treasury",
+ "sp-std",
 ]
 
 [[package]]
@@ -1016,6 +1029,7 @@ name = "contextfree-runtime"
 version = "0.1.0"
 dependencies = [
  "automata-primitives 0.1.0",
+ "automata-runtime-common",
  "fp-rpc",
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -1025,13 +1039,13 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal",
- "pallet-attestor 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-attestor",
  "pallet-authority-discovery",
  "pallet-authorship",
  "pallet-babe",
  "pallet-balances",
- "pallet-bridge 0.1.0",
- "pallet-bridgetransfer 0.1.0",
+ "pallet-bridge",
+ "pallet-bridgetransfer",
  "pallet-collective",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
@@ -1039,11 +1053,11 @@ dependencies = [
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-precompile-simple",
- "pallet-geode 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-geode",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-indices",
- "pallet-liveness 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-liveness",
  "pallet-membership",
  "pallet-offences",
  "pallet-randomness-collective-flip",
@@ -1055,7 +1069,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
- "pallet-transfer 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-transfer",
  "pallet-treasury",
  "pallet-utility",
  "pallet-vesting",
@@ -4541,23 +4555,6 @@ dependencies = [
 [[package]]
 name = "pallet-attestor"
 version = "0.1.0"
-dependencies = [
- "automata-primitives 0.1.0",
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "pallet-balances",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-attestor"
-version = "0.1.0"
 source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
@@ -4638,23 +4635,6 @@ dependencies = [
 
 [[package]]
 name = "pallet-bridge"
-version = "0.0.2"
-dependencies = [
- "blake2-rfc",
- "frame-support",
- "frame-system",
- "pallet-balances",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "substrate-wasm-builder-runner",
-]
-
-[[package]]
-name = "pallet-bridge"
 version = "0.1.0"
 source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
 dependencies = [
@@ -4673,32 +4653,13 @@ dependencies = [
 
 [[package]]
 name = "pallet-bridgetransfer"
-version = "0.0.1"
-dependencies = [
- "frame-support",
- "frame-system",
- "hex",
- "pallet-balances",
- "pallet-bridge 0.0.2",
- "parity-scale-codec",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "substrate-wasm-builder-runner",
-]
-
-[[package]]
-name = "pallet-bridgetransfer"
 version = "0.1.0"
 source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
 dependencies = [
  "frame-support",
  "frame-system",
  "hex",
- "pallet-bridge 0.1.0",
+ "pallet-bridge",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
@@ -4843,41 +4804,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-fulfillment"
-version = "0.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-stake",
- "parity-scale-codec",
- "serde",
- "serde_json",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-geode"
-version = "0.1.0"
-dependencies = [
- "automata-primitives 0.1.0",
- "frame-support",
- "frame-system",
- "pallet-attestor 0.1.0",
- "pallet-balances",
- "parity-scale-codec",
- "serde",
- "serde_json",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-geode"
 version = "0.1.0"
 source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
@@ -4885,7 +4811,7 @@ dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "frame-support",
  "frame-system",
- "pallet-attestor 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-attestor",
  "parity-scale-codec",
  "serde",
  "serde_json",
@@ -4951,32 +4877,13 @@ dependencies = [
 [[package]]
 name = "pallet-liveness"
 version = "0.1.0"
-dependencies = [
- "automata-primitives 0.1.0",
- "frame-support",
- "frame-system",
- "pallet-attestor 0.1.0",
- "pallet-balances",
- "pallet-geode 0.1.0",
- "parity-scale-codec",
- "serde",
- "serde_json",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-liveness"
-version = "0.1.0"
 source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "frame-support",
  "frame-system",
- "pallet-attestor 0.1.0 (git+https://github.com/automata-network/automata-common)",
- "pallet-geode 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-attestor",
+ "pallet-geode",
  "parity-scale-codec",
  "sp-runtime",
  "sp-std",
@@ -5062,23 +4969,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-stake"
-version = "0.1.0"
-dependencies = [
- "automata-primitives 0.1.0",
- "frame-support",
- "frame-system",
- "pallet-balances",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-staking",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-staking"
 version = "4.0.0-dev"
 source = "git+https://github.com/automata-network/substrate.git?branch=polkadot-v0.9.10#d49cdc05f6b784049b9ee48d0b787cfbda7e80b8"
@@ -5122,20 +5012,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "pallet-template"
-version = "3.0.0"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
 ]
 
 [[package]]
@@ -5198,23 +5074,6 @@ dependencies = [
  "parity-scale-codec",
  "sp-api",
  "sp-runtime",
-]
-
-[[package]]
-name = "pallet-transfer"
-version = "0.1.0"
-dependencies = [
- "automata-primitives 0.1.0",
- "blake2",
- "frame-support",
- "frame-system",
- "pallet-balances",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
