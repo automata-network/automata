@@ -45,6 +45,12 @@ pallet-session = { git = 'https://github.com/automata-network/substrate.git', br
 pallet-staking-reward-curve = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10', default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 pallet-utility = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-democracy = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-collective = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-elections-phragmen = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-membership = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-treasury = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-scheduler = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-api = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-block-builder = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-consensus-aura = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
@@ -73,6 +79,7 @@ pallet-liveness = { default-features = false,  git = 'https://github.com/automat
 pallet-bridge = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 pallet-bridgetransfer = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 automata-primitives = { default-features = false, path = "../../primitives" }
+automata-runtime-common = { default-features = false, path = "../common"}
 
 [features]
 default = ['std']
@@ -111,6 +118,12 @@ std = [
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
+    'pallet-democracy/std',
+    'pallet-collective/std',
+    'pallet-elections-phragmen/std',
+    'pallet-membership/std',
+    'pallet-treasury/std',
+    'pallet-scheduler/std',
     'serde',
     'sp-api/std',
     'sp-block-builder/std',

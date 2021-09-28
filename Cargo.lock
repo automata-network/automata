@@ -511,6 +511,7 @@ name = "automata-runtime"
 version = "0.1.0"
 dependencies = [
  "automata-primitives 0.1.0",
+ "automata-runtime-common",
  "fp-rpc",
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -527,7 +528,10 @@ dependencies = [
  "pallet-balances",
  "pallet-bridge 0.1.0",
  "pallet-bridgetransfer 0.1.0",
+ "pallet-collective",
+ "pallet-democracy",
  "pallet-election-provider-multi-phase",
+ "pallet-elections-phragmen",
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-precompile-simple",
@@ -536,8 +540,10 @@ dependencies = [
  "pallet-im-online",
  "pallet-indices",
  "pallet-liveness 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-membership",
  "pallet-offences",
  "pallet-randomness-collective-flip",
+ "pallet-scheduler",
  "pallet-session",
  "pallet-staking",
  "pallet-staking-reward-curve",
@@ -546,6 +552,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-transfer 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "pallet-treasury",
  "pallet-utility",
  "parity-scale-codec",
  "serde",
@@ -566,6 +573,19 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
+]
+
+[[package]]
+name = "automata-runtime-common"
+version = "0.1.0"
+dependencies = [
+ "automata-primitives 0.1.0",
+ "frame-support",
+ "frame-system",
+ "pallet-authorship",
+ "pallet-balances",
+ "pallet-treasury",
+ "sp-std",
 ]
 
 [[package]]
@@ -1016,6 +1036,7 @@ name = "contextfree-runtime"
 version = "0.1.0"
 dependencies = [
  "automata-primitives 0.1.0",
+ "automata-runtime-common",
  "fp-rpc",
  "frame-benchmarking",
  "frame-election-provider-support",
