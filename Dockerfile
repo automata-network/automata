@@ -4,6 +4,7 @@ LABEL maintainer "Automata Team"
 
 ARG PROFILE=release
 ARG TOOLCHAIN=nightly-2021-06-16
+ARG FEATURES
 
 RUN apt-get update && \
 	apt-get install -y --no-install-recommends cmake clang curl
@@ -32,7 +33,7 @@ RUN --mount=type=cache,target=/root/.cache/sccache \
 	--mount=type=cache,target=/usr/local/cargo/registry/index \
 	--mount=type=cache,target=/usr/local/cargo/registry/cache \
 	--mount=type=cache,target=/usr/local/cargo/git/db \
-	cargo build --$PROFILE --bin automata --features contextfree && \
+	cargo build --$PROFILE --bin automata --features ${FEATURES} && \
 	cp /automata/target/${PROFILE}/automata /usr/local/bin/automata
 
 # ===== SECOND STAGE ======
