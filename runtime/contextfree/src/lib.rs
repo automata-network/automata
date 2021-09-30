@@ -176,9 +176,9 @@ impl Contains<Call> for CallFilter {
             | Call::Balances(_) => true,
 
             // These modules are not allowed to be called by transactions:
-            Call::Offences(_)
-            | Call::Staking(_)
+            Call::Staking(_)
             | Call::Session(_)
+            | Call::ElectionProviderMultiPhase(_)
             | Call::BridgeTransfer(_)
             | Call::ChainBridge(_)
             | Call::Vesting(_) 
