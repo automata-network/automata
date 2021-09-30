@@ -1,10 +1,9 @@
-name: Docker
+name: Publish Docker image for new releases
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main] 
+  release:
+    types:
+      - published
 
 jobs:
   build_and_push:
@@ -35,13 +34,6 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Prepare Environment Variables
         run: |
-          echo 'DOCKER_TAGS<<EOF' >> $GITHUB_ENV
-          echo "${DOCKER_REPO}:${GITHUB_SHA::8}" >> $GITHUB_ENV
-          if [ "${GITHUB_REF}" = "refs/heads/main" ]
-          then
-            echo "${DOCKER_REPO}:latest" >> $GITHUB_ENV
-          fi
-          echo 'EOF' >> $GITHUB_ENV
           echo "BUILDX_BUILDER=${{ steps.docker-builder.outputs.name }}" >> $GITHUB_ENV
           echo "BUILDX_BUILDER_CONTAINER=buildx_buildkit_${{ steps.docker-builder.outputs.name }}0" >> $GITHUB_ENV
       - name: Restore buildx cache
@@ -55,9 +47,9 @@ jobs:
             alpine:3.10 /bin/sh -c "cd / && tar xf /backup/backup.tar.gz"
           docker buildx inspect --builder "${BUILDX_BUILDER}" --bootstrap
           docker buildx --builder "${BUILDX_BUILDER}" du --verbose
-      - name: Build with cache and push images
+      - name: ContextFree - Build with cache and push images
         uses: docker/build-push-action@v2
-        id: docker_build
+        id: contextfree_docker_build
         with:
           builder: ${{ steps.docker-builder.outputs.name }}
           push: true
@@ -66,7 +58,25 @@ jobs:
           cache-to: |
             type=local,dest=/tmp/buildx-cache-cross-step,mode=max
           tags: |
-            ${{ env.DOCKER_TAGS }}
+            atactr/automata:contextfree-latest
+            atactr/automata:contextfree-${{ github.event.release.tag_name }}
+          build-args: |
+            FEATURES=contextfree
+      - name: Automata - Build with cache and push images
+        uses: docker/build-push-action@v2
+        id: automata_docker_build
+        with:
+          builder: ${{ steps.docker-builder.outputs.name }}
+          push: true
+          cache-from: |
+            type=registry,ref=${{ env.DOCKER_REPO }}:builder
+          cache-to: |
+            type=local,dest=/tmp/buildx-cache-cross-step,mode=max
+          tags: |
+            atactr/automata:automata-latest
+            atactr/automata:automata-${{ github.event.release.tag_name }}
+          build-args: |
+            FEATURES=automata
       - name: Update registry cache
         uses: docker/build-push-action@v2
         if: github.ref == 'refs/heads/main'
@@ -97,5 +107,8 @@ jobs:
             -v /tmp/buildx-cache:/backup \
             alpine:3.10 /bin/sh -c "cd / && tar cf /backup/backup.tar.gz /var/lib/buildkit"
 
-      - name: Image digest
-        run: echo ${{ steps.docker_build.outputs.digest }}
+      - name: ContextFree Image digest
+        run: echo ${{ steps.contextfree_docker_build.outputs.digest }}
+
+      - name: Automata Image digest
+        run: echo ${{ steps.automata_docker_build.outputs.digest }}
