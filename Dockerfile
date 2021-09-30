@@ -28,7 +28,7 @@ WORKDIR /automata
 
 COPY . /automata
 
-ARG FEATURES
+ARG FEATURES=contextfree
 
 RUN --mount=type=cache,target=/root/.cache/sccache \
 	--mount=type=cache,target=/usr/local/cargo/registry/index \
