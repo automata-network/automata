@@ -170,7 +170,7 @@ impl Contains<Call> for CallFilter {
             | Call::Grandpa(_)
             | Call::ImOnline(_)
             | Call::Indices(_)
-            | Call::Babe(_)            
+            | Call::Babe(_)
             | Call::Sudo(_)
             | Call::Timestamp(_)
             | Call::Balances(_) => true,
@@ -181,7 +181,7 @@ impl Contains<Call> for CallFilter {
             | Call::ElectionProviderMultiPhase(_)
             | Call::BridgeTransfer(_)
             | Call::ChainBridge(_)
-            | Call::Vesting(_) 
+            | Call::Vesting(_)
             | Call::Utility(_)
             | Call::Democracy(_)
             | Call::Council(_)
