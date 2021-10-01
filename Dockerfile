@@ -1,12 +1,16 @@
 # syntax=docker/dockerfile:experimental
-FROM rust as builder
+FROM ubuntu:20.04 as builder
 LABEL maintainer "Automata Team"
 
 ARG PROFILE=release
 ARG TOOLCHAIN=nightly-2021-06-16
+ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-	apt-get install -y --no-install-recommends cmake clang curl
+	apt-get install -y build-essential pkg-config llvm-dev libclang-dev clang libssl-dev curl
+
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 RUN rustup toolchain install ${TOOLCHAIN} && \
     rustup default ${TOOLCHAIN} && \
