@@ -1,4 +1,4 @@
-name: Publish Docker image for new commit
+   name: Publish Docker image for new commit
 
 on:
   push:
@@ -10,6 +10,8 @@ on:
 jobs:
   main:
     runs-on: ubuntu-latest
+    env:
+      DOCKER_REPO: atactr/automata
     steps:
       - uses: actions/checkout@v2
       - name: Set up Docker Buildx
@@ -26,14 +28,22 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Prepare Environment Variables
+        run: |
+          echo 'DOCKER_TAGS<<EOF' >> $GITHUB_ENV
+          echo "${DOCKER_REPO}:${GITHUB_SHA::8}" >> $GITHUB_ENV
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]
+          then
+            echo "${DOCKER_REPO}:dev-latest" >> $GITHUB_ENV
+          fi
+          echo 'EOF' >> $GITHUB_ENV
       - name: Build and push
         id:   docker_build
         uses: docker/build-push-action@v2
         with:
           push: true
           tags: |
-            atactr/automata:latest
-            atactr/automata:${{ GITHUB_SHA::8 }}
+            ${{ env.DOCKER_TAGS }}
           build-args: |
             FEATURES=finitestate
           cache-from: type=local,src=/tmp/.buildx-cache
