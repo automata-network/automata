@@ -33,7 +33,7 @@ jobs:
           push: true
           tags: |
             atactr/automata:latest
-            atactr/automata:${GITHUB_SHA::8}
+            atactr/automata:${{ GITHUB_SHA::8 }}
           build-args: |
             FEATURES=finitestate
           cache-from: type=local,src=/tmp/.buildx-cache
