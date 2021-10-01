@@ -3,6 +3,7 @@ members = [
     'node',
     'runtime/automata',
     'runtime/contextfree',
+    'runtime/finitestate',
     'primitives'
 ]
 [profile.release]

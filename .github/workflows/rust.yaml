@@ -96,6 +96,19 @@ jobs:
         with:
           profile: minimal
           target: wasm32-unknown-unknown
+
+      - name: Build for FiniteState
+        uses: actions-rs/cargo@v1
+        env:
+          RUSTC_WRAPPER: ${{ env.SCCACHE }}
+          # disable incremental compilation to increase sccache hit rate
+          CARGO_INCREMENTAL: "0"
+        with:
+          command: build
+          args: --workspace --features finitestate
+      - name: Check sccache status
+        run: sccache -s
+
       - name: Build for ContextFree
         uses: actions-rs/cargo@v1
         env:
@@ -107,6 +120,7 @@ jobs:
           args: --workspace --features contextfree
       - name: Check sccache status
         run: sccache -s
+
       - name: Build for Automata
         uses: actions-rs/cargo@v1
         env:
@@ -118,6 +132,19 @@ jobs:
           args: --workspace --features automata
       - name: Check sccache status
         run: sccache -s
+
+      - name: Test for FiniteState
+        uses: actions-rs/cargo@v1
+        env:
+          RUSTC_WRAPPER: ${{ env.SCCACHE }}
+          # disable incremental compilation to increase sccache hit rate
+          CARGO_INCREMENTAL: "0"
+        with:
+          command: test
+          args: --workspace --features finitestate
+      - name: Check sccache status
+        run: sccache -s
+
       - name: Test for ContextFree
         uses: actions-rs/cargo@v1
         env:
@@ -129,6 +156,7 @@ jobs:
           args: --workspace --features contextfree
       - name: Check sccache status
         run: sccache -s
+        
       - name: Test for Automata
         uses: actions-rs/cargo@v1
         env:

@@ -841,7 +841,7 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
 
 // EVM parameters
 parameter_types! {
-    pub const ChainId: u64 = 86;
+    pub const ChainId: u64 = 11820;
     pub BlockGasLimit: U256 = U256::from(u32::max_value());
 }
 

@@ -1,5 +1,9 @@
 #[cfg(all(feature = "automata", feature = "contextfree"))]
 compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
+#[cfg(all(feature = "automata", feature = "finitestate"))]
+compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
+#[cfg(all(feature = "finitestate", feature = "contextfree"))]
+compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
 
 use automata_primitives::Block;
 pub use automata_primitives::{AccountId, Balance, BlockNumber, Signature};
@@ -14,6 +18,10 @@ use automata_runtime::{
 use contextfree_runtime as contextfree;
 #[cfg(feature = "contextfree")]
 use contextfree_runtime::{constants::currency::*, GenesisConfig, StakerStatus};
+#[cfg(feature = "finitestate")]
+use finitestate::{constants::currency::*, GenesisConfig, StakerStatus};
+#[cfg(feature = "finitestate")]
+use finitestate_runtime as finitestate;
 use frame_support::PalletId;
 use hex_literal::hex;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -33,6 +41,10 @@ use sp_runtime::traits::{AccountIdConversion, IdentifyAccount, Verify};
 #[cfg(feature = "contextfree")]
 pub type ContextFreeChainSpec =
     sc_service::GenericChainSpec<contextfree::GenesisConfig, Extensions>;
+
+#[cfg(feature = "finitestate")]
+pub type FiniteStateChainSpec =
+    sc_service::GenericChainSpec<finitestate::GenesisConfig, Extensions>;
 
 // The URL for the telemetry server.
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -72,10 +84,26 @@ fn get_properties() -> Option<Properties> {
     Some(properties)
 }
 
+#[cfg(feature = "finitestate")]
+fn get_properties() -> Option<Properties> {
+    let mut properties = Properties::new();
+    properties.insert("tokenSymbol".into(), "FST".into());
+    properties.insert("tokenDecimals".into(), 18.into());
+    properties.insert("ss58Format".into(), 13107.into());
+    Some(properties)
+}
+
 #[cfg(feature = "contextfree")]
 pub fn contextfree_chain_spec() -> Result<ContextFreeChainSpec, String> {
     ContextFreeChainSpec::from_json_bytes(
         &include_bytes!("../../assets/chain_spec_contextfree.json")[..],
+    )
+}
+
+#[cfg(feature = "finitestate")]
+pub fn finitestate_chain_spec() -> Result<FiniteStateChainSpec, String> {
+    FiniteStateChainSpec::from_json_bytes(
+        &include_bytes!("../../assets/chain_spec_finitestate.json")[..],
     )
 }
 
@@ -102,6 +130,21 @@ fn get_contextfree_session_keys(
     authority_discovery: AuthorityDiscoveryId,
 ) -> contextfree::opaque::SessionKeys {
     contextfree::opaque::SessionKeys {
+        babe,
+        grandpa,
+        im_online,
+        authority_discovery,
+    }
+}
+
+#[cfg(feature = "finitestate")]
+fn get_finitestate_session_keys(
+    grandpa: GrandpaId,
+    babe: BabeId,
+    im_online: ImOnlineId,
+    authority_discovery: AuthorityDiscoveryId,
+) -> finitestate::opaque::SessionKeys {
+    finitestate::opaque::SessionKeys {
         babe,
         grandpa,
         im_online,
@@ -246,6 +289,27 @@ pub fn contextfree_testnet_config() -> Result<ContextFreeChainSpec, String> {
     ))
 }
 
+#[cfg(feature = "finitestate")]
+pub fn finitestate_testnet_config() -> Result<FiniteStateChainSpec, String> {
+    let wasm_binary = finitestate::WASM_BINARY.ok_or("Finitestate testnet awsm not available")?;
+    let boot_nodes = vec![];
+
+    Ok(FiniteStateChainSpec::from_genesis(
+        "FiniteState Network",
+        "finitestate_network",
+        ChainType::Live,
+        move || finitestate_config_genesis(wasm_binary),
+        boot_nodes,
+        Some(
+            TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
+                .expect("Staging telemetry url is valid; qed"),
+        ),
+        Some(DEFAULT_PROTOCOL_ID),
+        get_properties(),
+        Default::default(),
+    ))
+}
+
 /// Staging testnet config.
 #[cfg(feature = "automata")]
 pub fn staging_testnet_config() -> Result<ChainSpec, String> {
@@ -377,10 +441,20 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
     ))
 }
 
-//TODO: we need to update contextfree spec when we want to launch it officially
-#[cfg(feature = "contextfree")]
-fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig {
-    let mut endowed_accounts: Vec<(AccountId, u128)> = vec![
+#[cfg(any(feature = "contextfree", feature = "finitestate"))]
+fn contextfree_genesis_accounts() -> (
+    Vec<(AccountId, u128)>,
+    Vec<(
+        AccountId,
+        AccountId,
+        GrandpaId,
+        BabeId,
+        ImOnlineId,
+        AuthorityDiscoveryId,
+    )>,
+    AccountId,
+) {
+    let endowed_accounts: Vec<(AccountId, u128)> = vec![
         //Chainbridge pallet account
         (
             AccountId::from_ss58check("a7Qbi6onJLQu6h37oLDRCoYbYcQ7B49Tz4gxNsPP5UT5bMy4B").unwrap(),
@@ -490,14 +564,23 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
         ),
     ];
 
+    let root_key: AccountId =
+        AccountId::from_ss58check("a7PywYxBDEBYTAfYPFGWEghzCFcTmp6fMvDR51sMMf2sotgAX").unwrap();
+
+    (endowed_accounts, initial_authorities, root_key)
+}
+
+//TODO: we need to update contextfree spec when we want to launch it officially
+#[cfg(feature = "contextfree")]
+fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig {
+    let (mut endowed_accounts, initial_authorities, root_key) = contextfree_genesis_accounts();
+
+    endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
+
     initial_authorities.iter().for_each(|x| {
         endowed_accounts.push((x.0.clone(), 9000 * DOLLARS));
         endowed_accounts.push((x.1.clone(), 1000 * DOLLARS));
     });
-
-    let root_key: AccountId =
-        AccountId::from_ss58check("a7PywYxBDEBYTAfYPFGWEghzCFcTmp6fMvDR51sMMf2sotgAX").unwrap();
-    endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
 
     contextfree::GenesisConfig {
         system: contextfree::SystemConfig {
@@ -568,6 +651,88 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
             key: root_key,
         },
         vesting: contextfree::VestingConfig::default(),
+    }
+}
+
+#[cfg(feature = "finitestate")]
+fn finitestate_config_genesis(wasm_binary: &[u8]) -> finitestate::GenesisConfig {
+    let (mut endowed_accounts, initial_authorities, root_key) = contextfree_genesis_accounts();
+    endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
+
+    initial_authorities.iter().for_each(|x| {
+        endowed_accounts.push((x.0.clone(), 9000 * DOLLARS));
+        endowed_accounts.push((x.1.clone(), 1000 * DOLLARS));
+    });
+
+    finitestate::GenesisConfig {
+        system: finitestate::SystemConfig {
+            // Add Wasm runtime to storage.
+            code: wasm_binary.to_vec(),
+            changes_trie_config: Default::default(),
+        },
+        balances: finitestate::BalancesConfig {
+            // Configure endowed accounts with initial balance of 1 << 60.
+            balances: endowed_accounts
+                .iter()
+                .cloned()
+                .map(|k| (k.0, k.1))
+                .collect(),
+        },
+        indices: finitestate::IndicesConfig { indices: vec![] },
+        babe: finitestate::BabeConfig {
+            authorities: vec![],
+            epoch_config: Some(finitestate::BABE_GENESIS_EPOCH_CONFIG),
+        },
+        grandpa: finitestate::GrandpaConfig {
+            authorities: vec![],
+        },
+        staking: finitestate::StakingConfig {
+            validator_count: 4,
+            minimum_validator_count: 2,
+            stakers: vec![],
+            invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+            slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
+            force_era: pallet_staking::Forcing::ForceNone,
+            ..Default::default()
+        },
+        session: finitestate::SessionConfig {
+            keys: initial_authorities
+                .iter()
+                .map(|x| {
+                    (
+                        x.0.clone(), // stash
+                        x.0.clone(), // stash
+                        get_finitestate_session_keys(
+                            x.2.clone(), // grandpa
+                            x.3.clone(), // babe
+                            x.4.clone(),
+                            x.5.clone(),
+                        ),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        },
+        im_online: finitestate::ImOnlineConfig { keys: vec![] },
+        authority_discovery: finitestate::AuthorityDiscoveryConfig { keys: vec![] },
+        democracy: finitestate::DemocracyConfig::default(),
+        council: finitestate::CouncilConfig {
+            members: vec![],
+            phantom: Default::default(),
+        },
+        technical_committee: finitestate::TechnicalCommitteeConfig {
+            members: vec![],
+            phantom: Default::default(),
+        },
+        phragmen_election: finitestate::PhragmenElectionConfig::default(),
+        technical_membership: finitestate::TechnicalMembershipConfig::default(),
+        treasury: finitestate::TreasuryConfig::default(),
+        evm: finitestate::EVMConfig::default(),
+        ethereum: finitestate::EthereumConfig::default(),
+        sudo: finitestate::SudoConfig {
+            // Assign network admin rights.
+            key: root_key,
+        },
+        vesting: finitestate::VestingConfig::default(),
     }
 }
 

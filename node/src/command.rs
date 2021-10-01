@@ -58,6 +58,9 @@ impl SubstrateCli for Cli {
             #[cfg(feature = "contextfree")]
             "contextfree" => Box::new(chain_spec::contextfree_chain_spec()?),
             // "contextfree" => Box::new(chain_spec::contextfree_testnet_config()?),
+            #[cfg(feature = "finitestate")]
+            "finitestate" => Box::new(chain_spec::finitestate_chain_spec()?),
+            // "finitestate" => Box::new(chain_spec::finitestate_testnet_config()?),
             path => Box::new(chain_spec::ChainSpec::from_json_file(
                 std::path::PathBuf::from(path),
             )?),
@@ -70,11 +73,16 @@ impl SubstrateCli for Cli {
             return &automata_runtime::VERSION;
             #[cfg(not(feature = "automata"))]
             panic!("{}", "Automata runtime not available");
-        } else {
+        } else if spec.is_contextfree() {
             #[cfg(feature = "contextfree")]
             return &contextfree_runtime::VERSION;
             #[cfg(not(feature = "contextfree"))]
             panic!("{}", "ContextFree runtime not available");
+        } else {
+            #[cfg(feature = "finitestate")]
+            return &finitestate_runtime::VERSION;
+            #[cfg(not(feature = "finitestate"))]
+            panic!("{}", "FiniteState runtime not available");
         }
     }
 }
