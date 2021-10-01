@@ -574,11 +574,7 @@ fn contextfree_genesis_accounts() -> (
 #[cfg(feature = "contextfree")]
 fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig {
     let (mut endowed_accounts, initial_authorities, root_key) = contextfree_genesis_accounts();
-    // let mut endowed_accounts = contextfree_endowed_accounts.clone();
 
-    // let initial_authorities = contextfree_initial_authorities.clone();
-
-    // let root_key: AccountId = contextfree_root_key;
     endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
 
     initial_authorities.iter().for_each(|x| {
