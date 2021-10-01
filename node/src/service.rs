@@ -1,6 +1,10 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 #[cfg(all(feature = "automata", feature = "contextfree"))]
 compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
+#[cfg(all(feature = "automata", feature = "finitestate"))]
+compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
+#[cfg(all(feature = "finitestate", feature = "contextfree"))]
+compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
 
 #[cfg(feature = "automata")]
 use automata_rpc as runtime_rpc;
@@ -13,6 +17,10 @@ pub use contextfree_runtime::{self as runtime, opaque::Block, RuntimeApi};
 use fc_consensus::FrontierBlockImport;
 use fc_mapping_sync::{MappingSyncWorker, SyncStrategy};
 use fc_rpc_core::types::PendingTransactions;
+#[cfg(feature = "finitestate")]
+use finitestate_rpc as runtime_rpc;
+#[cfg(feature = "finitestate")]
+pub use finitestate_runtime::{self as runtime, opaque::Block, RuntimeApi};
 use futures::StreamExt;
 use sc_cli::SubstrateCli;
 use sc_client_api::{BlockchainEvents, ExecutorProvider, RemoteBackend};
@@ -91,6 +99,9 @@ pub trait IdentifyVariant {
 
     /// Returns if this is a configuration for the `ContextFree` network.
     fn is_contextfree(&self) -> bool;
+
+    /// Returns if this is a configuration for the `FiniteState` network.
+    fn is_finitestate(&self) -> bool;
 }
 
 impl IdentifyVariant for Box<dyn ChainSpec> {
@@ -99,6 +110,9 @@ impl IdentifyVariant for Box<dyn ChainSpec> {
     }
     fn is_contextfree(&self) -> bool {
         self.id().starts_with("contextfree")
+    }
+    fn is_finitestate(&self) -> bool {
+        self.id().starts_with("finitestate")
     }
 }
 

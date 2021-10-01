@@ -67,9 +67,11 @@ sc-chain-spec = { git = 'https://github.com/automata-network/substrate.git', bra
 # local dependencies
 automata-runtime = { path = '../runtime/automata', optional = true }
 contextfree-runtime = { path = '../runtime/contextfree', optional = true }
+finitestate-runtime = { path = '../runtime/finitestate', optional = true }
 automata-primitives = { path = "../primitives" }
 automata-rpc = { path = "../rpc", package = "automata-rpc", optional = true, features=["automata"]}
 contextfree-rpc = { path = "../rpc", package = "automata-rpc", optional = true, features=["contextfree"]}
+finitestate-rpc = { path = "../rpc", package = "automata-rpc", optional = true, features=["finitestate"]}
 
 pallet-evm = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
 pallet-ethereum = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
@@ -90,3 +92,4 @@ default = []
 runtime-benchmarks = ['automata-runtime/runtime-benchmarks']
 automata = ["automata-runtime", "automata-rpc"]
 contextfree = ["contextfree-runtime", "contextfree-rpc"]
+finitestate = ["finitestate-runtime", "finitestate-rpc"]

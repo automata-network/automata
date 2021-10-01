@@ -4,6 +4,10 @@
 //! capabilities that are specific to this project's runtime configuration.
 #[cfg(all(feature = "automata", feature = "contextfree"))]
 compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
+#[cfg(all(feature = "automata", feature = "finitestate"))]
+compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
+#[cfg(all(feature = "finitestate", feature = "contextfree"))]
+compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
 
 use automata_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 #[cfg(feature = "automata")]
@@ -15,6 +19,8 @@ use automata_runtime::apis::{
 use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
 use fc_rpc::{OverrideHandle, RuntimeApiStorageOverride, SchemaV1Override, StorageOverride};
 use fc_rpc_core::types::PendingTransactions;
+#[cfg(feature = "finitestate")]
+use finitestate_runtime::apis::TransferApi as TransferRuntimeApi;
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use pallet_ethereum::EthereumStorageSchema;
 use sc_client_api::{
@@ -98,7 +104,7 @@ pub struct FullDeps<C, P, B, SC> {
 }
 
 /// Instantiate all full RPC extensions.
-#[cfg(feature = "contextfree")]
+#[cfg(any(feature = "contextfree", feature = "finitestate"))]
 pub fn create_full<C, P, BE, B, SC>(
     deps: FullDeps<C, P, B, SC>,
     subscription_task_executor: SubscriptionTaskExecutor,
