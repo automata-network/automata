@@ -94,6 +94,8 @@ fn set_default_ss58_version(spec: &Box<dyn sc_service::ChainSpec>) {
         Ss58AddressFormat::Automata
     } else if spec.is_contextfree() {
         Ss58AddressFormat::ContextFree
+    } else if spec.is_finitestate() {
+        Ss58AddressFormat::Custom(13107)
     } else {
         Ss58AddressFormat::SubstrateAccount
     };
