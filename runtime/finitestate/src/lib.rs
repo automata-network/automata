@@ -125,7 +125,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1000,
+    spec_version: 1001,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -173,14 +173,18 @@ impl Contains<Call> for CallFilter {
             | Call::Babe(_)
             | Call::Sudo(_)
             | Call::Timestamp(_)
+            | Call::Staking(_)
+            | Call::Session(_)
+            | Call::BridgeTransfer(_)
+            | Call::ChainBridge(_)
             | Call::Balances(_) => true,
 
             // These modules are not allowed to be called by transactions:
-            Call::Staking(_)
-            | Call::Session(_)
-            | Call::ElectionProviderMultiPhase(_)
-            | Call::BridgeTransfer(_)
-            | Call::ChainBridge(_)
+            // Call::Staking(_)
+            // | Call::Session(_)
+            Call::ElectionProviderMultiPhase(_)
+            // | Call::BridgeTransfer(_)
+            // | Call::ChainBridge(_)
             | Call::Vesting(_)
             | Call::Utility(_)
             | Call::Democracy(_)
