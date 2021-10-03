@@ -125,7 +125,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1001,
+    spec_version: 1002,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -177,16 +177,18 @@ impl Contains<Call> for CallFilter {
             | Call::Session(_)
             | Call::BridgeTransfer(_)
             | Call::ChainBridge(_)
+            | Call::Utility(_)
+            | Call::ElectionProviderMultiPhase(_)
             | Call::Balances(_) => true,
 
             // These modules are not allowed to be called by transactions:
             // Call::Staking(_)
             // | Call::Session(_)
-            Call::ElectionProviderMultiPhase(_)
+            // Call::ElectionProviderMultiPhase(_)
             // | Call::BridgeTransfer(_)
             // | Call::ChainBridge(_)
-            | Call::Vesting(_)
-            | Call::Utility(_)
+            Call::Vesting(_)
+            // | Call::Utility(_)
             | Call::Democracy(_)
             | Call::Council(_)
             | Call::TechnicalCommittee(_)
@@ -376,26 +378,26 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type WeightInfo = pallet_election_provider_multi_phase::weights::SubstrateWeight<Runtime>;
 }
 
-// pallet_staking_reward_curve::build! {
-//     // 4.5% min, 27.5% max, 50% ideal stake
-//     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
-//         min_inflation: 0_025_000,
-//         max_inflation: 0_100_000,
-//         ideal_stake: 0_500_000,
-//         falloff: 0_050_000,
-//         max_piece_count: 40,
-//         test_precision: 0_005_500,
-//     );
-// }
+pallet_staking_reward_curve::build! {
+    // 4.5% min, 27.5% max, 50% ideal stake
+    const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
+        min_inflation: 0_025_000,
+        max_inflation: 0_100_000,
+        ideal_stake: 0_500_000,
+        falloff: 0_050_000,
+        max_piece_count: 40,
+        test_precision: 0_005_500,
+    );
+}
 
-const REWARD_CURVE: PiecewiseLinear<'static> = PiecewiseLinear {
-    points: &[
-        (Perbill::from_parts(0), Perbill::from_parts(0)),
-        (Perbill::from_parts(0_500_000_000), Perbill::from_parts(0)),
-        (Perbill::from_parts(1_000_000_000), Perbill::from_parts(0)),
-    ],
-    maximum: Perbill::from_parts(0),
-};
+// const REWARD_CURVE: PiecewiseLinear<'static> = PiecewiseLinear {
+//     points: &[
+//         (Perbill::from_parts(0), Perbill::from_parts(0)),
+//         (Perbill::from_parts(0_500_000_000), Perbill::from_parts(0)),
+//         (Perbill::from_parts(1_000_000_000), Perbill::from_parts(0)),
+//     ],
+//     maximum: Perbill::from_parts(0),
+// };
 
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 6;
