@@ -153,6 +153,8 @@ where
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
     SC: sp_consensus::SelectChain<Block> + 'static,
 {
+
+    #[cfg(feature = "automata")]
     use transfer::TransferServer;
 
     let client = deps.client.clone();
