@@ -125,7 +125,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1000,
+    spec_version: 1001,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -173,14 +173,18 @@ impl Contains<Call> for CallFilter {
             | Call::Babe(_)
             | Call::Sudo(_)
             | Call::Timestamp(_)
+            | Call::Staking(_)
+            | Call::Session(_)
+            | Call::BridgeTransfer(_)
+            | Call::ChainBridge(_)
             | Call::Balances(_) => true,
 
             // These modules are not allowed to be called by transactions:
-            Call::Staking(_)
-            | Call::Session(_)
-            | Call::ElectionProviderMultiPhase(_)
-            | Call::BridgeTransfer(_)
-            | Call::ChainBridge(_)
+            // Call::Staking(_)
+            // | Call::Session(_)
+            // | Call::BridgeTransfer(_)
+            // | Call::ChainBridge(_)
+            Call::ElectionProviderMultiPhase(_)
             | Call::Vesting(_)
             | Call::Utility(_)
             | Call::Democracy(_)
@@ -941,7 +945,7 @@ impl pallet_bridge::Config for Runtime {
 }
 
 parameter_types! {
-    pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000a2120b9e674d3fc3875f415a7df52e382f14122502");
+    pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("00000000000000000000008289b901CAC48EbBB1B5cb0049d1459EA1240EF703");
     pub const EnableFee: bool = true;
 }
 
@@ -1023,7 +1027,7 @@ construct_runtime!(
         Utility: pallet_utility::{Pallet, Call, Event},
         Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
         ChainBridge: pallet_bridge::{Pallet, Call, Storage, Event<T>},
-        BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Event<T>},
+        BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Storage, Event<T>},
     }
 );
 
