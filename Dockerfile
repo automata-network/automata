@@ -42,6 +42,7 @@ RUN --mount=type=cache,target=/root/.cache/sccache \
 FROM debian:buster-slim as app
 LABEL maintainer "Automata Team"
 
+COPY --from=builder /automata/scripts/run-node.sh /run-node.sh
 COPY --from=builder /usr/local/bin/automata /usr/local/bin/automata
 
 RUN	useradd -m -u 1000 -U -s /bin/sh -d /automata automata && \
@@ -53,5 +54,5 @@ USER automata
 EXPOSE 30333 9933 9944
 VOLUME ["/data"]
 
-ENTRYPOINT ["/usr/local/bin/automata", "--port=30333", "--base-path=/data"]
+ENTRYPOINT ["/run-node.sh"]
 CMD []
