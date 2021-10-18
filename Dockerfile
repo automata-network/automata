@@ -53,4 +53,5 @@ USER automata
 EXPOSE 30333 9933 9944
 VOLUME ["/data"]
 
-ENTRYPOINT ["/usr/local/bin/automata"]
+ENTRYPOINT ["/usr/local/bin/automata", "--port=30333", "--base-path=/data"]
+CMD []
