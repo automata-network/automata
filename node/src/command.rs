@@ -55,6 +55,9 @@ impl SubstrateCli for Cli {
             "" | "local" => Box::new(chain_spec::local_testnet_config()?),
             #[cfg(feature = "automata")]
             "staging" => Box::new(chain_spec::staging_testnet_config()?),
+            #[cfg(feature = "automata")]
+            "automata" => Box::new(chain_spec::automata_chain_spec()?),
+            // "automata" => Box::new(chain_spec::automata_testnet_config()?),
             #[cfg(feature = "contextfree")]
             "contextfree" => Box::new(chain_spec::contextfree_chain_spec()?),
             // "contextfree" => Box::new(chain_spec::contextfree_testnet_config()?),

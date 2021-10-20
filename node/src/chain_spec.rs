@@ -7,13 +7,11 @@ compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled tog
 
 use automata_primitives::Block;
 pub use automata_primitives::{AccountId, Balance, BlockNumber, Signature};
+
 #[cfg(feature = "automata")]
-use automata_runtime::{
-    constants::currency::*, opaque::SessionKeys, AuthorityDiscoveryConfig, BabeConfig,
-    BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig,
-    IndicesConfig, SessionConfig, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
-    BABE_GENESIS_EPOCH_CONFIG, WASM_BINARY,
-};
+use automata_runtime as automata;
+#[cfg(feature = "automata")]
+use automata_runtime::{constants::currency::*, GenesisConfig, StakerStatus};
 #[cfg(feature = "contextfree")]
 use contextfree_runtime as contextfree;
 #[cfg(feature = "contextfree")]
@@ -37,6 +35,10 @@ use sp_core::{
 };
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{AccountIdConversion, IdentifyAccount, Verify};
+
+#[cfg(feature = "automata")]
+pub type AutomataChainSpec =
+    sc_service::GenericChainSpec<automata::GenesisConfig, Extensions>;
 
 #[cfg(feature = "contextfree")]
 pub type ContextFreeChainSpec =
@@ -93,6 +95,13 @@ fn get_properties() -> Option<Properties> {
     Some(properties)
 }
 
+#[cfg(feature = "automata")]
+pub fn automata_chain_spec() -> Result<AutomataChainSpec, String> {
+    AutomataChainSpec::from_json_bytes(
+        &include_bytes!("../../assets/chain_spec_automata.json")[..],
+    )
+}
+
 #[cfg(feature = "contextfree")]
 pub fn contextfree_chain_spec() -> Result<ContextFreeChainSpec, String> {
     ContextFreeChainSpec::from_json_bytes(
@@ -108,13 +117,13 @@ pub fn finitestate_chain_spec() -> Result<FiniteStateChainSpec, String> {
 }
 
 #[cfg(feature = "automata")]
-fn get_session_keys(
+fn get_automata_session_keys(
     grandpa: GrandpaId,
     babe: BabeId,
     im_online: ImOnlineId,
     authority_discovery: AuthorityDiscoveryId,
-) -> SessionKeys {
-    SessionKeys {
+) -> automata::opaque::SessionKeys {
+    automata::opaque::SessionKeys {
         babe,
         grandpa,
         im_online,
@@ -192,7 +201,7 @@ pub fn authority_keys_from_seed(
 
 #[cfg(feature = "automata")]
 pub fn development_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+    let wasm_binary = automata::WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
 
     Ok(ChainSpec::from_genesis(
         // Name
@@ -231,7 +240,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 
 #[cfg(feature = "automata")]
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+    let wasm_binary = automata::WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
 
     Ok(ChainSpec::from_genesis(
         // Name
@@ -264,6 +273,27 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         // Properties
         get_properties(),
         // Extensions
+        Default::default(),
+    ))
+}
+
+#[cfg(feature = "automata")]
+pub fn automata_testnet_config() -> Result<AutomataChainSpec, String> {
+    let wasm_binary = automata::WASM_BINARY.ok_or("Automata testnet awsm not available")?;
+    let boot_nodes = vec![];
+
+    Ok(AutomataChainSpec::from_genesis(
+        "Automata Network",
+        "automata_network",
+        ChainType::Live,
+        move || automata_config_genesis(wasm_binary),
+        boot_nodes,
+        Some(
+            TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
+                .expect("Staging telemetry url is valid; qed"),
+        ),
+        Some(DEFAULT_PROTOCOL_ID),
+        get_properties(),
         Default::default(),
     ))
 }
@@ -313,7 +343,7 @@ pub fn finitestate_testnet_config() -> Result<FiniteStateChainSpec, String> {
 /// Staging testnet config.
 #[cfg(feature = "automata")]
 pub fn staging_testnet_config() -> Result<ChainSpec, String> {
-    let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+    let wasm_binary = automata::WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
 
     let boot_nodes = vec![];
 
@@ -439,6 +469,171 @@ pub fn staging_testnet_config() -> Result<ChainSpec, String> {
         get_properties(),
         Default::default(),
     ))
+}
+
+#[cfg(feature = "automata")]
+fn automata_genesis_accounts() -> (
+    Vec<(AccountId, u128)>,
+    Vec<(
+        AccountId,
+        AccountId,
+        GrandpaId,
+        BabeId,
+        ImOnlineId,
+        AuthorityDiscoveryId,
+    )>,
+    AccountId,
+) {
+    let endowed_accounts: Vec<(AccountId, u128)> = vec![
+        //Chainbridge pallet account
+        (
+            AccountId::from_ss58check("aA6rX5bQBiGWiud3KnbAqzsn24Vy7Y6U3A5uvUqkCyY8kxeFf").unwrap(),
+            300700000 * DOLLARS,
+        ),
+        //Team account
+        (
+            AccountId::from_ss58check("aA93LRmxBNhbjNEWC2e6kbigS5S1JTyMqqDc96bRjmBKFVdWo").unwrap(),
+            150000000 * DOLLARS,
+        ),
+        //Advisor account
+        (
+            AccountId::from_ss58check("aA879T4UBUuHQJ9Xd8WqPueU4CqTTkHbaejikqsqJPhML7FgZ").unwrap(),
+            50000000 * DOLLARS,
+        ),
+        //Eco & Dev community account
+        (
+            AccountId::from_ss58check("aA4qwoGEXRJXNjB3E5yrtE6bgDbkkT7k6JsDDydZJsZPE5NGU").unwrap(),
+            220000000 * DOLLARS,
+        ),
+        //Protocol Reserve account
+        (
+            AccountId::from_ss58check("aA9N4ZY13Ka35q9163XafddevMmwBpC8Xt2BRUFaBJCMHQaNU").unwrap(),
+            279230000 * DOLLARS,
+        ),
+    ];
+
+    let initial_authorities: Vec<(
+        AccountId,
+        AccountId,
+        GrandpaId,
+        BabeId,
+        ImOnlineId,
+        AuthorityDiscoveryId,
+    )> = vec![
+        (
+            // aA9KuahEhXXNqdsf5VbAZZEQg3Bq9arf1oYNJzhvme7oGRiGh
+            hex!["dacb3b91dfd167393b90255efc0e2c6094bf216c6440aae75e23c9eadee0846e"].into(),
+            // aA9HSgYWJxKmemZmDP8CP4ewTXhx3ae6yodPRTB1eg58Lr9fM
+            hex!["d8ea30f80d77d4ff7912c1cc38479f38161c19928f9d5cea36523c2d0134ed2f"].into(),
+            // aA4Q8mYNVGHwhm4PjxmqDV7FTUz6UYyDK6XF4J1cATY8ZWTfD
+            hex!["00d770425c64abba83c6c4928d43b6fc452d2a6e2e66c4c28903b89da1fe0adb"]
+                .unchecked_into(),
+            // aA7sxWZLSDC6sfiBm4PXTqDpivaCeTDkpNhMLCT7AXHYHDjsQ
+            hex!["9ac47a4197092cd6a5ebdd713a3c47bb53091745ef8c8c2feab67ce64b616878"]
+                .unchecked_into(),
+            // aA7sxWZLSDC6sfiBm4PXTqDpivaCeTDkpNhMLCT7AXHYHDjsQ
+            hex!["9ac47a4197092cd6a5ebdd713a3c47bb53091745ef8c8c2feab67ce64b616878"]
+                .unchecked_into(),
+            // aA7sxWZLSDC6sfiBm4PXTqDpivaCeTDkpNhMLCT7AXHYHDjsQ
+            hex!["9ac47a4197092cd6a5ebdd713a3c47bb53091745ef8c8c2feab67ce64b616878"]
+                .unchecked_into(),
+        ),
+        (
+            // aA9gDAx9YoKioMtnsxgp7WCUDf8XDgKksheZgpFKFxxa14zry
+            hex!["ea475b2cd5274953e6068da6f28f2375839ebced2486adeca7e261a07d3df368"].into(),
+            // aA6yWDZduXFMkdShYqeC5xWSmAfEw2nGFRKkxMtUrSfzcEc4Z
+            hex!["72c334d420f3cfd8c458e6b9f2bf097d1420dcf2570a6473adb964a9498bef1e"].into(),
+            // aA87z7YJXRLAe354aQscPJAXWubTue5WpPj1Q8oNF1xypmV9r
+            hex!["a5774f54378af9b5b961d8db45c5e6620bcf0492988301acd28c75c4b1f9d3cf"]
+                .unchecked_into(),
+            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
+            hex!["14242c313c0795915367f466a8dfdcf70489e40cbbb2e6e6c0416068b901c87c"]
+                .unchecked_into(),
+            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
+            hex!["14242c313c0795915367f466a8dfdcf70489e40cbbb2e6e6c0416068b901c87c"]
+                .unchecked_into(),
+            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
+            hex!["14242c313c0795915367f466a8dfdcf70489e40cbbb2e6e6c0416068b901c87c"]
+                .unchecked_into(),
+        ),
+        (
+            // aA6UpQ7QS6KJMrfFjrQazDfJbxc4URF1QrAgdKdzMax5QBjdU
+            hex!["5ce24b93b6bfd5f04a79335e275a49d4e04426ad699b47b7df59d45d51945e5b"].into(),
+            // aA4aUrbQ17D1LwGedrwd3YpGkKjbT1qZr8W8CguswxdoPpUvo
+            hex!["08bb8304499b86da123550f8eb4897afef724d8c11f7224578e1d78cc3595734"].into(),
+            // aA5P3LJq2k3JQx9e8WmE84baFDJeNcGuTRCEQRowz2CbnckqC
+            hex!["2c3e21699d2c7f39f6122ee0718ac331472b3f20bb8b74b467d941a4c6a0f49b"]
+                .unchecked_into(),
+            // aA9eDNQUg4AJs6qcGHpRvxRBaR5Zm4sQL2qFWsVJf84ZTK8Jc
+            hex!["e8c187b67963b5d24ac810d85797106520d1d629ca3def7d23e842a21c8fc160"]
+                .unchecked_into(),
+            // aA9eDNQUg4AJs6qcGHpRvxRBaR5Zm4sQL2qFWsVJf84ZTK8Jc
+            hex!["e8c187b67963b5d24ac810d85797106520d1d629ca3def7d23e842a21c8fc160"]
+                .unchecked_into(),
+            // aA9eDNQUg4AJs6qcGHpRvxRBaR5Zm4sQL2qFWsVJf84ZTK8Jc
+            hex!["e8c187b67963b5d24ac810d85797106520d1d629ca3def7d23e842a21c8fc160"]
+                .unchecked_into(),
+        ),
+        (
+            // aA8pRXkNzmeF1LQKwK3t26QzHjGamKbxABWv51xoiemN7AqkA
+            hex!["c44eb04795043d04849e5e7038ce3ff145f21855f4be05d63671db102d714871"].into(),
+            // aA7k6SERy3Uw4N2XF9kPpnjSZpJBAcpL5kvKDJCVmWK34oaCE
+            hex!["94c531933bbbcad0174def84bbd6cb9a0c30406740f7af7b8609076da0a09b4a"].into(),
+            // aA8PNXzdRzgTvM6ojxtMA9cKbdfDgvccfE16KFntw2H1ho6vG
+            hex!["b133780600ec73d2351ca39a7f3c427c95f118dc7113e793ccb6133175a3b5f9"]
+                .unchecked_into(),
+            // aA8ryEoEVArdCUknrVFTWeBXfCrq7WWSNsxawKcdcKYAy4Nsv
+            hex!["c63feacc9993c2f868628b7e95741a280bf73a54c888582f1a49a72eb1c31e63"]
+                .unchecked_into(),
+            // aA8ryEoEVArdCUknrVFTWeBXfCrq7WWSNsxawKcdcKYAy4Nsv
+            hex!["c63feacc9993c2f868628b7e95741a280bf73a54c888582f1a49a72eb1c31e63"]
+                .unchecked_into(),
+            // aA8ryEoEVArdCUknrVFTWeBXfCrq7WWSNsxawKcdcKYAy4Nsv
+            hex!["c63feacc9993c2f868628b7e95741a280bf73a54c888582f1a49a72eb1c31e63"]
+                .unchecked_into(),
+        ),
+        (
+            // aA9b4gb35fpnyyiXCv4UAUoek3anMHQ7K2Xztme7vGLdgsrt9
+            hex!["e65a8d7040e6ed8ef49712a1ca1f919be86c796d23b7b27b250941fe65b11c50"].into(),
+            // aA6fSPcZDRzTka1GmAWZUX6XULR3gNTpw7SJGge7WPTz94WYk
+            hex!["64fbe83e4dfc50af80f34a3811267788da21ec6f40b43765921b05388c9ec713"].into(),
+            // aA8srPZUYb5Q8SLvcBTUfaC3JyF2P2jPAvHVoWyaheVTWgQwP
+            hex!["c6ec1b6979bd791afe1c5f432282f3eeb6f8bcc49d2878084a21ec28b0098a49"]
+                .unchecked_into(),
+            // aA84SnLH9YvQahy8VWxayMYnZBqwWjEfJ4CxRd1sfNZwBiH8t
+            hex!["a2c41a841593b506f4ca606149f36f65c19d6f7e5702360bf46525f4c4a2d71b"]
+                .unchecked_into(),
+            // aA84SnLH9YvQahy8VWxayMYnZBqwWjEfJ4CxRd1sfNZwBiH8t
+            hex!["a2c41a841593b506f4ca606149f36f65c19d6f7e5702360bf46525f4c4a2d71b"]
+                .unchecked_into(),
+            // aA84SnLH9YvQahy8VWxayMYnZBqwWjEfJ4CxRd1sfNZwBiH8t
+            hex!["a2c41a841593b506f4ca606149f36f65c19d6f7e5702360bf46525f4c4a2d71b"]
+                .unchecked_into(),
+        ),
+        (
+            // aA7X8gsRFB17GLsVasGQ3RacToXiiQJFudTv7ZxmToZ77EQen
+            hex!["8ae295e78b506ead5cf5afc7e0e443c8eca7b6c436daa5eec6c836a3d5946032"].into(),
+            // aA6LEZZrf1MDcAUq53qMTF41q7CjUmVmPm15UGtz3q9bPgExe
+            hex!["56566d36776ebec5724d58538f6821e13e5a243bc8702f60cc1b8cd9c072d84c"].into(),
+            // aA8j4ww9CXqM6oW3LYNYsnrZn5QuZB2FGi9wp22EsWTNHreqn
+            hex!["c0392c491441ed0c2b118f50ffd5aabb09e12ae6802f474db7f385faa308a7b8"]
+                .unchecked_into(),
+            // aA6UmgY5UChsBUnuRqoiiBjxv4eedXJor45Ex7FHKUCy8vP16
+            hex!["5cd9264f41eb4d03d2f0a4d63eb43626d30d127f1692364425f30b00df7d4038"]
+                .unchecked_into(),
+            // aA6UmgY5UChsBUnuRqoiiBjxv4eedXJor45Ex7FHKUCy8vP16
+            hex!["5cd9264f41eb4d03d2f0a4d63eb43626d30d127f1692364425f30b00df7d4038"]
+                .unchecked_into(),
+            // aA6UmgY5UChsBUnuRqoiiBjxv4eedXJor45Ex7FHKUCy8vP16
+            hex!["5cd9264f41eb4d03d2f0a4d63eb43626d30d127f1692364425f30b00df7d4038"]
+                .unchecked_into(),
+        ),
+    ];
+
+    let root_key: AccountId =
+        AccountId::from_ss58check("aA94EAry4K6H2WUefaK8dZqw8WuP7yq2PCoSMsURVDrBoGEyR").unwrap();
+
+    (endowed_accounts, initial_authorities, root_key)
 }
 
 #[cfg(feature = "contextfree")]
@@ -663,6 +858,88 @@ fn finitestate_genesis_accounts() -> (
     (endowed_accounts, initial_authorities, root_key)
 }
 
+#[cfg(feature = "automata")]
+fn automata_config_genesis(wasm_binary: &[u8]) -> automata::GenesisConfig {
+    let (mut endowed_accounts, initial_authorities, root_key) = automata_genesis_accounts();
+
+    endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
+
+    initial_authorities.iter().for_each(|x| {
+        endowed_accounts.push((x.0.clone(), 9000 * DOLLARS));
+        endowed_accounts.push((x.1.clone(), 1000 * DOLLARS));
+    });
+
+    automata::GenesisConfig {
+        system: automata::SystemConfig {
+            // Add Wasm runtime to storage.
+            code: wasm_binary.to_vec(),
+            changes_trie_config: Default::default(),
+        },
+        balances: automata::BalancesConfig {
+            // Configure endowed accounts with initial balance of 1 << 60.
+            balances: endowed_accounts
+                .iter()
+                .cloned()
+                .map(|k| (k.0, k.1))
+                .collect(),
+        },
+        indices: automata::IndicesConfig { indices: vec![] },
+        babe: automata::BabeConfig {
+            authorities: vec![],
+            epoch_config: Some(automata::BABE_GENESIS_EPOCH_CONFIG),
+        },
+        grandpa: automata::GrandpaConfig {
+            authorities: vec![],
+        },
+        staking: automata::StakingConfig {
+            validator_count: 6,
+            minimum_validator_count: 3,
+            stakers: vec![],
+            invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
+            slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
+            force_era: pallet_staking::Forcing::ForceNone,
+            ..Default::default()
+        },
+        session: automata::SessionConfig {
+            keys: initial_authorities
+                .iter()
+                .map(|x| {
+                    (
+                        x.0.clone(), // stash
+                        x.0.clone(), // stash
+                        get_automata_session_keys(
+                            x.2.clone(), // grandpa
+                            x.3.clone(), // babe
+                            x.4.clone(),
+                            x.5.clone(),
+                        ),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        },
+        im_online: automata::ImOnlineConfig { keys: vec![] },
+        authority_discovery: automata::AuthorityDiscoveryConfig { keys: vec![] },
+        democracy: automata::DemocracyConfig::default(),
+        council: automata::CouncilConfig {
+            members: vec![],
+            phantom: Default::default(),
+        },
+        technical_committee: automata::TechnicalCommitteeConfig {
+            members: vec![],
+            phantom: Default::default(),
+        },
+        phragmen_election: automata::PhragmenElectionConfig::default(),
+        technical_membership: automata::TechnicalMembershipConfig::default(),
+        treasury: automata::TreasuryConfig::default(),
+        evm: automata::EVMConfig::default(),
+        ethereum: automata::EthereumConfig::default(),
+        sudo: automata::SudoConfig {
+            // Assign network admin rights.
+            key: root_key,
+        },
+    }
+}
+
 //TODO: we need to update contextfree spec when we want to launch it officially
 #[cfg(feature = "contextfree")]
 fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig {
@@ -698,7 +975,7 @@ fn contextfree_config_genesis(wasm_binary: &[u8]) -> contextfree::GenesisConfig 
             authorities: vec![],
         },
         staking: contextfree::StakingConfig {
-            validator_count: 2,
+            validator_count: 4,
             minimum_validator_count: 2,
             stakers: vec![],
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
@@ -780,7 +1057,7 @@ fn finitestate_config_genesis(wasm_binary: &[u8]) -> finitestate::GenesisConfig 
             authorities: vec![],
         },
         staking: finitestate::StakingConfig {
-            validator_count: 4,
+            validator_count: 2,
             minimum_validator_count: 2,
             stakers: vec![],
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
@@ -882,12 +1159,12 @@ fn testnet_genesis(
     }
 
     GenesisConfig {
-        system: SystemConfig {
+        system: automata::SystemConfig {
             // Add Wasm runtime to storage.
             code: wasm_binary.to_vec(),
             changes_trie_config: Default::default(),
         },
-        balances: BalancesConfig {
+        balances: automata::BalancesConfig {
             // Configure endowed accounts with initial balance of 1 << 60.
             balances: endowed_accounts
                 .iter()
@@ -895,15 +1172,15 @@ fn testnet_genesis(
                 .map(|k| (k, ENDOWMENT))
                 .collect(),
         },
-        indices: IndicesConfig { indices: vec![] },
-        session: SessionConfig {
+        indices: automata::IndicesConfig { indices: vec![] },
+        session: automata::SessionConfig {
             keys: initial_authorities
                 .iter()
                 .map(|x| {
                     (
                         x.0.clone(), // stash
                         x.0.clone(), // stash
-                        get_session_keys(
+                        get_automata_session_keys(
                             x.2.clone(), // grandpa
                             x.3.clone(), // babe
                             x.4.clone(),
@@ -913,7 +1190,7 @@ fn testnet_genesis(
                 })
                 .collect::<Vec<_>>(),
         },
-        staking: StakingConfig {
+        staking: automata::StakingConfig {
             validator_count: initial_authorities.len() as u32 * 2,
             minimum_validator_count: initial_authorities.len() as u32,
             stakers: initial_authorities
@@ -931,26 +1208,38 @@ fn testnet_genesis(
             slash_reward_fraction: sp_runtime::Perbill::from_percent(10),
             ..Default::default()
         },
-        babe: BabeConfig {
+        babe: automata::BabeConfig {
             authorities: vec![],
-            epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG),
+            epoch_config: Some(automata::BABE_GENESIS_EPOCH_CONFIG),
         },
-        grandpa: GrandpaConfig {
+        grandpa: automata::GrandpaConfig {
             authorities: vec![],
         },
-        authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
-        im_online: ImOnlineConfig { keys: vec![] },
+        authority_discovery: automata::AuthorityDiscoveryConfig { keys: vec![] },
+        democracy: automata::DemocracyConfig::default(),
+        council: automata::CouncilConfig {
+            members: vec![],
+            phantom: Default::default(),
+        },
+        technical_committee: automata::TechnicalCommitteeConfig {
+            members: vec![],
+            phantom: Default::default(),
+        },
+        phragmen_election: automata::PhragmenElectionConfig::default(),
+        technical_membership: automata::TechnicalMembershipConfig::default(),
+        treasury: automata::TreasuryConfig::default(),
+        im_online: automata::ImOnlineConfig { keys: vec![] },
         // pallet_grandpa: Some(GrandpaConfig {
         //     authorities: initial_authorities
         //         .iter()
         //         .map(|x| (x.2.clone(), 1))
         //         .collect(),
         // }),
-        sudo: SudoConfig {
+        sudo: automata::SudoConfig {
             // Assign network admin rights.
             key: root_key,
         },
-        evm: EVMConfig {
+        evm: automata::EVMConfig {
             accounts: vec![
                 H160::from(hex_literal::hex![
                     "18bD778c044F47d41CFabF336F2b1e06648e0771"
@@ -979,6 +1268,6 @@ fn testnet_genesis(
             })
             .collect(),
         },
-        ethereum: EthereumConfig::default(),
+        ethereum: automata::EthereumConfig::default(),
     }
 }

@@ -10,17 +10,17 @@ compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled tog
 compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled together");
 
 use automata_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
-#[cfg(feature = "automata")]
-use automata_runtime::apis::{
-    AttestorApi as AttestorRuntimeApi, GeodeApi as GeodeRuntimeApi,
-    TransferApi as TransferRuntimeApi,
-};
-#[cfg(feature = "contextfree")]
-use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
+// #[cfg(feature = "automata")]
+// use automata_runtime::apis::{
+//     AttestorApi as AttestorRuntimeApi, GeodeApi as GeodeRuntimeApi,
+//     TransferApi as TransferRuntimeApi,
+// };
+// #[cfg(feature = "contextfree")]
+// use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
 use fc_rpc::{OverrideHandle, RuntimeApiStorageOverride, SchemaV1Override, StorageOverride};
 use fc_rpc_core::types::PendingTransactions;
-#[cfg(feature = "finitestate")]
-use finitestate_runtime::apis::TransferApi as TransferRuntimeApi;
+// #[cfg(feature = "finitestate")]
+// use finitestate_runtime::apis::TransferApi as TransferRuntimeApi;
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use pallet_ethereum::EthereumStorageSchema;
 use sc_client_api::{
@@ -44,12 +44,12 @@ use sp_runtime::traits::BlakeTwo256;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-#[cfg(feature = "automata")]
-pub mod attestor;
-#[cfg(feature = "automata")]
-pub mod geode;
-#[cfg(feature = "automata")]
-pub mod transfer;
+// #[cfg(feature = "automata")]
+// pub mod attestor;
+// #[cfg(feature = "automata")]
+// pub mod geode;
+// #[cfg(feature = "automata")]
+// pub mod transfer;
 
 /// Extra dependencies for BABE.
 pub struct BabeDeps {
@@ -151,30 +151,30 @@ where
     C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
     C::Api: sp_consensus_babe::BabeApi<Block>,
     C::Api: BlockBuilder<Block>,
-    C::Api: AttestorRuntimeApi<Block>,
-    C::Api: GeodeRuntimeApi<Block>,
-    C::Api: TransferRuntimeApi<Block>,
+    // C::Api: AttestorRuntimeApi<Block>,
+    // C::Api: GeodeRuntimeApi<Block>,
+    // C::Api: TransferRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
     SC: sp_consensus::SelectChain<Block> + 'static,
 {
-    use transfer::TransferServer;
+    // use transfer::TransferServer;
 
     let client = deps.client.clone();
     let mut io = create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor);
 
-    io.extend_with(attestor::AttestorServer::to_delegate(
-        attestor::AttestorApi::new(client.clone()),
-    ));
+    // io.extend_with(attestor::AttestorServer::to_delegate(
+    //     attestor::AttestorApi::new(client.clone()),
+    // ));
 
-    io.extend_with(geode::GeodeServer::to_delegate(geode::GeodeApi::new(
-        client.clone(),
-    )));
+    // io.extend_with(geode::GeodeServer::to_delegate(geode::GeodeApi::new(
+    //     client.clone(),
+    // )));
 
-    io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(
-        client.clone(),
-    )));
+    // io.extend_with(TransferServer::to_delegate(transfer::TransferApi::new(
+    //     client.clone(),
+    // )));
 
     Ok(io)
 }
@@ -209,10 +209,10 @@ where
         HexEncodedIdProvider, NetApi, NetApiServer, Web3Api, Web3ApiServer,
     };
 
-    #[cfg(feature = "automata")]
-    use attestor::AttestorServer;
-    #[cfg(feature = "automata")]
-    use geode::GeodeServer;
+    // #[cfg(feature = "automata")]
+    // use attestor::AttestorServer;
+    // #[cfg(feature = "automata")]
+    // use geode::GeodeServer;
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
     use sc_consensus_babe_rpc::BabeRpcHandler;
     use sc_finality_grandpa_rpc::GrandpaRpcHandler;
