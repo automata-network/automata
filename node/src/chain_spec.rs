@@ -482,6 +482,16 @@ fn automata_genesis_accounts() -> (
         ImOnlineId,
         AuthorityDiscoveryId,
     )>,
+    Vec<(
+        AccountId,
+        u64, 
+        u64, 
+        u64, 
+        u64, 
+        u128, 
+        u128, 
+        bool
+    )>,
     AccountId,
 ) {
     let endowed_accounts: Vec<(AccountId, u128)> = vec![
@@ -509,6 +519,19 @@ fn automata_genesis_accounts() -> (
         (
             AccountId::from_ss58check("aA9N4ZY13Ka35q9163XafddevMmwBpC8Xt2BRUFaBJCMHQaNU").unwrap(),
             279230000 * DOLLARS,
+        ),
+    ];
+
+    let vesting_plans: Vec<(AccountId, u64, u64, u64, u64, u128, u128, bool)> = vec![
+        (
+            AccountId::from_ss58check("aA93LRmxBNhbjNEWC2e6kbigS5S1JTyMqqDc96bRjmBKFVdWo").unwrap(),
+            1635163200000, //satrt time
+            3600000, //cliff duration
+            36000000, //total duration
+            3600000, //interval
+            0, //initial amount
+            150000000, //total amount
+            true, // vesting during cliff
         ),
     ];
 
@@ -633,7 +656,7 @@ fn automata_genesis_accounts() -> (
     let root_key: AccountId =
         AccountId::from_ss58check("aA94EAry4K6H2WUefaK8dZqw8WuP7yq2PCoSMsURVDrBoGEyR").unwrap();
 
-    (endowed_accounts, initial_authorities, root_key)
+    (endowed_accounts, initial_authorities, vesting_plans, root_key)
 }
 
 #[cfg(feature = "contextfree")]
@@ -860,7 +883,7 @@ fn finitestate_genesis_accounts() -> (
 
 #[cfg(feature = "automata")]
 fn automata_config_genesis(wasm_binary: &[u8]) -> automata::GenesisConfig {
-    let (mut endowed_accounts, initial_authorities, root_key) = automata_genesis_accounts();
+    let (mut endowed_accounts, initial_authorities, vesting_plans, root_key) = automata_genesis_accounts();
 
     endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
 
@@ -937,6 +960,9 @@ fn automata_config_genesis(wasm_binary: &[u8]) -> automata::GenesisConfig {
             // Assign network admin rights.
             key: root_key,
         },
+        vesting: automata::VestingConfig {
+            vesting: vesting_plans
+        }
     }
 }
 
@@ -1269,5 +1295,6 @@ fn testnet_genesis(
             .collect(),
         },
         ethereum: automata::EthereumConfig::default(),
+        vesting: automata::VestingConfig::default(),
     }
 }
