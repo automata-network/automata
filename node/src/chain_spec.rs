@@ -360,7 +360,7 @@ fn automata_genesis_accounts() -> (
         ),
         //Team account
         (
-            AccountId::from_ss58check("aA93LRmxBNhbjNEWC2e6kbigS5S1JTyMqqDc96bRjmBKFVdWo").unwrap(),
+            AccountId::from_ss58check("aA4nzHDK8YSvqE6GWzaa6aGPM5UswS5PUxfJNSpTmXCfQT1X5").unwrap(),
             150000000 * DOLLARS,
         ),
         //Advisor account
@@ -380,6 +380,19 @@ fn automata_genesis_accounts() -> (
         ),
     ];
 
+    let vesting_plans: Vec<(AccountId, u64, u64, u64, u64, u128, u128, bool)> = vec![
+        (
+            AccountId::from_ss58check("aA4nzHDK8YSvqE6GWzaa6aGPM5UswS5PUxfJNSpTmXCfQT1X5").unwrap(),
+            1635163200000, //satrt time
+            3600000, //cliff duration
+            36000000, //total duration
+            3600000, //interval
+            0, //initial amount
+            150000000, //total amount
+            true, // vesting during cliff
+        ),
+    ];
+
     let initial_authorities: Vec<(
         AccountId,
         AccountId,
@@ -392,7 +405,7 @@ fn automata_genesis_accounts() -> (
             // aA9KuahEhXXNqdsf5VbAZZEQg3Bq9arf1oYNJzhvme7oGRiGh
             hex!["dacb3b91dfd167393b90255efc0e2c6094bf216c6440aae75e23c9eadee0846e"].into(),
             // aA9HSgYWJxKmemZmDP8CP4ewTXhx3ae6yodPRTB1eg58Lr9fM
-            hex!["d8ea30f80d77d4ff7912c1cc38479f38161c19928f9d5cea36523c2d0134ed2f"].into(),
+            hex!["7eb0b8b7a440b66ac415ca32ea55b6e1fee816df5ccd1b8d70d90e3449ce4e6c"].into(),
             // aA4Q8mYNVGHwhm4PjxmqDV7FTUz6UYyDK6XF4J1cATY8ZWTfD
             hex!["00d770425c64abba83c6c4928d43b6fc452d2a6e2e66c4c28903b89da1fe0adb"]
                 .unchecked_into(),
