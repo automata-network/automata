@@ -350,6 +350,16 @@ fn automata_genesis_accounts() -> (
         ImOnlineId,
         AuthorityDiscoveryId,
     )>,
+    Vec<(
+        AccountId,
+        u64, 
+        u64, 
+        u64, 
+        u64, 
+        u128, 
+        u128, 
+        bool
+    )>,
     AccountId,
 ) {
     let endowed_accounts: Vec<(AccountId, u128)> = vec![
@@ -360,36 +370,70 @@ fn automata_genesis_accounts() -> (
         ),
         //Team account
         (
-            AccountId::from_ss58check("aA4nzHDK8YSvqE6GWzaa6aGPM5UswS5PUxfJNSpTmXCfQT1X5").unwrap(),
+            AccountId::from_ss58check("aA8zrbUXa5SkUwe2EBrQJC7aeuBfX3M4vFmwXvwGu6aF4A69o").unwrap(),
             150000000 * DOLLARS,
         ),
         //Advisor account
         (
-            AccountId::from_ss58check("aA879T4UBUuHQJ9Xd8WqPueU4CqTTkHbaejikqsqJPhML7FgZ").unwrap(),
+            AccountId::from_ss58check("aA8soqLqZj98EQhktfywvipkcZLDDdhMPUmnfLGEspub8FjoV").unwrap(),
             50000000 * DOLLARS,
         ),
         //Eco & Dev community account
         (
-            AccountId::from_ss58check("aA4qwoGEXRJXNjB3E5yrtE6bgDbkkT7k6JsDDydZJsZPE5NGU").unwrap(),
+            AccountId::from_ss58check("aA8ue1WwLD6k4rvgaRCBLwpT25JCPgMqzV1NnZJ1RgrL42WyN").unwrap(),
             220000000 * DOLLARS,
         ),
         //Protocol Reserve account
         (
-            AccountId::from_ss58check("aA9N4ZY13Ka35q9163XafddevMmwBpC8Xt2BRUFaBJCMHQaNU").unwrap(),
+            AccountId::from_ss58check("aA8RW3kstyvQ2P7zMh79HCtWBSCwxipB18N1Z1pB8XQa3gFpP").unwrap(),
             279230000 * DOLLARS,
         ),
     ];
 
     let vesting_plans: Vec<(AccountId, u64, u64, u64, u64, u128, u128, bool)> = vec![
-        (
-            AccountId::from_ss58check("aA4nzHDK8YSvqE6GWzaa6aGPM5UswS5PUxfJNSpTmXCfQT1X5").unwrap(),
-            1635163200000, //satrt time
-            3600000, //cliff duration
-            36000000, //total duration
-            3600000, //interval
+        (   
+            // Team
+            AccountId::from_ss58check("aA8zrbUXa5SkUwe2EBrQJC7aeuBfX3M4vFmwXvwGu6aF4A69o").unwrap(),
+            1623045420000, //start time
+            15552000000, //cliff duration - 6 months
+            139968000000, //total duration - 54 months
+            7776000000, //interval - 3 months
             0, //initial amount
-            150000000, //total amount
+            150000000 * DOLLARS, //total amount
             true, // vesting during cliff
+        ),
+        (   
+            // Advisor
+            AccountId::from_ss58check("aA8soqLqZj98EQhktfywvipkcZLDDdhMPUmnfLGEspub8FjoV").unwrap(),
+            1635163200000, //start time
+            15552000000, //cliff duration - 6 months
+            139968000000, //total duration - 54 months
+            7776000000, //interval - 3 months
+            0, //initial amount
+            50000000 * DOLLARS, //total amount
+            true, // vesting during cliff
+        ),
+        (   
+            // Eco & Dev
+            AccountId::from_ss58check("aA8ue1WwLD6k4rvgaRCBLwpT25JCPgMqzV1NnZJ1RgrL42WyN").unwrap(),
+            1635163200000, //start time
+            0, //cliff duration
+            124416000000, //total duration - 48 months
+            7776000000, //interval - 3 months
+            19930000 * DOLLARS, //initial amount
+            259930000 * DOLLARS, //total amount
+            false, // vesting during cliff
+        ),
+        (   
+            // Protocol
+            AccountId::from_ss58check("aA8RW3kstyvQ2P7zMh79HCtWBSCwxipB18N1Z1pB8XQa3gFpP").unwrap(),
+            1635163200000, //start time
+            0, //cliff duration
+            155520000000, //total duration - 60 months
+            7776000000, //interval - 3 months
+            0, //initial amount
+            294000000 * DOLLARS, //total amount
+            false, // vesting during cliff
         ),
     ];
 
@@ -514,7 +558,7 @@ fn automata_genesis_accounts() -> (
     let root_key: AccountId =
         AccountId::from_ss58check("aA94EAry4K6H2WUefaK8dZqw8WuP7yq2PCoSMsURVDrBoGEyR").unwrap();
 
-    (endowed_accounts, initial_authorities, root_key)
+    (endowed_accounts, initial_authorities, vesting_plans, root_key)
 }
 
 #[cfg(feature = "contextfree")]
@@ -741,7 +785,7 @@ fn finitestate_genesis_accounts() -> (
 
 #[cfg(feature = "automata")]
 fn automata_config_genesis(wasm_binary: &[u8]) -> automata::GenesisConfig {
-    let (mut endowed_accounts, initial_authorities, root_key) = automata_genesis_accounts();
+    let (mut endowed_accounts, initial_authorities, vesting_plans, root_key) = automata_genesis_accounts();
 
     endowed_accounts.push((root_key.clone(), 10000 * DOLLARS));
 
@@ -818,6 +862,9 @@ fn automata_config_genesis(wasm_binary: &[u8]) -> automata::GenesisConfig {
             // Assign network admin rights.
             key: root_key,
         },
+        vesting: automata::VestingConfig {
+            vesting: vesting_plans
+        }
     }
 }
 
@@ -1149,7 +1196,12 @@ fn testnet_genesis(
             })
             .collect(),
         },
+<<<<<<< HEAD
         ethereum: finitestate::EthereumConfig::default(),
         vesting: finitestate::VestingConfig::default(),
+=======
+        ethereum: automata::EthereumConfig::default(),
+        vesting: automata::VestingConfig::default(),
+>>>>>>> 403bbab (add vesting pallet)
     }
 }

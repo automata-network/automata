@@ -51,7 +51,6 @@ pallet-elections-phragmen = { default-features = false, git = 'https://github.co
 pallet-membership = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 pallet-treasury = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 pallet-utility = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
-pallet-vesting = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-api = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-block-builder = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-consensus-aura = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
@@ -80,6 +79,7 @@ pallet-transfer = { default-features = false,  git = 'https://github.com/automat
 pallet-liveness = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-bridge = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 pallet-bridgetransfer = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
+pallet-vesting = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 automata-primitives = { default-features = false, path = "../../primitives" }
 automata-runtime-common = { path = "../common", default-features = false }
 

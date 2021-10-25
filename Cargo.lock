@@ -451,7 +451,7 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
+source = "git+https://github.com/automata-network/automata-common#148cb206581ab3505488440a89b8a7463e93f56a"
 dependencies = [
  "frame-system",
  "parity-scale-codec",
@@ -556,7 +556,7 @@ dependencies = [
  "pallet-transfer",
  "pallet-treasury",
  "pallet-utility",
- "pallet-vesting",
+ "pallet-vesting 0.1.0",
  "parity-scale-codec",
  "serde",
  "sp-api",
@@ -1083,7 +1083,7 @@ dependencies = [
  "pallet-transfer",
  "pallet-treasury",
  "pallet-utility",
- "pallet-vesting",
+ "pallet-vesting 4.0.0-dev",
  "parity-scale-codec",
  "serde",
  "sp-api",
@@ -2053,7 +2053,7 @@ dependencies = [
  "pallet-transfer",
  "pallet-treasury",
  "pallet-utility",
- "pallet-vesting",
+ "pallet-vesting 4.0.0-dev",
  "parity-scale-codec",
  "serde",
  "sp-api",
@@ -4637,7 +4637,7 @@ dependencies = [
 [[package]]
 name = "pallet-attestor"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
+source = "git+https://github.com/automata-network/automata-common#148cb206581ab3505488440a89b8a7463e93f56a"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "frame-benchmarking",
@@ -4718,7 +4718,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridge"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
+source = "git+https://github.com/automata-network/automata-common#148cb206581ab3505488440a89b8a7463e93f56a"
 dependencies = [
  "blake2-rfc",
  "frame-support",
@@ -4736,7 +4736,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridgetransfer"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
+source = "git+https://github.com/automata-network/automata-common#148cb206581ab3505488440a89b8a7463e93f56a"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4888,7 +4888,7 @@ dependencies = [
 [[package]]
 name = "pallet-geode"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
+source = "git+https://github.com/automata-network/automata-common#148cb206581ab3505488440a89b8a7463e93f56a"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "frame-support",
@@ -4959,7 +4959,7 @@ dependencies = [
 [[package]]
 name = "pallet-liveness"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
+source = "git+https://github.com/automata-network/automata-common#148cb206581ab3505488440a89b8a7463e93f56a"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "frame-support",
@@ -5161,7 +5161,7 @@ dependencies = [
 [[package]]
 name = "pallet-transfer"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#980b6978794d3aa8667084c69596da9dc37c6db4"
+source = "git+https://github.com/automata-network/automata-common#148cb206581ab3505488440a89b8a7463e93f56a"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "blake2",
@@ -5198,6 +5198,25 @@ dependencies = [
  "frame-support",
  "frame-system",
  "parity-scale-codec",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-vesting"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common#148cb206581ab3505488440a89b8a7463e93f56a"
+dependencies = [
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "blake2",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "serde",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -9160,7 +9179,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f559b464de2e2bdabcac6a210d12e9b5a5973c251e102c44c585c71d51bd78e"
 dependencies = [
  "cfg-if 1.0.0",
- "rand 0.8.4",
+ "rand 0.3.23",
  "static_assertions",
 ]
 
