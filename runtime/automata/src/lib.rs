@@ -18,7 +18,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 
 use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
-use frame_system::{EnsureRoot, EnsureOneOf};
+use frame_system::{EnsureOneOf, EnsureRoot};
 // use pallet_geode::{Geode, GeodeState};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -28,13 +28,13 @@ use sp_api::impl_runtime_apis;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::{
     crypto::{KeyTypeId, Public},
-    OpaqueMetadata, H160, H256, U256,
     u32_trait::{_1, _2, _3, _4, _5},
+    OpaqueMetadata, H160, H256, U256,
 };
 // use sp_io::hashing::blake2_128;
 use sp_runtime::traits::{
-    AccountIdLookup, BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion,
-    StaticLookup, Verify, ConvertInto
+    AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, Extrinsic, NumberFor,
+    SaturatedConversion, StaticLookup, Verify,
 };
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
@@ -50,12 +50,14 @@ pub mod apis;
 pub mod constants;
 use sp_runtime::generic::Era;
 
-use automata_runtime_common::{impls::DealWithFees};
+use automata_runtime_common::impls::DealWithFees;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
     construct_runtime, debug, parameter_types,
-    traits::{FindAuthor, KeyOwnerProofSystem, Randomness, U128CurrencyToVote, Contains, LockIdentifier},
+    traits::{
+        Contains, FindAuthor, KeyOwnerProofSystem, LockIdentifier, Randomness, U128CurrencyToVote,
+    },
     weights::{
         constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
         DispatchClass, IdentityFee, Weight,
@@ -79,7 +81,6 @@ use pallet_evm::{
 
 use constants::currency::*;
 use constants::time::*;
-
 
 pub use pallet_bridge;
 pub use pallet_bridgetransfer;
@@ -127,7 +128,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1000,
+    spec_version: 1003,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -174,10 +175,13 @@ impl Contains<Call> for CallFilter {
             | Call::Babe(_)
             | Call::Sudo(_)
             | Call::Vesting(_)
-            | Call::Timestamp(_) => true,
-
-            // These modules are not allowed to be called by transactions:
-            Call::EVM(_)
+            | Call::Staking(_)
+            | Call::Balances(_)
+            | Call::BridgeTransfer(_)
+            | Call::ChainBridge(_)
+            | Call::Session(_)
+            | Call::ElectionProviderMultiPhase(_)
+            | Call::Utility(_)
             | Call::Democracy(_)
             | Call::Council(_)
             | Call::TechnicalCommittee(_)
@@ -185,14 +189,10 @@ impl Contains<Call> for CallFilter {
             | Call::Treasury(_)
             | Call::PhragmenElection(_)
             | Call::Scheduler(_)
-            | Call::Balances(_)
-            | Call::BridgeTransfer(_)
-            | Call::ChainBridge(_)
-            | Call::Staking(_)
-            | Call::ElectionProviderMultiPhase(_)
-            | Call::Session(_)
-            | Call::Utility(_)
-            | Call::Ethereum(_) => false,
+            | Call::Timestamp(_) => true,
+
+            // These modules are not allowed to be called by transactions:
+            Call::EVM(_) | Call::Ethereum(_) => false,
             // | Call::GeodeModule(_)
             // | Call::LivenessModule(_)
             // | Call::TransferModule(_)
@@ -377,26 +377,26 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type WeightInfo = pallet_election_provider_multi_phase::weights::SubstrateWeight<Runtime>;
 }
 
-// pallet_staking_reward_curve::build! {
-//     // 4.5% min, 27.5% max, 50% ideal stake
-//     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
-//         min_inflation: 0_025_000,
-//         max_inflation: 0_100_000,
-//         ideal_stake: 0_500_000,
-//         falloff: 0_050_000,
-//         max_piece_count: 40,
-//         test_precision: 0_005_500,
-//     );
-// }
+pallet_staking_reward_curve::build! {
+    // 4.5% min, 27.5% max, 50% ideal stake
+    const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
+        min_inflation: 0_025_000,
+        max_inflation: 0_100_000,
+        ideal_stake: 0_500_000,
+        falloff: 0_050_000,
+        max_piece_count: 40,
+        test_precision: 0_005_500,
+    );
+}
 
-const REWARD_CURVE: PiecewiseLinear<'static> = PiecewiseLinear {
-    points: &[
-        (Perbill::from_parts(0), Perbill::from_parts(0)),
-        (Perbill::from_parts(0_500_000_000), Perbill::from_parts(0)),
-        (Perbill::from_parts(1_000_000_000), Perbill::from_parts(0)),
-    ],
-    maximum: Perbill::from_parts(0),
-};
+// const REWARD_CURVE: PiecewiseLinear<'static> = PiecewiseLinear {
+//     points: &[
+//         (Perbill::from_parts(0), Perbill::from_parts(0)),
+//         (Perbill::from_parts(0_500_000_000), Perbill::from_parts(0)),
+//         (Perbill::from_parts(1_000_000_000), Perbill::from_parts(0)),
+//     ],
+//     maximum: Perbill::from_parts(0),
+// };
 
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 6;
