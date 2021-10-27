@@ -28,6 +28,7 @@ frame-system-rpc-runtime-api = { default-features = false, git = 'https://github
 frame-election-provider-support = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 pallet-balances = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 pallet-evm = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master' }
+pallet-scheduler = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 pallet-grandpa = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 pallet-randomness-collective-flip = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 pallet-sudo = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
@@ -44,6 +45,11 @@ pallet-election-provider-multi-phase = { default-features = false, git = 'https:
 pallet-session = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10', features = ["historical"], default-features = false }
 pallet-staking-reward-curve = { git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10', default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-democracy = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-collective = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-elections-phragmen = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-membership = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pallet-treasury = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 pallet-utility = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-api = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-block-builder = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
@@ -64,6 +70,7 @@ pallet-ethereum = { default-features = false, git = 'https://github.com/automata
 pallet-evm-precompile-simple = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master' }
 fp-rpc = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
 pallet-indices = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+static_assertions = "1.1.0"
 
 # local dependencies
 pallet-attestor = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
@@ -72,7 +79,9 @@ pallet-transfer = { default-features = false,  git = 'https://github.com/automat
 pallet-liveness = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-bridge = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 pallet-bridgetransfer = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
+pallet-vesting = { default-features = false,  git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 automata-primitives = { default-features = false, path = "../../primitives" }
+automata-runtime-common = { path = "../common", default-features = false }
 
 [features]
 default = ['std']
@@ -86,6 +95,7 @@ runtime-benchmarks = [
     'pallet-attestor/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
+    'pallet-election-provider-multi-phase/runtime-benchmarks'
 ]
 std = [
     'codec/std',
@@ -111,6 +121,13 @@ std = [
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
+    'pallet-democracy/std',
+    'pallet-collective/std',
+    'pallet-elections-phragmen/std',
+    'pallet-membership/std',
+    'pallet-treasury/std',
+    'pallet-utility/std',
+    'pallet-vesting/std',
     'serde',
     'sp-api/std',
     'sp-block-builder/std',
@@ -129,7 +146,9 @@ std = [
 	'pallet-ethereum/std',
 	'fp-rpc/std',
     'pallet-indices/std',
+    'pallet-scheduler/std',
     'pallet-bridge/std',
     'pallet-bridgetransfer/std',
-    
+    'frame-election-provider-support/std',
+    'automata-runtime-common/std',
 ]

@@ -45,6 +45,9 @@ LABEL maintainer "Automata Team"
 COPY --from=builder /automata/scripts/run-node.sh /run-node.sh
 COPY --from=builder /usr/local/bin/automata /usr/local/bin/automata
 
+RUN apt-get update && \
+	apt-get install -y curl
+
 RUN	useradd -m -u 1000 -U -s /bin/sh -d /automata automata && \
 	mkdir -p /automata/.local/share/automata && \
 	chown -R automata:automata /automata/.local && \
