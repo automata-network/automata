@@ -128,7 +128,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1004,
+    spec_version: 1007,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -787,9 +787,9 @@ impl pallet_scheduler::Config for Runtime {
 }
 
 parameter_types! {
-    pub const EnactmentPeriod: BlockNumber = 28 * MINUTES;
-    pub const LaunchPeriod: BlockNumber = 28 * MINUTES;
-    pub const VotingPeriod: BlockNumber = 28 * MINUTES;
+    pub const EnactmentPeriod: BlockNumber = 7 * MINUTES;
+    pub const LaunchPeriod: BlockNumber = 7 * MINUTES;
+    pub const VotingPeriod: BlockNumber = 7 * MINUTES;
     pub const MinimumDeposit: Balance = 100 * DOLLARS;
     pub const InstantAllowed: bool = true;
     pub const FastTrackVotingPeriod: BlockNumber = 3 * MINUTES;
