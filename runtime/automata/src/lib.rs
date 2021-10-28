@@ -128,7 +128,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1003,
+    spec_version: 1004,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -742,7 +742,7 @@ impl pallet_bridge::Config for Runtime {
 }
 
 parameter_types! {
-    pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000A2120b9e674d3fC3875f415A7DF52e382F14122501");
+    pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000b3CDF73e94D0FeEdB517Ba15471cebCC9efCb4Ec03");
     pub const EnableFee: bool = true;
 }
 
