@@ -787,13 +787,13 @@ impl pallet_scheduler::Config for Runtime {
 }
 
 parameter_types! {
-    pub const EnactmentPeriod: BlockNumber = 28 * DAYS;
-    pub const LaunchPeriod: BlockNumber = 28 * DAYS;
-    pub const VotingPeriod: BlockNumber = 28 * DAYS;
+    pub const EnactmentPeriod: BlockNumber = 28 * MINUTES;
+    pub const LaunchPeriod: BlockNumber = 28 * MINUTES;
+    pub const VotingPeriod: BlockNumber = 28 * MINUTES;
     pub const MinimumDeposit: Balance = 100 * DOLLARS;
     pub const InstantAllowed: bool = true;
-    pub const FastTrackVotingPeriod: BlockNumber = 3 * HOURS;
-    pub const CooloffPeriod: BlockNumber = 7 * DAYS;
+    pub const FastTrackVotingPeriod: BlockNumber = 3 * MINUTES;
+    pub const CooloffPeriod: BlockNumber = 7 * MINUTES;
     pub const PreimageByteDeposit: Balance = 10 * MILLICENTS;
     pub const MaxVotes: u32 = 100;
     pub const MaxProposals: u32 = 100;
@@ -858,7 +858,7 @@ impl pallet_democracy::Config for Runtime {
 }
 
 parameter_types! {
-    pub const CouncilMotionDuration: BlockNumber = 7 * DAYS;
+    pub const CouncilMotionDuration: BlockNumber = 7 * MINUTES;
     pub const CouncilMaxProposals: u32 = 100;
     pub const CouncilMaxMembers: u32 = 100;
 }
@@ -876,7 +876,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 }
 
 parameter_types! {
-    pub const TechnicalMotionDuration: BlockNumber = 7 * DAYS;
+    pub const TechnicalMotionDuration: BlockNumber = 7 * MINUTES;
     pub const TechnicalMaxProposals: u32 = 100;
     pub const TechnicalMaxMembers: u32 = 100;
 }
@@ -897,7 +897,7 @@ parameter_types! {
     pub const CandidacyBond: Balance = 100 * DOLLARS;
     pub const VotingBondBase: Balance = deposit(1, 64);
     pub const VotingBondFactor: Balance = deposit(0, 32);
-    pub const TermDuration: BlockNumber = 7 * DAYS;
+    pub const TermDuration: BlockNumber = 7 * MINUTES;
     pub const DesiredMembers: u32 = 13;
     pub const DesiredRunnersUp: u32 = 20;
     pub const PhragmenElectionPalletId: LockIdentifier = *b"phrelect";
@@ -945,7 +945,7 @@ impl pallet_membership::Config<pallet_membership::Instance1> for Runtime {
 parameter_types! {
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub const ProposalBondMinimum: Balance = 100 * DOLLARS;
-    pub const SpendPeriod: BlockNumber = 7 * DAYS;
+    pub const SpendPeriod: BlockNumber = 7 * MINUTES;
     pub const Burn: Permill = Permill::from_percent(0);
     pub const TreasuryPalletId: PalletId = PalletId(*b"ct/trsry");
     pub const MaxApprovals: u32 = 100;
