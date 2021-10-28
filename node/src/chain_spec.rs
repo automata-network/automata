@@ -37,8 +37,7 @@ use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{AccountIdConversion, IdentifyAccount, Verify};
 
 #[cfg(feature = "automata")]
-pub type AutomataChainSpec =
-    sc_service::GenericChainSpec<automata::GenesisConfig, Extensions>;
+pub type AutomataChainSpec = sc_service::GenericChainSpec<automata::GenesisConfig, Extensions>;
 
 #[cfg(feature = "contextfree")]
 pub type ContextFreeChainSpec =
@@ -97,9 +96,7 @@ fn get_properties() -> Option<Properties> {
 
 #[cfg(feature = "automata")]
 pub fn automata_chain_spec() -> Result<AutomataChainSpec, String> {
-    AutomataChainSpec::from_json_bytes(
-        &include_bytes!("../../assets/chain_spec_automata.json")[..],
-    )
+    AutomataChainSpec::from_json_bytes(&include_bytes!("../../assets/chain_spec_automata.json")[..])
 }
 
 #[cfg(feature = "contextfree")]
@@ -201,7 +198,8 @@ pub fn authority_keys_from_seed(
 
 #[cfg(feature = "automata")]
 pub fn development_config() -> Result<ChainSpec, String> {
-    let wasm_binary = automata::WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+    let wasm_binary =
+        automata::WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
 
     Ok(ChainSpec::from_genesis(
         // Name
@@ -240,7 +238,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
 
 #[cfg(feature = "automata")]
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
-    let wasm_binary = automata::WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+    let wasm_binary =
+        automata::WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
 
     Ok(ChainSpec::from_genesis(
         // Name
@@ -343,7 +342,8 @@ pub fn finitestate_testnet_config() -> Result<FiniteStateChainSpec, String> {
 /// Staging testnet config.
 #[cfg(feature = "automata")]
 pub fn staging_testnet_config() -> Result<ChainSpec, String> {
-    let wasm_binary = automata::WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+    let wasm_binary =
+        automata::WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
 
     let boot_nodes = vec![];
 

@@ -18,7 +18,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 
 use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
-use frame_system::{EnsureRoot, EnsureOneOf};
+use frame_system::{EnsureOneOf, EnsureRoot};
 // use pallet_geode::{Geode, GeodeState};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -28,8 +28,8 @@ use sp_api::impl_runtime_apis;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::{
     crypto::{KeyTypeId, Public},
-    OpaqueMetadata, H160, H256, U256,
     u32_trait::{_1, _2, _3, _4, _5},
+    OpaqueMetadata, H160, H256, U256,
 };
 // use sp_io::hashing::blake2_128;
 use sp_runtime::traits::{
@@ -50,12 +50,14 @@ pub mod apis;
 pub mod constants;
 use sp_runtime::generic::Era;
 
-use automata_runtime_common::{impls::DealWithFees};
+use automata_runtime_common::impls::DealWithFees;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
     construct_runtime, debug, parameter_types,
-    traits::{FindAuthor, KeyOwnerProofSystem, Randomness, U128CurrencyToVote, Contains, LockIdentifier},
+    traits::{
+        Contains, FindAuthor, KeyOwnerProofSystem, LockIdentifier, Randomness, U128CurrencyToVote,
+    },
     weights::{
         constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
         DispatchClass, IdentityFee, Weight,
@@ -79,7 +81,6 @@ use pallet_evm::{
 
 use constants::currency::*;
 use constants::time::*;
-
 
 pub use pallet_bridge;
 pub use pallet_bridgetransfer;
