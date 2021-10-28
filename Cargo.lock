@@ -513,6 +513,7 @@ name = "automata-runtime"
 version = "0.1.0"
 dependencies = [
  "automata-primitives 0.1.0",
+ "automata-runtime-common",
  "fp-rpc",
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -529,7 +530,10 @@ dependencies = [
  "pallet-balances",
  "pallet-bridge",
  "pallet-bridgetransfer",
+ "pallet-collective",
+ "pallet-democracy",
  "pallet-election-provider-multi-phase",
+ "pallet-elections-phragmen",
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-precompile-simple",
@@ -538,8 +542,10 @@ dependencies = [
  "pallet-im-online",
  "pallet-indices",
  "pallet-liveness",
+ "pallet-membership",
  "pallet-offences",
  "pallet-randomness-collective-flip",
+ "pallet-scheduler",
  "pallet-session",
  "pallet-staking",
  "pallet-staking-reward-curve",
@@ -548,7 +554,9 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-transfer",
+ "pallet-treasury",
  "pallet-utility",
+ "pallet-vesting",
  "parity-scale-codec",
  "serde",
  "sp-api",
@@ -567,6 +575,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
+ "static_assertions",
  "substrate-wasm-builder",
 ]
 
