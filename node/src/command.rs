@@ -49,12 +49,10 @@ impl SubstrateCli for Cli {
 
     fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
         Ok(match id {
-            #[cfg(feature = "automata")]
+            #[cfg(feature = "finitestate")]
             "dev" => Box::new(chain_spec::development_config()?),
-            #[cfg(feature = "automata")]
+            #[cfg(feature = "finitestate")]
             "" | "local" => Box::new(chain_spec::local_testnet_config()?),
-            #[cfg(feature = "automata")]
-            "staging" => Box::new(chain_spec::staging_testnet_config()?),
             #[cfg(feature = "automata")]
             "automata" => Box::new(chain_spec::automata_chain_spec()?),
             // "automata" => Box::new(chain_spec::automata_testnet_config()?),
