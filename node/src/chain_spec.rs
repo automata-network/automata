@@ -394,10 +394,10 @@ fn automata_genesis_accounts() -> (
         (   
             // Team
             AccountId::from_ss58check("aA8zrbUXa5SkUwe2EBrQJC7aeuBfX3M4vFmwXvwGu6aF4A69o").unwrap(),
-            1623045420000, //start time
-            15552000000, //cliff duration - 6 months
-            139968000000, //total duration - 54 months
-            7776000000, //interval - 3 months
+            1623045420000, //start time: 7th June 2021
+            15552000000, //cliff duration: 6 months
+            155520000000, //total duration: 60 months
+            7776000000, //interval: 3 months
             0, //initial amount
             150000000 * DOLLARS, //total amount
             true, // vesting during cliff
@@ -405,10 +405,10 @@ fn automata_genesis_accounts() -> (
         (   
             // Advisor
             AccountId::from_ss58check("aA8soqLqZj98EQhktfywvipkcZLDDdhMPUmnfLGEspub8FjoV").unwrap(),
-            1635163200000, //start time
-            15552000000, //cliff duration - 6 months
-            139968000000, //total duration - 54 months
-            7776000000, //interval - 3 months
+            1623045420000, //start time: 7th June 2021
+            15552000000, //cliff duration: 6 months
+            155520000000, //total duration: 60 months
+            7776000000, //interval: 3 months
             0, //initial amount
             50000000 * DOLLARS, //total amount
             true, // vesting during cliff
@@ -416,21 +416,21 @@ fn automata_genesis_accounts() -> (
         (   
             // Eco & Dev
             AccountId::from_ss58check("aA8ue1WwLD6k4rvgaRCBLwpT25JCPgMqzV1NnZJ1RgrL42WyN").unwrap(),
-            1635163200000, //start time
+            1630821420000, //start time (1st release + 1 interval): 5th Sep 2021
             0, //cliff duration
-            124416000000, //total duration - 48 months
-            7776000000, //interval - 3 months
-            19930000 * DOLLARS, //initial amount
-            259930000 * DOLLARS, //total amount
+            116640000000, //total duration (total duration - 1 interval): 45 months
+            7776000000, //interval: 3 months
+            39930000 * DOLLARS, //initial amount (1st release + 2nd release - validator - sudo)
+            259930000 * DOLLARS, //total amount (total - validator - sudo)
             false, // vesting during cliff
         ),
         (   
             // Protocol
             AccountId::from_ss58check("aA8RW3kstyvQ2P7zMh79HCtWBSCwxipB18N1Z1pB8XQa3gFpP").unwrap(),
-            1635163200000, //start time
+            1623045420000, //start time: 7th June 2021
             0, //cliff duration
-            155520000000, //total duration - 60 months
-            7776000000, //interval - 3 months
+            155520000000, //total duration: 60 months
+            7776000000, //interval: 3 months
             0, //initial amount
             294000000 * DOLLARS, //total amount
             false, // vesting during cliff
