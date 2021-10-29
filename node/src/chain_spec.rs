@@ -556,7 +556,7 @@ fn automata_genesis_accounts() -> (
     ];
 
     let root_key: AccountId =
-        AccountId::from_ss58check("aA94EAry4K6H2WUefaK8dZqw8WuP7yq2PCoSMsURVDrBoGEyR").unwrap();
+        AccountId::from_ss58check("aA8rnWtLvNhtxVR5umiw4eM8uhCbGJTcJYBEVRFSv1VKZ7JnW").unwrap();
 
     (endowed_accounts, initial_authorities, vesting_plans, root_key)
 }
