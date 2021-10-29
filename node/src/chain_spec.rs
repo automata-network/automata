@@ -500,24 +500,6 @@ fn automata_genesis_accounts() -> (
                 .unchecked_into(),
         ),
         (
-            // aA8pRXkNzmeF1LQKwK3t26QzHjGamKbxABWv51xoiemN7AqkA
-            hex!["c44eb04795043d04849e5e7038ce3ff145f21855f4be05d63671db102d714871"].into(),
-            // aA7k6SERy3Uw4N2XF9kPpnjSZpJBAcpL5kvKDJCVmWK34oaCE
-            hex!["94c531933bbbcad0174def84bbd6cb9a0c30406740f7af7b8609076da0a09b4a"].into(),
-            // aA8PNXzdRzgTvM6ojxtMA9cKbdfDgvccfE16KFntw2H1ho6vG
-            hex!["b133780600ec73d2351ca39a7f3c427c95f118dc7113e793ccb6133175a3b5f9"]
-                .unchecked_into(),
-            // aA8ryEoEVArdCUknrVFTWeBXfCrq7WWSNsxawKcdcKYAy4Nsv
-            hex!["c63feacc9993c2f868628b7e95741a280bf73a54c888582f1a49a72eb1c31e63"]
-                .unchecked_into(),
-            // aA8ryEoEVArdCUknrVFTWeBXfCrq7WWSNsxawKcdcKYAy4Nsv
-            hex!["c63feacc9993c2f868628b7e95741a280bf73a54c888582f1a49a72eb1c31e63"]
-                .unchecked_into(),
-            // aA8ryEoEVArdCUknrVFTWeBXfCrq7WWSNsxawKcdcKYAy4Nsv
-            hex!["c63feacc9993c2f868628b7e95741a280bf73a54c888582f1a49a72eb1c31e63"]
-                .unchecked_into(),
-        ),
-        (
             // aA4ZkXXUgsC6LpNtmFZRfX8BJUyM3WxNxkvfWc3UDdi5Vgwfk
             hex!["082d053fdba5b21d4d8cb2323ab47284952b6e20009a900cce3e9c77fe8cfa67"].into(),
             // aA815THPp9A42z9DamHKPAU13fJZd6Baeh19SueZBK2Uo3CRe
