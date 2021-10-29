@@ -381,7 +381,7 @@ fn automata_genesis_accounts() -> (
         //Eco & Dev community account
         (
             AccountId::from_ss58check("aA8ue1WwLD6k4rvgaRCBLwpT25JCPgMqzV1NnZJ1RgrL42WyN").unwrap(),
-            260000000 * DOLLARS,
+            259930000 * DOLLARS,
         ),
         //Protocol Reserve account
         (
@@ -446,39 +446,57 @@ fn automata_genesis_accounts() -> (
         AuthorityDiscoveryId,
     )> = vec![
         (
-            // aA9gDAx9YoKioMtnsxgp7WCUDf8XDgKksheZgpFKFxxa14zry
-            hex!["ea475b2cd5274953e6068da6f28f2375839ebced2486adeca7e261a07d3df368"].into(),
-            // aA6yWDZduXFMkdShYqeC5xWSmAfEw2nGFRKkxMtUrSfzcEc4Z
-            hex!["72c334d420f3cfd8c458e6b9f2bf097d1420dcf2570a6473adb964a9498bef1e"].into(),
-            // aA87z7YJXRLAe354aQscPJAXWubTue5WpPj1Q8oNF1xypmV9r
-            hex!["a5774f54378af9b5b961d8db45c5e6620bcf0492988301acd28c75c4b1f9d3cf"]
+            // aA8BbdCuXJMhsYRpLtrWTc4D6pKm6LfoanMNuT31P8PaLn8ZY
+            hex!["a838969fb3bcc567ac56ef19aad14fd59a4bcee4c547247ed03298a13ab1125c"].into(),
+            // aA9Gtmffr3KQrRmLvkym4wzABmDRsLZ8x9exaoVzY5oUnUZ6k
+            hex!["d87ec45d6662f6974eed63602d7e149bcd67821bf80d25e51e717d520a4b4427"].into(),
+            // aA9LXQbR9tkbqPJhkV4p1EhuJ3fKfa7b4CzkFMAeBbTh4ksPf
+            hex!["db43d551a4b807e2158685714a2e2169ab84a57ec667cd5533af46b609039bd2"]
                 .unchecked_into(),
-            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
-            hex!["14242c313c0795915367f466a8dfdcf70489e40cbbb2e6e6c0416068b901c87c"]
+            // aA5VGJ5ggnoT4ksfjwLctBSXFZDK96VFwwmAHQYLzNSq4D2aw
+            hex!["30fd3c511e73f801c02d67ebdb975d624d4c568b1f5f413762b2454f709bd20b"]
                 .unchecked_into(),
-            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
-            hex!["14242c313c0795915367f466a8dfdcf70489e40cbbb2e6e6c0416068b901c87c"]
+            // aA5VGJ5ggnoT4ksfjwLctBSXFZDK96VFwwmAHQYLzNSq4D2aw
+            hex!["30fd3c511e73f801c02d67ebdb975d624d4c568b1f5f413762b2454f709bd20b"]
                 .unchecked_into(),
-            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
-            hex!["14242c313c0795915367f466a8dfdcf70489e40cbbb2e6e6c0416068b901c87c"]
+            // aA5VGJ5ggnoT4ksfjwLctBSXFZDK96VFwwmAHQYLzNSq4D2aw
+            hex!["30fd3c511e73f801c02d67ebdb975d624d4c568b1f5f413762b2454f709bd20b"]
                 .unchecked_into(),
         ),
         (
-            // aA6UpQ7QS6KJMrfFjrQazDfJbxc4URF1QrAgdKdzMax5QBjdU
-            hex!["5ce24b93b6bfd5f04a79335e275a49d4e04426ad699b47b7df59d45d51945e5b"].into(),
-            // aA4aUrbQ17D1LwGedrwd3YpGkKjbT1qZr8W8CguswxdoPpUvo
-            hex!["08bb8304499b86da123550f8eb4897afef724d8c11f7224578e1d78cc3595734"].into(),
-            // aA5P3LJq2k3JQx9e8WmE84baFDJeNcGuTRCEQRowz2CbnckqC
-            hex!["2c3e21699d2c7f39f6122ee0718ac331472b3f20bb8b74b467d941a4c6a0f49b"]
+            // aA9jHYZRkv4someHCmqRw8TwZPrNz89LiTtX5wDH13Bu4tP9H
+            hex!["ec9fcfcbbdd4b3ba2afbe39ce5cf508885203f5ef313ae42e1eff40d4f100526"].into(),
+            // aA5ZPiyupm1XP8NnGFKAw6ErprodgAFtGexbXjV6W21kZn5na
+            hex!["342339fed5b97ff4033bdb23ff0fcf506a16ddece2c53776671c79b2688cf618"].into(),
+            // aA5Z6P8RpDAiTfKX1zHNa7hf98uvqrARAW8wWpUgXdLnHqD8w
+            hex!["33e8d8e05805353c28ae0cd2336db82ba1949ee4996486bb2308bba1ec562c3d"]
                 .unchecked_into(),
-            // aA9eDNQUg4AJs6qcGHpRvxRBaR5Zm4sQL2qFWsVJf84ZTK8Jc
-            hex!["e8c187b67963b5d24ac810d85797106520d1d629ca3def7d23e842a21c8fc160"]
+            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
+            hex!["140769243cb70a9c3fe2c73aeada402785ca6ac2f69610071da9e321d5c1af61"]
                 .unchecked_into(),
-            // aA9eDNQUg4AJs6qcGHpRvxRBaR5Zm4sQL2qFWsVJf84ZTK8Jc
-            hex!["e8c187b67963b5d24ac810d85797106520d1d629ca3def7d23e842a21c8fc160"]
+            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
+            hex!["140769243cb70a9c3fe2c73aeada402785ca6ac2f69610071da9e321d5c1af61"]
                 .unchecked_into(),
-            // aA9eDNQUg4AJs6qcGHpRvxRBaR5Zm4sQL2qFWsVJf84ZTK8Jc
-            hex!["e8c187b67963b5d24ac810d85797106520d1d629ca3def7d23e842a21c8fc160"]
+            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
+            hex!["140769243cb70a9c3fe2c73aeada402785ca6ac2f69610071da9e321d5c1af61"]
+                .unchecked_into(),
+        ),
+        (
+            // aA9gJP6NP8N7usGvLdYqMQT4MNLpPoohrSo2JsjUMVD44fQ2y
+            hex!["ea58e4717103834b82d97bff600a8ebd345e384272a3782577eb40fdaed7aa4b"].into(),
+            // aA8YLLC6iGMJRCBufaehgsCNCfVVrS16ApR7Ejkoi7cRfNTxW
+            hex!["b8094287b1c1af37437c477fad4f2c6a350a98028aa9727f7c442efdee3a1c58"].into(),
+            // aA93iHshYQLvup8mNJKNGjcsvQ4GsPP8ncrK8coid2NMPys6m
+            hex!["ce714cfbf906b51d720f39ae184f49b5090669fd21d4b5c1f5548d0a3878abd5"]
+                .unchecked_into(),
+            // aA4fb93xenFEZLRND2vwEP6B6iBvNRU7YsWGBxbsjq1fSKzsL
+            hex!["0ca0e44e72ad0214f7cb493b0625b7f799bca820d0c9491cc3640b0c61ff1a77"]
+                .unchecked_into(),
+            // aA4fb93xenFEZLRND2vwEP6B6iBvNRU7YsWGBxbsjq1fSKzsL
+            hex!["0ca0e44e72ad0214f7cb493b0625b7f799bca820d0c9491cc3640b0c61ff1a77"]
+                .unchecked_into(),
+            // aA4fb93xenFEZLRND2vwEP6B6iBvNRU7YsWGBxbsjq1fSKzsL
+            hex!["0ca0e44e72ad0214f7cb493b0625b7f799bca820d0c9491cc3640b0c61ff1a77"]
                 .unchecked_into(),
         ),
         (
