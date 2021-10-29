@@ -128,7 +128,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1001,
+    spec_version: 1002,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -178,6 +178,8 @@ impl Contains<Call> for CallFilter {
             | Call::Staking(_)
             | Call::Session(_)
             | Call::Balances(_)
+            | Call::BridgeTransfer(_)
+            | Call::ChainBridge(_)
             | Call::Timestamp(_) => true,
 
             // These modules are not allowed to be called by transactions:
@@ -189,8 +191,6 @@ impl Contains<Call> for CallFilter {
             | Call::Treasury(_)
             | Call::PhragmenElection(_)
             | Call::Scheduler(_)
-            | Call::BridgeTransfer(_)
-            | Call::ChainBridge(_)
             | Call::ElectionProviderMultiPhase(_)
             | Call::Utility(_)
             | Call::Ethereum(_) => false,
@@ -743,7 +743,7 @@ impl pallet_bridge::Config for Runtime {
 }
 
 parameter_types! {
-    pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000A2120b9e674d3fC3875f415A7DF52e382F14122501");
+    pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("0000000000000000000000b3CDF73e94D0FeEdB517Ba15471cebCC9efCb4Ec03");
     pub const EnableFee: bool = true;
 }
 
