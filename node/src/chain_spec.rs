@@ -366,7 +366,7 @@ fn automata_genesis_accounts() -> (
         //Chainbridge pallet account
         (
             AccountId::from_ss58check("aA6rX5bQBiGWiud3KnbAqzsn24Vy7Y6U3A5uvUqkCyY8kxeFf").unwrap(),
-            300700000 * DOLLARS,
+            246000000 * DOLLARS,
         ),
         //Team account
         (
@@ -381,12 +381,12 @@ fn automata_genesis_accounts() -> (
         //Eco & Dev community account
         (
             AccountId::from_ss58check("aA8ue1WwLD6k4rvgaRCBLwpT25JCPgMqzV1NnZJ1RgrL42WyN").unwrap(),
-            220000000 * DOLLARS,
+            260000000 * DOLLARS,
         ),
         //Protocol Reserve account
         (
             AccountId::from_ss58check("aA8RW3kstyvQ2P7zMh79HCtWBSCwxipB18N1Z1pB8XQa3gFpP").unwrap(),
-            279230000 * DOLLARS,
+            294000000 * DOLLARS,
         ),
     ];
 
