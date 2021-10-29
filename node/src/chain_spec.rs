@@ -446,24 +446,6 @@ fn automata_genesis_accounts() -> (
         AuthorityDiscoveryId,
     )> = vec![
         (
-            // aA9KuahEhXXNqdsf5VbAZZEQg3Bq9arf1oYNJzhvme7oGRiGh
-            hex!["dacb3b91dfd167393b90255efc0e2c6094bf216c6440aae75e23c9eadee0846e"].into(),
-            // aA9HSgYWJxKmemZmDP8CP4ewTXhx3ae6yodPRTB1eg58Lr9fM
-            hex!["7eb0b8b7a440b66ac415ca32ea55b6e1fee816df5ccd1b8d70d90e3449ce4e6c"].into(),
-            // aA4Q8mYNVGHwhm4PjxmqDV7FTUz6UYyDK6XF4J1cATY8ZWTfD
-            hex!["00d770425c64abba83c6c4928d43b6fc452d2a6e2e66c4c28903b89da1fe0adb"]
-                .unchecked_into(),
-            // aA7sxWZLSDC6sfiBm4PXTqDpivaCeTDkpNhMLCT7AXHYHDjsQ
-            hex!["9ac47a4197092cd6a5ebdd713a3c47bb53091745ef8c8c2feab67ce64b616878"]
-                .unchecked_into(),
-            // aA7sxWZLSDC6sfiBm4PXTqDpivaCeTDkpNhMLCT7AXHYHDjsQ
-            hex!["9ac47a4197092cd6a5ebdd713a3c47bb53091745ef8c8c2feab67ce64b616878"]
-                .unchecked_into(),
-            // aA7sxWZLSDC6sfiBm4PXTqDpivaCeTDkpNhMLCT7AXHYHDjsQ
-            hex!["9ac47a4197092cd6a5ebdd713a3c47bb53091745ef8c8c2feab67ce64b616878"]
-                .unchecked_into(),
-        ),
-        (
             // aA9gDAx9YoKioMtnsxgp7WCUDf8XDgKksheZgpFKFxxa14zry
             hex!["ea475b2cd5274953e6068da6f28f2375839ebced2486adeca7e261a07d3df368"].into(),
             // aA6yWDZduXFMkdShYqeC5xWSmAfEw2nGFRKkxMtUrSfzcEc4Z
@@ -1196,12 +1178,7 @@ fn testnet_genesis(
             })
             .collect(),
         },
-<<<<<<< HEAD
         ethereum: finitestate::EthereumConfig::default(),
         vesting: finitestate::VestingConfig::default(),
-=======
-        ethereum: automata::EthereumConfig::default(),
-        vesting: automata::VestingConfig::default(),
->>>>>>> 403bbab (add vesting pallet)
     }
 }

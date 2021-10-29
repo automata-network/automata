@@ -283,10 +283,12 @@ where
     io.extend_with(EthApiServer::to_delegate(EthApi::new(
         client.clone(),
         pool.clone(),
-        // #[cfg(feature = "automata")]
-        // automata_runtime::TransactionConverter,
-        // #[cfg(feature = "contextfree")]
+        #[cfg(feature = "automata")]
+        automata_runtime::TransactionConverter,
+        #[cfg(feature = "contextfree")]
         contextfree_runtime::TransactionConverter,
+        #[cfg(feature = "finitestate")]
+        finitestate_runtime::TransactionConverter,
         network.clone(),
         pending_transactions,
         signers,
