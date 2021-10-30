@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
 
-  # Allows you to run this workflow manually from the Actions tab
+# Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 env:
@@ -22,6 +22,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
+          toolchain: nightly-2021-06-16
+          default: true
           profile: minimal
           components: rustfmt
       - uses: actions-rs/cargo@v1
@@ -94,9 +96,10 @@ jobs:
           echo -e 'no\n${SGX_SDK_DEST}' | ${SGX_SDK_INSTALLER}
       - uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
+          toolchain: nightly-2021-06-16
           target: wasm32-unknown-unknown
-
+          default: true
+          profile: minimal
       - name: Build for FiniteState
         uses: actions-rs/cargo@v1
         env:
@@ -188,9 +191,11 @@ jobs:
           echo -e 'no\n${SGX_SDK_DEST}' | ${SGX_SDK_INSTALLER}
       - uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
+          toolchain: nightly-2021-06-16
           components: clippy
           target: wasm32-unknown-unknown
+          profile: minimal
+          default: true
       - uses: actions-rs/cargo@v1
         continue-on-error: true
         with:
