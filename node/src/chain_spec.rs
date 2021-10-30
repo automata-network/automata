@@ -858,10 +858,10 @@ fn automata_config_genesis(wasm_binary: &[u8]) -> automata::GenesisConfig {
         treasury: automata::TreasuryConfig::default(),
         evm: automata::EVMConfig::default(),
         ethereum: automata::EthereumConfig::default(),
-        sudo: automata::SudoConfig {
-            // Assign network admin rights.
-            key: root_key,
-        },
+        // sudo: automata::SudoConfig {
+        //     // Assign network admin rights.
+        //     key: root_key,
+        // },
         vesting: automata::VestingConfig {
             vesting: vesting_plans
         }

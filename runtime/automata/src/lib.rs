@@ -173,7 +173,6 @@ impl Contains<Call> for CallFilter {
             | Call::ImOnline(_)
             | Call::Indices(_)
             | Call::Babe(_)
-            | Call::Sudo(_)
             | Call::Vesting(_)
             | Call::Staking(_)
             | Call::Session(_)
@@ -531,11 +530,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = IdentityFee<Balance>;
     type FeeMultiplierUpdate =
         TargetedFeeAdjustment<Runtime, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
-}
-
-impl pallet_sudo::Config for Runtime {
-    type Event = Event;
-    type Call = Call;
 }
 
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
@@ -1023,7 +1017,6 @@ construct_runtime!(
         EVM: pallet_evm::{Pallet, Call, Storage, Config, Event<T>},
         Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event, Config, ValidateUnsigned},
 
-        Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
         Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
 
