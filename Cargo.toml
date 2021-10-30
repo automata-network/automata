@@ -14,11 +14,11 @@ frame-benchmarking-cli = {git = "https://github.com/automata-network/substrate.g
 frame-election-provider-support = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10"}
 frame-executive = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10"}
 frame-metadata = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10"}
-frame-support = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10", default-features = false}
+frame-support = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10"}
 frame-support-procedural = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10"}
 frame-support-procedural-tools = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10"}
 frame-support-procedural-tools-derive = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10"}
-frame-system = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10", default-features = false}
+frame-system = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10"}
 frame-system-benchmarking = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10"}
 frame-system-rpc-runtime-api = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10"}
 sp-api = {git = "https://github.com/automata-network/substrate.git", branch = "polkadot-v0.9.10"}
