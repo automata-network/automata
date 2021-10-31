@@ -11,16 +11,19 @@ pub use automata_primitives::{AccountId, Balance, BlockNumber, Signature};
 #[cfg(feature = "automata")]
 use automata_runtime as automata;
 #[cfg(feature = "automata")]
-use automata_runtime::{constants::currency::*, GenesisConfig, StakerStatus};
+use automata_runtime::{constants::currency::*, GenesisConfig};
 #[cfg(feature = "contextfree")]
 use contextfree_runtime as contextfree;
 #[cfg(feature = "contextfree")]
-use contextfree_runtime::{constants::currency::*, GenesisConfig, StakerStatus};
+use contextfree_runtime::{constants::currency::*, GenesisConfig};
 #[cfg(feature = "finitestate")]
 use finitestate::{constants::currency::*, GenesisConfig, StakerStatus};
 #[cfg(feature = "finitestate")]
 use finitestate_runtime as finitestate;
+#[cfg(feature = "finitestate")]
 use frame_support::PalletId;
+#[cfg(feature = "finitestate")]
+use sp_core::{H160, U256};
 use hex_literal::hex;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -31,10 +34,10 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{
     crypto::{Ss58Codec, UncheckedInto},
-    sr25519, Pair, Public, H160, U256,
+    sr25519, Pair, Public
 };
 use sp_finality_grandpa::AuthorityId as GrandpaId;
-use sp_runtime::traits::{AccountIdConversion, IdentifyAccount, Verify};
+use sp_runtime::traits::{IdentifyAccount, Verify};
 
 #[cfg(feature = "automata")]
 pub type AutomataChainSpec = sc_service::GenericChainSpec<automata::GenesisConfig, Extensions>;

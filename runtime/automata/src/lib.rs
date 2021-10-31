@@ -33,7 +33,7 @@ use sp_core::{
 };
 // use sp_io::hashing::blake2_128;
 use sp_runtime::traits::{
-    AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, Extrinsic, NumberFor,
+    BlakeTwo256, Block as BlockT, ConvertInto, Extrinsic, NumberFor,
     SaturatedConversion, StaticLookup, Verify,
 };
 use sp_runtime::{
@@ -1067,7 +1067,7 @@ pub type Executive = frame_executive::Executive<
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
-    AllModules,
+    AllPallets,
 >;
 
 impl_runtime_apis! {

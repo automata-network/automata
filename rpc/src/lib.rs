@@ -161,8 +161,8 @@ where
 {
     // use transfer::TransferServer;
 
-    let client = deps.client.clone();
-    let mut io = create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor);
+    let _client = deps.client.clone();
+    let io = create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor);
 
     // io.extend_with(attestor::AttestorServer::to_delegate(
     //     attestor::AttestorApi::new(client.clone()),
