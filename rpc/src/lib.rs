@@ -161,8 +161,8 @@ where
 {
     // use transfer::TransferServer;
 
-    let client = deps.client.clone();
-    let mut io = create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor);
+    let _client = deps.client.clone();
+    let io = create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor);
 
     // io.extend_with(attestor::AttestorServer::to_delegate(
     //     attestor::AttestorApi::new(client.clone()),
@@ -283,10 +283,12 @@ where
     io.extend_with(EthApiServer::to_delegate(EthApi::new(
         client.clone(),
         pool.clone(),
-        // #[cfg(feature = "automata")]
-        // automata_runtime::TransactionConverter,
-        // #[cfg(feature = "contextfree")]
+        #[cfg(feature = "automata")]
+        automata_runtime::TransactionConverter,
+        #[cfg(feature = "contextfree")]
         contextfree_runtime::TransactionConverter,
+        #[cfg(feature = "finitestate")]
+        finitestate_runtime::TransactionConverter,
         network.clone(),
         pending_transactions,
         signers,

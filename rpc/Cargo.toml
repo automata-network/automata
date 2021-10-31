@@ -56,7 +56,7 @@ fp-rpc = { default-features = false, git = 'https://github.com/automata-network/
 pallet-ethereum = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
 
 [features]
-default = ["contextfree-runtime"]
+default = ["finitestate-runtime"]
 automata = ["automata-runtime"]
 contextfree = ["contextfree-runtime"]
 finitestate = ["finitestate-runtime"]

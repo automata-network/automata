@@ -25,7 +25,7 @@ Initialize your Wasm Build environment:
 Build Wasm and native code:
 
 ```bash
-cargo build --release
+cargo build --release --features finitestate
 ```
 
 ## Run

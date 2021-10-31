@@ -34,7 +34,6 @@ use sc_network::Event;
 use sc_service::{error::Error as ServiceError, BasePath, ChainSpec, Configuration, TaskManager};
 use sc_telemetry::TelemetryWorker;
 pub use sp_api::ConstructRuntimeApi;
-use sp_consensus_babe::inherents::InherentDataProvider;
 use std::time::Duration;
 use std::{
     collections::HashMap,

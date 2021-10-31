@@ -33,8 +33,8 @@ use sp_core::{
 };
 // use sp_io::hashing::blake2_128;
 use sp_runtime::traits::{
-    AccountIdLookup, BlakeTwo256, Block as BlockT, Extrinsic, NumberFor, SaturatedConversion,
-    StaticLookup, Verify,
+    BlakeTwo256, Block as BlockT, ConvertInto, Extrinsic, NumberFor,
+    SaturatedConversion, StaticLookup, Verify,
 };
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
@@ -174,6 +174,7 @@ impl Contains<Call> for CallFilter {
             | Call::Indices(_)
             | Call::Babe(_)
             | Call::Sudo(_)
+            | Call::Vesting(_)
             | Call::Timestamp(_) => true,
 
             // These modules are not allowed to be called by transactions:
@@ -974,6 +975,19 @@ impl pallet_treasury::Config for Runtime {
     type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const MinVestedTransfer: Balance = 1000 * DOLLARS;
+}
+
+impl pallet_vesting::Config for Runtime {
+    type Event = Event;
+    type Currency = Balances;
+    type UnixTime = Timestamp;
+    type MinVestedTransfer = MinVestedTransfer;
+    type U64ToBalance = ConvertInto;
+    type VestingWeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -1011,6 +1025,7 @@ construct_runtime!(
 
         Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
         Utility: pallet_utility::{Pallet, Call, Event},
+        Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
 
         // Include the custom logic from the pallet-template in the runtime.
         // AttestorModule: pallet_attestor::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
@@ -1052,7 +1067,7 @@ pub type Executive = frame_executive::Executive<
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
-    AllModules,
+    AllPallets,
 >;
 
 impl_runtime_apis! {
