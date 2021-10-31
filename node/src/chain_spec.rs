@@ -462,13 +462,13 @@ fn automata_genesis_accounts() -> (
             // aA5Z6P8RpDAiTfKX1zHNa7hf98uvqrARAW8wWpUgXdLnHqD8w
             hex!["33e8d8e05805353c28ae0cd2336db82ba1949ee4996486bb2308bba1ec562c3d"]
                 .unchecked_into(),
-            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
+            // aA4qHvrPWeDCNRBL3N3kjwxmXg7tLn9quJKHfsDqzRkEHuhyY
             hex!["140769243cb70a9c3fe2c73aeada402785ca6ac2f69610071da9e321d5c1af61"]
                 .unchecked_into(),
-            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
+            // aA4qHvrPWeDCNRBL3N3kjwxmXg7tLn9quJKHfsDqzRkEHuhyY
             hex!["140769243cb70a9c3fe2c73aeada402785ca6ac2f69610071da9e321d5c1af61"]
                 .unchecked_into(),
-            // aA4qSUQetJiJAfpydSpq2shMGqavPNzZtcW51M1DJ6jAf3ma4
+            // aA4qHvrPWeDCNRBL3N3kjwxmXg7tLn9quJKHfsDqzRkEHuhyY
             hex!["140769243cb70a9c3fe2c73aeada402785ca6ac2f69610071da9e321d5c1af61"]
                 .unchecked_into(),
         ),
