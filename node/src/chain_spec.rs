@@ -409,7 +409,7 @@ fn automata_genesis_accounts() -> (
             AccountId::from_ss58check("aA8ue1WwLD6k4rvgaRCBLwpT25JCPgMqzV1NnZJ1RgrL42WyN").unwrap(),
             1630821420000,       //start time (1st release + 1 interval): 5th Sep 2021
             0,                   //cliff duration
-            116640000000,        //total duration (total duration - 1 interval): 45 months
+            85536000000,        //total duration (total duration - 1 interval): 33 months
             7776000000,          //interval: 3 months
             39930000 * DOLLARS,  //initial amount (1st release + 2nd release - validator - sudo)
             259930000 * DOLLARS, //total amount (total - validator - sudo)
