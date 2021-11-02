@@ -38,6 +38,8 @@ use sp_core::{
 };
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
+#[cfg(feature = "finitestate")]
+use sp_runtime::traits::AccountIdConversion;
 
 #[cfg(feature = "automata")]
 pub type AutomataChainSpec = sc_service::GenericChainSpec<automata::GenesisConfig, Extensions>;
