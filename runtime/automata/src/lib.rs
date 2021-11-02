@@ -33,8 +33,8 @@ use sp_core::{
 };
 // use sp_io::hashing::blake2_128;
 use sp_runtime::traits::{
-    BlakeTwo256, Block as BlockT, ConvertInto, Extrinsic, NumberFor,
-    SaturatedConversion, StaticLookup, Verify,
+    BlakeTwo256, Block as BlockT, ConvertInto, Extrinsic, NumberFor, SaturatedConversion,
+    StaticLookup, Verify,
 };
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
