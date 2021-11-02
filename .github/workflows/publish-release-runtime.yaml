@@ -45,10 +45,10 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DRAFT_RELEASE: "false"
-          PRE_RELEASE: "false"
+          DRAFT_RELEASE: "true"
+          PRE_RELEASE: "true"
           CHANGELOG_FILE: "CHANGELOG.md"
-          ALLOW_EMPTY_CHANGELOG: "true"
+          ALLOW_EMPTY_CHANGELOG: "false"
         with:
           args: |
             deploy/bin/*
