@@ -57,5 +57,5 @@ USER automata
 EXPOSE 30333 9933 9944
 VOLUME ["/data"]
 
-ENTRYPOINT ["/run-node.sh"]
+ENTRYPOINT ["/usr/local/bin/automata"]
 CMD []
