@@ -51,11 +51,11 @@ RUN apt-get update && \
 RUN	useradd -m -u 1000 -U -s /bin/sh -d /automata automata && \
 	mkdir -p /automata/.local/share/automata && \
 	chown -R automata:automata /automata/.local && \
-	ln -s /automata/.local/share/automata /data
+	ln -s /automata/.local/share/automata /chain-data
 
 USER automata
 EXPOSE 30333 9933 9944
-VOLUME ["/data"]
+VOLUME ["/chain-data"]
 
-ENTRYPOINT ["/run-node.sh"]
+ENTRYPOINT ["/usr/local/bin/automata"]
 CMD []

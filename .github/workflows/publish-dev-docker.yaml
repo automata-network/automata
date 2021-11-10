@@ -2,10 +2,7 @@ name: Publish Docker image for new commit
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main] 
-
+    branches: [automata_onfinality_image]
 
 jobs:
   main:
@@ -37,6 +34,7 @@ jobs:
         run: |
           echo 'DOCKER_TAGS<<EOF' >> $GITHUB_ENV
           echo "${DOCKER_REPO}:${GITHUB_SHA::8}" >> $GITHUB_ENV
+          echo "${DOCKER_REPO}:automata_onfinality_test_v0.1" >> $GITHUB_ENV
           if [ "${GITHUB_REF}" = "refs/heads/main" ]
           then
             echo "${DOCKER_REPO}:dev-latest" >> $GITHUB_ENV
@@ -68,7 +66,7 @@ jobs:
           tags: |
             ${{ env.DOCKER_TAGS }}
           build-args: |
-            FEATURES=finitestate
+            FEATURES=automata
       - name: Update registry cache
         uses: docker/build-push-action@v2
         if: github.ref == 'refs/heads/main'
