@@ -2,10 +2,7 @@ name: Publish Docker image for new commit
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main] 
-
+    branches: [docker_image_onfinality]
 
 jobs:
   main:
