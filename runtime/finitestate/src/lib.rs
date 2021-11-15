@@ -947,17 +947,17 @@ impl pallet_bridge::Config for Runtime {
 }
 
 parameter_types! {
+    pub const DefaultDestBridgeChainId: u8 = 3;
     pub const BridgeTokenId: [u8; 32] = hex_literal::hex!("00000000000000000000008B9366ca897FB89a0466945Cae5cb7B8E37b107003");
-    pub const EnableFee: bool = true;
 }
 
 impl pallet_bridgetransfer::Config for Runtime {
     type Event = Event;
     type BridgeOrigin = pallet_bridge::EnsureBridge<Runtime>;
     type Currency = Balances;
+    type DefaultDestBridgeChainId = DefaultDestBridgeChainId;
     type BridgeTokenId = BridgeTokenId;
     type OnFeePay = Treasury;
-    type EnableFee = EnableFee;
 }
 
 pub struct TransactionConverter;
