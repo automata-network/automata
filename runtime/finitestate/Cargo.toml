@@ -78,8 +78,8 @@ pallet-attestor = { default-features = false, git = 'https://github.com/automata
 pallet-geode = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-transfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-liveness = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
-pallet-bridge = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'bridgetransfer/multiplechains'}
-pallet-bridgetransfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'bridgetransfer/multiplechains'}
+pallet-bridge = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'cb/multichains'}
+pallet-bridgetransfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'cb/multichains'}
 automata-primitives = { default-features = false, path = "../../primitives" }
 automata-runtime-common = { path = "../common", default-features = false }
 

@@ -2025,8 +2025,8 @@ dependencies = [
  "pallet-authorship",
  "pallet-babe",
  "pallet-balances",
- "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common?branch=bridgetransfer/multiplechains)",
- "pallet-bridgetransfer 0.1.0 (git+https://github.com/automata-network/automata-common?branch=bridgetransfer/multiplechains)",
+ "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common?branch=cb/multichains)",
+ "pallet-bridgetransfer 0.1.0 (git+https://github.com/automata-network/automata-common?branch=cb/multichains)",
  "pallet-collective",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
@@ -4718,7 +4718,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridge"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=bridgetransfer/multiplechains#5293bef0427d47736af22e1db1796238468356e5"
+source = "git+https://github.com/automata-network/automata-common?branch=cb/multichains#1d88d4e38956d65c5766456e091cb28d048c8d07"
 dependencies = [
  "blake2-rfc",
  "frame-support",
@@ -4754,12 +4754,12 @@ dependencies = [
 [[package]]
 name = "pallet-bridgetransfer"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=bridgetransfer/multiplechains#5293bef0427d47736af22e1db1796238468356e5"
+source = "git+https://github.com/automata-network/automata-common?branch=cb/multichains#1d88d4e38956d65c5766456e091cb28d048c8d07"
 dependencies = [
  "frame-support",
  "frame-system",
  "hex",
- "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common?branch=bridgetransfer/multiplechains)",
+ "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common?branch=cb/multichains)",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
