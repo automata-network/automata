@@ -125,7 +125,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1006,
+    spec_version: 1008,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -179,6 +179,14 @@ impl Contains<Call> for CallFilter {
             | Call::ChainBridge(_)
             | Call::Utility(_)
             | Call::ElectionProviderMultiPhase(_)
+            | Call::Game(_)
+            | Call::Democracy(_)
+            | Call::Council(_)
+            | Call::TechnicalCommittee(_)
+            | Call::TechnicalMembership(_)
+            | Call::Treasury(_)
+            | Call::PhragmenElection(_)
+            | Call::Scheduler(_)
             | Call::Balances(_) => true,
 
             // These modules are not allowed to be called by transactions:
@@ -187,15 +195,15 @@ impl Contains<Call> for CallFilter {
             // | Call::ElectionProviderMultiPhase(_)
             // | Call::BridgeTransfer(_)
             // | Call::ChainBridge(_)
-            | Call::Vesting(_)
+            Call::Vesting(_)
             // | Call::Utility(_)
-            | Call::Democracy(_)
-            | Call::Council(_)
-            | Call::TechnicalCommittee(_)
-            | Call::TechnicalMembership(_)
-            | Call::Treasury(_)
-            | Call::PhragmenElection(_)
-            | Call::Scheduler(_)
+            // | Call::Democracy(_)
+            // | Call::Council(_)
+            // | Call::TechnicalCommittee(_)
+            // | Call::TechnicalMembership(_)
+            // | Call::Treasury(_)
+            // | Call::PhragmenElection(_)
+            // | Call::Scheduler(_)
             | Call::EVM(_)
             | Call::Ethereum(_) => false,
         }
@@ -960,6 +968,18 @@ impl pallet_bridgetransfer::Config for Runtime {
     type EnableFee = EnableFee;
 }
 
+parameter_types! {
+    pub const MaximumAttackCount: u32 = 3;
+    pub const MaximumAttackerNum: u32 = 50;
+}
+
+impl pallet_game::Config for Runtime {
+    type Event = Event;
+    type MaximumAttackCount = MaximumAttackCount;
+    type MaximumAttackerNum = MaximumAttackerNum;
+    type WeightInfo = pallet_game::weights::SubstrateWeight<Runtime>;
+}
+
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
@@ -1030,6 +1050,7 @@ construct_runtime!(
         Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
         ChainBridge: pallet_bridge::{Pallet, Call, Storage, Event<T>},
         BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Storage, Event<T>},
+        Game: pallet_game::{Pallet, Call, Storage, Event<T>},
     }
 );
 
