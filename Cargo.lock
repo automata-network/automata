@@ -451,6 +451,18 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?branch=main#dfcfe4e6e8b345b6687c78b56bc80bdf251dd021"
+dependencies = [
+ "frame-system",
+ "parity-scale-codec",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
+name = "automata-primitives"
+version = "0.1.0"
 source = "git+https://github.com/automata-network/automata-common#148cb206581ab3505488440a89b8a7463e93f56a"
 dependencies = [
  "frame-system",
@@ -2025,8 +2037,8 @@ dependencies = [
  "pallet-authorship",
  "pallet-babe",
  "pallet-balances",
- "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common?branch=cb/multichains)",
- "pallet-bridgetransfer 0.1.0 (git+https://github.com/automata-network/automata-common?branch=cb/multichains)",
+ "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
+ "pallet-bridgetransfer 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "pallet-collective",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
@@ -2034,6 +2046,7 @@ dependencies = [
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-precompile-simple",
+ "pallet-game",
  "pallet-geode",
  "pallet-grandpa",
  "pallet-im-online",
@@ -4718,7 +4731,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridge"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=cb/multichains#1d88d4e38956d65c5766456e091cb28d048c8d07"
+source = "git+https://github.com/automata-network/automata-common?branch=main#dfcfe4e6e8b345b6687c78b56bc80bdf251dd021"
 dependencies = [
  "blake2-rfc",
  "frame-support",
@@ -4736,7 +4749,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridge"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#148cb206581ab3505488440a89b8a7463e93f56a"
+source = "git+https://github.com/automata-network/automata-common#dfcfe4e6e8b345b6687c78b56bc80bdf251dd021"
 dependencies = [
  "blake2-rfc",
  "frame-support",
@@ -4754,12 +4767,12 @@ dependencies = [
 [[package]]
 name = "pallet-bridgetransfer"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=cb/multichains#1d88d4e38956d65c5766456e091cb28d048c8d07"
+source = "git+https://github.com/automata-network/automata-common?branch=main#dfcfe4e6e8b345b6687c78b56bc80bdf251dd021"
 dependencies = [
  "frame-support",
  "frame-system",
  "hex",
- "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common?branch=cb/multichains)",
+ "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
@@ -4773,7 +4786,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridgetransfer"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#148cb206581ab3505488440a89b8a7463e93f56a"
+source = "git+https://github.com/automata-network/automata-common#dfcfe4e6e8b345b6687c78b56bc80bdf251dd021"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4920,6 +4933,23 @@ dependencies = [
  "ripemd160",
  "sp-core",
  "sp-io",
+]
+
+[[package]]
+name = "pallet-game"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?branch=main#dfcfe4e6e8b345b6687c78b56bc80bdf251dd021"
+dependencies = [
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
+ "blake2",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
