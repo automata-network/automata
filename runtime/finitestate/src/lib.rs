@@ -180,6 +180,7 @@ impl Contains<Call> for CallFilter {
             | Call::Utility(_)
             | Call::ElectionProviderMultiPhase(_)
             | Call::Game(_)
+            | Call::DAOPortal(_)
             | Call::Democracy(_)
             | Call::Council(_)
             | Call::TechnicalCommittee(_)
@@ -982,6 +983,26 @@ impl pallet_game::Config for Runtime {
     type WeightInfo = pallet_game::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const MinDuration: u64 = 3600000;
+    pub const MaxDuration: u64 = 86400000;
+    pub const MaxOptionCount: u8 = 10;
+    pub const MaxWorkspace: u32 = 100;
+    pub const MaxStrategy: u32 = 100;
+}
+
+impl pallet_daoportal::Config for Runtime {
+    type Event = Event;
+    type Currency = Balances;
+    type MinDuration = MinDuration;
+    type MaxDuration = MaxDuration;
+    type MaxOptionCount = MaxOptionCount;
+    type MaxWorkspace = MaxWorkspace;
+    type MaxStrategy = MaxStrategy;
+    type UnixTime = Timestamp;
+    type DAOPortalWeightInfo = pallet_daoportal::weights::SubstrateWeight<Runtime>;
+}
+
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
@@ -1053,6 +1074,7 @@ construct_runtime!(
         ChainBridge: pallet_bridge::{Pallet, Call, Storage, Event<T>},
         BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Storage, Event<T>},
         Game: pallet_game::{Pallet, Call, Storage, Event<T>},
+        DAOPortal: pallet_daoportal::{Pallet, Call, Storage, Event<T>},
     }
 );
 
