@@ -969,14 +969,16 @@ impl pallet_bridgetransfer::Config for Runtime {
 }
 
 parameter_types! {
-    pub const MaximumAttackCount: u32 = 3;
+    pub const MaximumAttackCount: u32 = 13;
     pub const MaximumAttackerNum: u32 = 50;
+    pub const MinimumAttackerNum: u32 = 3;
 }
 
 impl pallet_game::Config for Runtime {
     type Event = Event;
     type MaximumAttackCount = MaximumAttackCount;
     type MaximumAttackerNum = MaximumAttackerNum;
+    type MinimumAttackerNum = MinimumAttackerNum;
     type WeightInfo = pallet_game::weights::SubstrateWeight<Runtime>;
 }
 
