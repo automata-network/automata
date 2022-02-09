@@ -11,6 +11,7 @@ frame-system = { default-features = false, git = 'https://github.com/automata-ne
 sp-application-crypto = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-core = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
 sp-runtime = { default-features = false, git = 'https://github.com/automata-network/substrate.git', branch = 'polkadot-v0.9.10' }
+pdqselect = { version = "=0.1.0", default-features = false }
 
 [features]
 default = ["std"]

@@ -19,6 +19,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
 use frame_system::{EnsureOneOf, EnsureRoot};
+use pallet_daoportal::datastructures::{ProjectId, Project, ProposalId, Proposal};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlinedId;
@@ -1296,6 +1297,20 @@ impl_runtime_apis! {
     //         TransferModule::submit_unsigned_transaction(message, signature_raw_bytes)
     //     }
     // }
+
+    impl apis::DAOPortalApi<Block> for Runtime {
+        fn get_projects() -> Vec<(ProjectId, Project<AccountId>)> {
+            DAOPortal::get_projects()
+        }
+
+        fn get_proposals(project_id: ProjectId) -> Vec<(ProjectId, Proposal<AccountId>)> {
+            DAOPortal::get_proposals(project_id)
+        }
+
+        fn get_all_proposals() -> Vec<(ProjectId, ProposalId, Proposal<AccountId>)> {
+            DAOPortal::get_all_proposals()
+        }
+    }
 
     impl fp_rpc::EthereumRuntimeRPCApi<Block> for Runtime {
         fn chain_id() -> u64 {
