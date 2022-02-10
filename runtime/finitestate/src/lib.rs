@@ -19,7 +19,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
 use frame_system::{EnsureOneOf, EnsureRoot};
-use pallet_daoportal::datastructures::{ProjectId, Project, ProposalId, Proposal};
+use pallet_daoportal::datastructures::{ProjectId, Project, ProposalId, DAOProposal};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlinedId;
@@ -126,7 +126,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1011,
+    spec_version: 1012,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1303,11 +1303,11 @@ impl_runtime_apis! {
             DAOPortal::get_projects()
         }
 
-        fn get_proposals(project_id: ProjectId) -> Vec<(ProjectId, Proposal<AccountId>)> {
+        fn get_proposals(project_id: ProjectId) -> Vec<(ProjectId, DAOProposal<AccountId>)> {
             DAOPortal::get_proposals(project_id)
         }
 
-        fn get_all_proposals() -> Vec<(ProjectId, ProposalId, Proposal<AccountId>)> {
+        fn get_all_proposals() -> Vec<(ProjectId, ProposalId, DAOProposal<AccountId>)> {
             DAOPortal::get_all_proposals()
         }
     }

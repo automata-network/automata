@@ -16,7 +16,7 @@ use finitestate_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
 use jsonrpc_core::{Error, ErrorCode, Result};
 use jsonrpc_derive::rpc;
 
-use pallet_daoportal::datastructures::{ProjectId, Project, ProposalId, Proposal};
+use pallet_daoportal::datastructures::{ProjectId, Project, ProposalId, DAOProposal};
 use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
 use sp_api::ProvideRuntimeApi;
 use sp_runtime::{codec::Decode, traits::Block as BlockT};
@@ -31,10 +31,10 @@ pub trait DAOPortalServer<BlockHash> {
     fn get_projects(&self) -> Result<Vec<(ProjectId, Project<AccountId>)>>;
 
     #[rpc(name = "daoportal_getProposals")]
-    fn get_proposals(&self, project_id: ProjectId) -> Result<Vec<(ProposalId, Proposal<AccountId>)>>;
+    fn get_proposals(&self, project_id: ProjectId) -> Result<Vec<(ProposalId, DAOProposal<AccountId>)>>;
 
     #[rpc(name = "daoportal_getAllProposals")]
-    fn get_all_proposals(&self) -> Result<Vec<(ProjectId, ProposalId, Proposal<AccountId>)>>;
+    fn get_all_proposals(&self) -> Result<Vec<(ProjectId, ProposalId, DAOProposal<AccountId>)>>;
 }
 
 /// An implementation of DAOPortal specific RPC methods.
@@ -71,7 +71,7 @@ where
     }
 
     /// get proposals for a project
-    fn get_proposals(&self, project_id: ProjectId) -> Result<Vec<(ProposalId, Proposal<AccountId>)>> {
+    fn get_proposals(&self, project_id: ProjectId) -> Result<Vec<(ProposalId, DAOProposal<AccountId>)>> {
         let api = self.client.runtime_api();
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
@@ -86,7 +86,7 @@ where
     }
 
     /// get all projects
-    fn get_all_proposals(&self) -> Result<Vec<(ProjectId, ProposalId, Proposal<AccountId>)>> {
+    fn get_all_proposals(&self) -> Result<Vec<(ProjectId, ProposalId, DAOProposal<AccountId>)>> {
         let api = self.client.runtime_api();
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
