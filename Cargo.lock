@@ -443,7 +443,7 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=feature/daoportal#13a29f74fb8fc84b39db712ffd490e35b1fe2cff"
+source = "git+https://github.com/automata-network/automata-common?branch=feature/daoportal#843a37fba0e7cdcdace0c620cf701c84835dcc75"
 dependencies = [
  "frame-system",
  "impl-trait-for-tuples 0.2.1",
@@ -4828,7 +4828,7 @@ dependencies = [
 [[package]]
 name = "pallet-daoportal"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=feature/daoportal#13a29f74fb8fc84b39db712ffd490e35b1fe2cff"
+source = "git+https://github.com/automata-network/automata-common?branch=feature/daoportal#843a37fba0e7cdcdace0c620cf701c84835dcc75"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=feature/daoportal)",
  "frame-support",
