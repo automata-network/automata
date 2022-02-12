@@ -125,7 +125,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1002,
+    spec_version: 1003,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -173,12 +173,20 @@ impl Contains<Call> for CallFilter {
             | Call::Babe(_)
             | Call::Sudo(_)
             | Call::Timestamp(_)
+            | Call::Game(_)
+            | Call::Balances(_)
             | Call::Staking(_)
             | Call::Session(_)
             | Call::BridgeTransfer(_)
             | Call::ChainBridge(_)
-            | Call::Balances(_)
             | Call::ElectionProviderMultiPhase(_)
+            | Call::Democracy(_)
+            | Call::Council(_)
+            | Call::TechnicalCommittee(_)
+            | Call::TechnicalMembership(_)
+            | Call::Treasury(_)
+            | Call::PhragmenElection(_)
+            | Call::Scheduler(_)
             | Call::Utility(_) => true,
 
             // These modules are not allowed to be called by transactions:
@@ -189,13 +197,13 @@ impl Contains<Call> for CallFilter {
             // Call::ElectionProviderMultiPhase(_)
             // | Call::Utility(_)
             Call::Vesting(_)
-            | Call::Democracy(_)
-            | Call::Council(_)
-            | Call::TechnicalCommittee(_)
-            | Call::TechnicalMembership(_)
-            | Call::Treasury(_)
-            | Call::PhragmenElection(_)
-            | Call::Scheduler(_)
+            // | Call::Democracy(_)
+            // | Call::Council(_)
+            // | Call::TechnicalCommittee(_)
+            // | Call::TechnicalMembership(_)
+            // | Call::Treasury(_)
+            // | Call::PhragmenElection(_)
+            // | Call::Scheduler(_)
             | Call::EVM(_)
             | Call::Ethereum(_) => false,
         }
@@ -533,6 +541,20 @@ impl pallet_transaction_payment::Config for Runtime {
         TargetedFeeAdjustment<Runtime, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
 }
 
+parameter_types! {
+    pub const MaximumAttackCount: u32 = 5;
+    pub const MaximumAttackerNum: u32 = 50;
+    pub const MinimumAttackerNum: u32 = 3;
+}
+
+impl pallet_game::Config for Runtime {
+    type Event = Event;
+    type MaximumAttackCount = MaximumAttackCount;
+    type MaximumAttackerNum = MaximumAttackerNum;
+    type MinimumAttackerNum = MinimumAttackerNum;
+    type WeightInfo = pallet_game::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_sudo::Config for Runtime {
     type Event = Event;
     type Call = Call;
@@ -636,8 +658,8 @@ impl pallet_authority_discovery::Config for Runtime {}
 parameter_types! {
     pub const EnactmentPeriod: BlockNumber = 10 * MINUTES;
     pub const LaunchPeriod: BlockNumber = 3 * MINUTES;
-    pub const VotingPeriod: BlockNumber = 3 * MINUTES;
-    pub const MinimumDeposit: Balance = 100 * DOLLARS;
+    pub const VotingPeriod: BlockNumber = 3 * HOURS;
+    pub const MinimumDeposit: Balance = 30 * DOLLARS;
     pub const InstantAllowed: bool = true;
     pub const FastTrackVotingPeriod: BlockNumber = 3 * MINUTES;
     pub const CooloffPeriod: BlockNumber = 7 * DAYS;
@@ -1029,7 +1051,8 @@ construct_runtime!(
         Utility: pallet_utility::{Pallet, Call, Event},
         Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>},
         ChainBridge: pallet_bridge::{Pallet, Call, Storage, Event<T>},
-        BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Storage, Event<T>},
+        BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Event<T>},
+        Game: pallet_game::{Pallet, Call, Storage, Event<T>},
     }
 );
 
