@@ -1,5 +1,5 @@
 use automata_primitives::{AccountId, Hash};
-use pallet_daoportal::datastructures::{ProjectId, Project, ProposalId, DAOProposal};
+use pallet_daoportal::datastructures::{DAOProposal, Project, ProjectId, ProposalId};
 use sp_std::vec::Vec;
 
 // use sp_std::vec::Vec;

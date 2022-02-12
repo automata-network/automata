@@ -56,7 +56,6 @@ use std::sync::Arc;
 #[cfg(feature = "finitestate")]
 pub mod daoportal;
 
-
 /// Extra dependencies for BABE.
 pub struct BabeDeps {
     /// BABE protocol config.
