@@ -1084,6 +1084,7 @@ dependencies = [
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-precompile-simple",
+ "pallet-game",
  "pallet-geode",
  "pallet-grandpa",
  "pallet-im-online",

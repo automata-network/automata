@@ -19,7 +19,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
 use frame_system::{EnsureOneOf, EnsureRoot};
-use pallet_daoportal::datastructures::{ProjectId, Project, ProposalId, DAOProposal};
+use pallet_daoportal::datastructures::{DAOProposal, Project, ProjectId, ProposalId};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlinedId;

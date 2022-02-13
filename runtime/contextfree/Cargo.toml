@@ -80,6 +80,7 @@ pallet-transfer = { default-features = false, git = 'https://github.com/automata
 pallet-liveness = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-bridge = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 pallet-bridgetransfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
+pallet-game = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'main' }
 automata-primitives = { default-features = false, path = "../../primitives" }
 automata-runtime-common = { path = "../common", default-features = false }
 
@@ -128,6 +129,7 @@ std = [
     'pallet-treasury/std',
     'pallet-utility/std',
     'pallet-vesting/std',
+    'pallet-game/std',
     'serde',
     'sp-api/std',
     'sp-block-builder/std',
