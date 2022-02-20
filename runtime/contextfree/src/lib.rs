@@ -542,7 +542,7 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 parameter_types! {
-    pub const MaximumAttackCount: u32 = 5;
+    pub const MaximumAttackCount: u32 = 15;
     pub const MaximumAttackerNum: u32 = 50;
     pub const MinimumAttackerNum: u32 = 3;
 }
