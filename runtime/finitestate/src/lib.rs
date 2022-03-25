@@ -986,7 +986,7 @@ impl pallet_game::Config for Runtime {
 
 parameter_types! {
     pub const MinDuration: u64 = 3600000;
-    pub const MaxDuration: u64 = 86400000;
+    pub const MaxDuration: u64 = 2592000000;
     pub const MaxOptionCount: u8 = 10;
     pub const MaxWorkspace: u32 = 100;
     pub const MaxStrategy: u32 = 100;
