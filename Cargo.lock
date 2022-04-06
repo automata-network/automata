@@ -443,7 +443,7 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common?branch=main#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "frame-system",
  "impl-trait-for-tuples 0.2.1",
@@ -457,7 +457,7 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "frame-system",
  "impl-trait-for-tuples 0.2.1",
@@ -604,7 +604,7 @@ dependencies = [
 [[package]]
 name = "automata-traits"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
@@ -4649,7 +4649,7 @@ dependencies = [
 [[package]]
 name = "pallet-attestor"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "automata-traits",
@@ -4732,7 +4732,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridge"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common?branch=main#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "blake2-rfc",
  "frame-support",
@@ -4750,7 +4750,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridge"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "blake2-rfc",
  "frame-support",
@@ -4768,7 +4768,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridgetransfer"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common?branch=main#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4787,7 +4787,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridgetransfer"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4821,7 +4821,7 @@ dependencies = [
 [[package]]
 name = "pallet-daoportal"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common?branch=main#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "frame-support",
@@ -4957,7 +4957,7 @@ dependencies = [
 [[package]]
 name = "pallet-game"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common?branch=main#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "blake2",
@@ -4974,7 +4974,7 @@ dependencies = [
 [[package]]
 name = "pallet-geode"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "automata-traits",
@@ -5046,7 +5046,7 @@ dependencies = [
 [[package]]
 name = "pallet-liveness"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "automata-traits",
@@ -5122,7 +5122,7 @@ dependencies = [
 [[package]]
 name = "pallet-service"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "frame-support",
@@ -5266,7 +5266,7 @@ dependencies = [
 [[package]]
 name = "pallet-transfer"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "blake2",
@@ -5312,7 +5312,7 @@ dependencies = [
 [[package]]
 name = "pallet-vesting"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#7e4b751b62bbd18ac5bd50df8612bd990469ea6e"
+source = "git+https://github.com/automata-network/automata-common#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "blake2",
@@ -5822,9 +5822,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.36"
+version = "1.0.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7342d5883fbccae1cc37a2353b09c87c9b0f3afd73f5fb9bba687a1f733b029"
+checksum = "ec757218438d5fda206afc041538b2f6d889286160d649a86a24d37e1235afd1"
 dependencies = [
  "unicode-xid",
 ]
@@ -8659,9 +8659,9 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"
-version = "1.0.90"
+version = "1.0.91"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "704df27628939572cd88d33f171cd6f896f4eaca85252c6e0a72d8d8287ee86f"
+checksum = "b683b2b825c8eef438b77c36a06dc262294da3d5a5813fac20da149241dcd44d"
 dependencies = [
  "proc-macro2",
  "quote",
