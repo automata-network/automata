@@ -8,8 +8,8 @@ compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled tog
 use automata_primitives::{AccountId, Block, BlockId, Index};
 // #[cfg(feature = "automata")]
 // use automata_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
-// #[cfg(feature = "contextfree")]
-// use contextfree_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
+#[cfg(feature = "contextfree")]
+use contextfree_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
 #[cfg(feature = "finitestate")]
 use finitestate_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
 

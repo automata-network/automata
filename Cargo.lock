@@ -1064,6 +1064,7 @@ dependencies = [
  "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "pallet-bridgetransfer 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "pallet-collective",
+ "pallet-daoportal",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
  "pallet-elections-phragmen",
