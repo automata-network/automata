@@ -19,6 +19,7 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
 use frame_system::{EnsureOneOf, EnsureRoot};
+use pallet_daoportal::datastructures::{DAOProposal, Project, ProjectId, ProposalId};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlinedId;
@@ -125,7 +126,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1004,
+    spec_version: 1005,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -180,6 +181,7 @@ impl Contains<Call> for CallFilter {
             | Call::BridgeTransfer(_)
             | Call::ChainBridge(_)
             | Call::ElectionProviderMultiPhase(_)
+            | Call::DAOPortal(_)
             | Call::Democracy(_)
             | Call::Council(_)
             | Call::TechnicalCommittee(_)
@@ -553,6 +555,26 @@ impl pallet_game::Config for Runtime {
     type MaximumAttackerNum = MaximumAttackerNum;
     type MinimumAttackerNum = MinimumAttackerNum;
     type WeightInfo = pallet_game::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+    pub const MinDuration: u64 = 3600000;
+    pub const MaxDuration: u64 = 2592000000;
+    pub const MaxOptionCount: u8 = 10;
+    pub const MaxWorkspace: u32 = 10;
+    pub const MaxStrategy: u32 = 10;
+}
+
+impl pallet_daoportal::Config for Runtime {
+    type Event = Event;
+    type Currency = Balances;
+    type MinDuration = MinDuration;
+    type MaxDuration = MaxDuration;
+    type MaxOptionCount = MaxOptionCount;
+    type MaxWorkspace = MaxWorkspace;
+    type MaxStrategy = MaxStrategy;
+    type UnixTime = Timestamp;
+    type DAOPortalWeightInfo = pallet_daoportal::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -1053,6 +1075,7 @@ construct_runtime!(
         ChainBridge: pallet_bridge::{Pallet, Call, Storage, Event<T>},
         BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Event<T>},
         Game: pallet_game::{Pallet, Call, Storage, Event<T>},
+        DAOPortal: pallet_daoportal::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -1274,6 +1297,20 @@ impl_runtime_apis! {
     //         TransferModule::submit_unsigned_transaction(message, signature_raw_bytes)
     //     }
     // }
+
+    impl apis::DAOPortalApi<Block> for Runtime {
+        fn get_projects() -> Vec<(ProjectId, Project<AccountId>)> {
+            DAOPortal::get_projects()
+        }
+
+        fn get_proposals(project_id: ProjectId) -> Vec<(ProjectId, DAOProposal<AccountId>)> {
+            DAOPortal::get_proposals(project_id)
+        }
+
+        fn get_all_proposals() -> Vec<(ProjectId, ProposalId, DAOProposal<AccountId>)> {
+            DAOPortal::get_all_proposals()
+        }
+    }
 
     impl fp_rpc::EthereumRuntimeRPCApi<Block> for Runtime {
         fn chain_id() -> u64 {
