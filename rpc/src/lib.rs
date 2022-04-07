@@ -17,6 +17,8 @@ use automata_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 // };
 // #[cfg(feature = "contextfree")]
 // use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
+#[cfg(feature = "contextfree")]
+use contextfree_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
 use fc_rpc::{OverrideHandle, RuntimeApiStorageOverride, SchemaV1Override, StorageOverride};
 use fc_rpc_core::types::PendingTransactions;
 // #[cfg(feature = "finitestate")]
@@ -52,6 +54,9 @@ use std::sync::Arc;
 // pub mod geode;
 // #[cfg(feature = "automata")]
 // pub mod transfer;
+
+#[cfg(feature = "contextfree")]
+pub mod daoportal;
 
 #[cfg(feature = "finitestate")]
 pub mod daoportal;
@@ -168,15 +173,22 @@ where
     C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
     C::Api: sp_consensus_babe::BabeApi<Block>,
     C::Api: BlockBuilder<Block>,
+    C::Api: DAOPortalRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
     SC: sp_consensus::SelectChain<Block> + 'static,
 {
-    Ok(create_full_base::<C, P, BE, B, SC>(
-        deps,
-        subscription_task_executor,
-    ))
+    use daoportal::DAOPortalServer;
+
+    let _client = deps.client.clone();
+    let mut io = create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor);
+
+    io.extend_with(DAOPortalServer::to_delegate(daoportal::DAOPortalApi::new(
+        _client.clone(),
+    )));
+
+    Ok(io)
 }
 
 #[cfg(feature = "automata")]
