@@ -17,6 +17,8 @@ use automata_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 // };
 // #[cfg(feature = "contextfree")]
 // use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
+#[cfg(feature = "contextfree")]
+use contextfree_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
 use fc_rpc::{OverrideHandle, RuntimeApiStorageOverride, SchemaV1Override, StorageOverride};
 use fc_rpc_core::types::PendingTransactions;
 // #[cfg(feature = "finitestate")]
