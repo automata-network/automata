@@ -60,7 +60,7 @@ jobs:
             type=local,dest=/tmp/buildx-cache-cross-step,mode=max
           tags: |
             atactr/automata:contextfree-latest
-            atactr/automata:contextfree-${{ github.event.release.tag_name }}
+            atactr/automata:contextfree-${{ github.ref_name }}
           build-args: |
             FEATURES=contextfree
       - name: Automata - Build with cache and push images
