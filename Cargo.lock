@@ -457,6 +457,20 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced#2b56383496e416e176569a25bfeb6d9ef2c6dced"
+dependencies = [
+ "frame-system",
+ "impl-trait-for-tuples 0.2.1",
+ "parity-scale-codec",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-runtime",
+ "uint",
+]
+
+[[package]]
+name = "automata-primitives"
+version = "0.1.0"
 source = "git+https://github.com/automata-network/automata-common#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "frame-system",
@@ -4822,9 +4836,9 @@ dependencies = [
 [[package]]
 name = "pallet-daoportal"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#2b56383496e416e176569a25bfeb6d9ef2c6dced"
+source = "git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
- "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced)",
  "frame-support",
  "frame-system",
  "pallet-timestamp",
