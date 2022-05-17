@@ -65,6 +65,9 @@ pub mod daoportal;
 #[cfg(feature = "finitestate")]
 pub mod daoportal;
 
+#[cfg(feature = "contextfree")]
+pub mod gmetadata;
+
 #[cfg(feature = "finitestate")]
 pub mod gmetadata;
 
@@ -203,7 +206,9 @@ where
         _client.clone(),
     )));
 
-    io.extend_with(DAOPortalServer::to_delegate(daoportal::Gmetadata::new(
+    use gmetadata::GmetadataServer;
+
+    io.extend_with(GmetadataServer::to_delegate(gmetadata::GmetadataApi::new(
         _client.clone(),
     )));
 
