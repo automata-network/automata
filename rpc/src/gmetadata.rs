@@ -63,11 +63,13 @@ where
         let best = self.client.info().best_hash;
         let at = BlockId::hash(best);
 
-        let result = api.query_with_index(&at, index_key, value_key, cursor, limit).map_err(|e| Error {
-            code: ErrorCode::ServerError(RUNTIME_ERROR),
-            message: "Runtime unable to get projects list.".into(),
-            data: Some(format!("{:?}", e).into()),
-        })?;
+        let result = api
+            .query_with_index(&at, index_key, value_key, cursor, limit)
+            .map_err(|e| Error {
+                code: ErrorCode::ServerError(RUNTIME_ERROR),
+                message: "Runtime unable to get projects list.".into(),
+                data: Some(format!("{:?}", e).into()),
+            })?;
 
         // Ok(proposals_list)
         Ok(result)
