@@ -443,6 +443,20 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?branch=feautre/add_global_metadata#9b5883b612109375641cdfd4267b73506604a62c"
+dependencies = [
+ "frame-system",
+ "impl-trait-for-tuples 0.2.1",
+ "parity-scale-codec",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-runtime",
+ "uint",
+]
+
+[[package]]
+name = "automata-primitives"
+version = "0.1.0"
 source = "git+https://github.com/automata-network/automata-common?branch=main#32c60ead64859cdbfab8f2c5965bc6288816b159"
 dependencies = [
  "frame-system",
@@ -9295,7 +9309,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
  "cfg-if 1.0.0",
- "rand 0.8.5",
+ "rand 0.3.23",
  "static_assertions",
 ]
 
