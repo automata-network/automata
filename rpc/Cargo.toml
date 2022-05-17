@@ -49,6 +49,7 @@ finitestate-runtime = { path = '../runtime/finitestate', optional = true }
 pallet-geode = { git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-transfer = { git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-daoportal = { git = 'https://github.com/automata-network/automata-common', branch = 'main' }
+pallet-gmetadata = { git = 'https://github.com/automata-network/automata-common', branch = 'feautre/add_global_metadata' }
 
 fc-rpc = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
 fc-rpc-core = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}

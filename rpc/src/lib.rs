@@ -19,12 +19,16 @@ use automata_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 // use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
 #[cfg(feature = "contextfree")]
 use contextfree_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
+#[cfg(feature = "contextfree")]
+use contextfree_runtime::apis::GmetadataApi as GmetadataRuntimeApi;
 use fc_rpc::{OverrideHandle, RuntimeApiStorageOverride, SchemaV1Override, StorageOverride};
 use fc_rpc_core::types::PendingTransactions;
 // #[cfg(feature = "finitestate")]
 // use finitestate_runtime::apis::TransferApi as TransferRuntimeApi;
 #[cfg(feature = "finitestate")]
 use finitestate_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
+#[cfg(feature = "finitestate")]
+use finitestate_runtime::apis::GmetadataApi as GmetadataRuntimeApi;
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use pallet_ethereum::EthereumStorageSchema;
 use sc_client_api::{
@@ -60,6 +64,9 @@ pub mod daoportal;
 
 #[cfg(feature = "finitestate")]
 pub mod daoportal;
+
+#[cfg(feature = "finitestate")]
+pub mod gmetadata;
 
 /// Extra dependencies for BABE.
 pub struct BabeDeps {
@@ -133,6 +140,7 @@ where
     C::Api: sp_consensus_babe::BabeApi<Block>,
     C::Api: BlockBuilder<Block>,
     C::Api: DAOPortalRuntimeApi<Block>,
+    C::Api: GmetadataRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
@@ -144,6 +152,12 @@ where
     let mut io = create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor);
 
     io.extend_with(DAOPortalServer::to_delegate(daoportal::DAOPortalApi::new(
+        _client.clone(),
+    )));
+
+    use gmetadata::GmetadataServer;
+
+    io.extend_with(GmetadataServer::to_delegate(gmetadata::GmetadataApi::new(
         _client.clone(),
     )));
 
@@ -174,6 +188,7 @@ where
     C::Api: sp_consensus_babe::BabeApi<Block>,
     C::Api: BlockBuilder<Block>,
     C::Api: DAOPortalRuntimeApi<Block>,
+    C::Api: GmetadataRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
@@ -185,6 +200,10 @@ where
     let mut io = create_full_base::<C, P, BE, B, SC>(deps, subscription_task_executor);
 
     io.extend_with(DAOPortalServer::to_delegate(daoportal::DAOPortalApi::new(
+        _client.clone(),
+    )));
+
+    io.extend_with(DAOPortalServer::to_delegate(daoportal::Gmetadata::new(
         _client.clone(),
     )));
 

@@ -20,6 +20,7 @@ use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
 use frame_system::{EnsureOneOf, EnsureRoot};
 use pallet_daoportal::datastructures::{DAOProposal, Project, ProjectId, ProposalId};
+use pallet_gmetadata::datastructures::{GmetadataKey, GmetadataQueryResult, HexBytes};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlinedId;
@@ -182,6 +183,7 @@ impl Contains<Call> for CallFilter {
             | Call::ChainBridge(_)
             | Call::ElectionProviderMultiPhase(_)
             | Call::DAOPortal(_)
+            | Call::Gmetadata(_)
             | Call::Democracy(_)
             | Call::Council(_)
             | Call::TechnicalCommittee(_)
@@ -575,6 +577,10 @@ impl pallet_daoportal::Config for Runtime {
     type MaxStrategy = MaxStrategy;
     type UnixTime = Timestamp;
     type DAOPortalWeightInfo = pallet_daoportal::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_gmetadata::Config for Runtime {
+    type Event = Event;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -1076,6 +1082,7 @@ construct_runtime!(
         BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Event<T>},
         Game: pallet_game::{Pallet, Call, Storage, Event<T>},
         DAOPortal: pallet_daoportal::{Pallet, Call, Storage, Event<T>},
+        Gmetadata: pallet_gmetadata::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -1309,6 +1316,17 @@ impl_runtime_apis! {
 
         fn get_all_proposals() -> Vec<(ProjectId, ProposalId, DAOProposal<AccountId>)> {
             DAOPortal::get_all_proposals()
+        }
+    }
+
+    impl apis::GmetadataApi<Block> for Runtime {
+        fn query_with_index(
+            index_key: GmetadataKey, 
+            value_key: GmetadataKey, 
+            cursor: HexBytes, 
+            limit: u64
+        ) -> GmetadataQueryResult {
+            Gmetadata::query_with_index(index_key, value_key, cursor, limit)
         }
     }
 
