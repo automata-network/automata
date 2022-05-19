@@ -581,6 +581,7 @@ impl pallet_daoportal::Config for Runtime {
 
 impl pallet_gmetadata::Config for Runtime {
     type Event = Event;
+    type UnixTime = Timestamp;
 }
 
 impl pallet_sudo::Config for Runtime {
