@@ -1008,7 +1008,7 @@ impl pallet_daoportal::Config for Runtime {
 
 impl pallet_gmetadata::Config for Runtime {
     type Event = Event;
-    type UnixTime = Timestamp;
+    type UnixTime = Timestamp; // update_time
 }
 
 pub struct TransactionConverter;
