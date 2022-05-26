@@ -27,7 +27,7 @@ pub trait GmetadataServer<BlockHash> {
     #[rpc(name = "gmetadata_queryWithIndex")]
     fn query_with_index(
         &self,
-        index_key: GmetadataKey,
+        index_key: Vec<GmetadataKey>,
         value_key: GmetadataKey,
         cursor: HexBytes,
         limit: u64,
@@ -54,7 +54,7 @@ where
 {
     fn query_with_index(
         &self,
-        index_key: GmetadataKey,
+        index_key: Vec<GmetadataKey>,
         value_key: GmetadataKey,
         cursor: HexBytes,
         limit: u64,
@@ -71,7 +71,6 @@ where
                 data: Some(format!("{:?}", e).into()),
             })?;
 
-        // Ok(proposals_list)
         Ok(result)
     }
 }

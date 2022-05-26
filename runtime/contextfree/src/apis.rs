@@ -21,7 +21,7 @@ sp_api::decl_runtime_apis! {
 
     pub trait GmetadataApi {
         fn query_with_index(
-            index_key: GmetadataKey,
+            index_key: Vec<GmetadataKey>,
             value_key: GmetadataKey,
             cursor: HexBytes,
             limit: u64

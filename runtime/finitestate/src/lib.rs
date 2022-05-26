@@ -1322,12 +1322,12 @@ impl_runtime_apis! {
 
     impl apis::GmetadataApi<Block> for Runtime {
         fn query_with_index(
-            index_key: GmetadataKey,
+            index_key: Vec<GmetadataKey>,
             value_key: GmetadataKey,
             cursor: HexBytes,
             limit: u64
         ) -> GmetadataQueryResult {
-            Gmetadata::query_with_index(index_key, value_key, cursor, limit)
+            Gmetadata::query_with_indexes(index_key, value_key, cursor, limit)
         }
     }
 
