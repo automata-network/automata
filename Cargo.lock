@@ -443,7 +443,7 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=feautre/add_global_metadata#a38d9da9fffc33142fc11707302f9eb4e206f583"
+source = "git+https://github.com/automata-network/automata-common?branch=feautre/add_global_metadata#5bd51dca1c92da5ff3a36c86b16f30d2969f896e"
 dependencies = [
  "frame-system",
  "impl-trait-for-tuples 0.2.1",
@@ -5008,7 +5008,7 @@ dependencies = [
 [[package]]
 name = "pallet-gmetadata"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=feautre/add_global_metadata#a38d9da9fffc33142fc11707302f9eb4e206f583"
+source = "git+https://github.com/automata-network/automata-common?branch=feautre/add_global_metadata#5bd51dca1c92da5ff3a36c86b16f30d2969f896e"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=feautre/add_global_metadata)",
  "blake2",
@@ -9310,7 +9310,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
  "cfg-if 1.0.0",
- "rand 0.3.23",
+ "rand 0.8.5",
  "static_assertions",
 ]
 
