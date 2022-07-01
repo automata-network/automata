@@ -75,7 +75,7 @@ jobs:
             type=local,dest=/tmp/buildx-cache-cross-step,mode=max
           tags: |
             atactr/automata:automata-latest
-            atactr/automata:automata-${{ github.event.release.tag_name }}
+            atactr/automata:automata-${{ github.ref_name }}
           build-args: |
             FEATURES=automata
       - name: Update registry cache
