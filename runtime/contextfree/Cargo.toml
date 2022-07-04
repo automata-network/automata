@@ -82,7 +82,7 @@ pallet-bridge = { default-features = false, git = 'https://github.com/automata-n
 pallet-bridgetransfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 pallet-game = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'main' }
 pallet-daoportal = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'main' }
-pallet-gmetadata = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'feautre/add_global_metadata' }
+pallet-gmetadata = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'main' }
 automata-primitives = { default-features = false, path = "../../primitives" }
 automata-runtime-common = { path = "../common", default-features = false }
 
