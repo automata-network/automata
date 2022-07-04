@@ -443,7 +443,7 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=feature/daoportal-cf#f3ac748ceb285fe4a431af38ecdec996b77a8b92"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
  "frame-system",
  "impl-trait-for-tuples 0.2.1",
@@ -457,7 +457,7 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
+source = "git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "frame-system",
  "impl-trait-for-tuples 0.2.1",
@@ -500,8 +500,8 @@ dependencies = [
  "jsonrpc-core-client 15.1.0",
  "jsonrpc-derive 15.1.0",
  "jsonrpc-pubsub 15.1.0",
- "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?branch=feature/daoportal-cf)",
  "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
+ "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced)",
  "pallet-ethereum",
  "pallet-geode",
  "pallet-gmetadata",
@@ -1080,7 +1080,7 @@ dependencies = [
  "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "pallet-bridgetransfer 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "pallet-collective",
- "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?branch=feature/daoportal-cf)",
+ "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced)",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
  "pallet-elections-phragmen",
@@ -4839,9 +4839,9 @@ dependencies = [
 [[package]]
 name = "pallet-daoportal"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=feature/daoportal-cf#f3ac748ceb285fe4a431af38ecdec996b77a8b92"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
- "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=feature/daoportal-cf)",
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "frame-support",
  "frame-system",
  "pallet-timestamp",
@@ -4857,9 +4857,9 @@ dependencies = [
 [[package]]
 name = "pallet-daoportal"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
+source = "git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
- "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced)",
  "frame-support",
  "frame-system",
  "pallet-timestamp",

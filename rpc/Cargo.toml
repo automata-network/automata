@@ -49,7 +49,7 @@ finitestate-runtime = { path = '../runtime/finitestate', optional = true }
 pallet-geode = { git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-transfer = { git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-daoportal = { git = 'https://github.com/automata-network/automata-common', branch = 'main' }
-pallet-daoportal-cf = { git = 'https://github.com/automata-network/automata-common', branch = 'feature/daoportal-cf', package = 'pallet-daoportal' }
+pallet-daoportal-cf = { git = 'https://github.com/automata-network/automata-common', rev = '2b56383496e416e176569a25bfeb6d9ef2c6dced', package = 'pallet-daoportal' }
 pallet-gmetadata = { git = 'https://github.com/automata-network/automata-common', branch = 'main' }
 
 fc-rpc = { default-features = false, git = 'https://github.com/automata-network/frontier', branch='master'}
