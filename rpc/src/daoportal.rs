@@ -22,7 +22,6 @@ use pallet_daoportal::datastructures::{DAOProposal, Project, ProjectId, Proposal
 use jsonrpc_core::{Error, ErrorCode, Result};
 use jsonrpc_derive::rpc;
 
-
 use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
 use sp_api::ProvideRuntimeApi;
 use sp_runtime::{codec::Decode, traits::Block as BlockT};
