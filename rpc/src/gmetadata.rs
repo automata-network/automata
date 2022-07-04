@@ -67,7 +67,7 @@ where
             .query_with_index(&at, index_key, value_key, cursor, limit)
             .map_err(|e| Error {
                 code: ErrorCode::ServerError(RUNTIME_ERROR),
-                message: "Runtime unable to get projects list.".into(),
+                message: "Runtime unable to call query_with_index.".into(),
                 data: Some(format!("{:?}", e).into()),
             })?;
 
