@@ -8,15 +8,21 @@ compile_error!("Feature 1 and 2 are mutually exclusive and cannot be enabled tog
 use automata_primitives::{AccountId, Block, BlockId, Index};
 // #[cfg(feature = "automata")]
 // use automata_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
+
 #[cfg(feature = "contextfree")]
 use contextfree_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
+#[cfg(feature = "contextfree")]
+use pallet_daoportal_cf::datastructures::{DAOProposal, Project, ProjectId, ProposalId};
+
 #[cfg(feature = "finitestate")]
 use finitestate_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
+#[cfg(feature = "finitestate")]
+use pallet_daoportal::datastructures::{DAOProposal, Project, ProjectId, ProposalId};
 
 use jsonrpc_core::{Error, ErrorCode, Result};
 use jsonrpc_derive::rpc;
 
-use pallet_daoportal::datastructures::{DAOProposal, Project, ProjectId, ProposalId};
+
 use sc_light::blockchain::BlockchainHeaderBackend as HeaderBackend;
 use sp_api::ProvideRuntimeApi;
 use sp_runtime::{codec::Decode, traits::Block as BlockT};

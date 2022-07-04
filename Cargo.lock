@@ -443,6 +443,20 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?branch=feature/daoportal-cf#f3ac748ceb285fe4a431af38ecdec996b77a8b92"
+dependencies = [
+ "frame-system",
+ "impl-trait-for-tuples 0.2.1",
+ "parity-scale-codec",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-runtime",
+ "uint",
+]
+
+[[package]]
+name = "automata-primitives"
+version = "0.1.0"
 source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
  "frame-system",
@@ -486,7 +500,8 @@ dependencies = [
  "jsonrpc-core-client 15.1.0",
  "jsonrpc-derive 15.1.0",
  "jsonrpc-pubsub 15.1.0",
- "pallet-daoportal",
+ "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?branch=feature/daoportal-cf)",
+ "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "pallet-ethereum",
  "pallet-geode",
  "pallet-gmetadata",
@@ -1065,7 +1080,7 @@ dependencies = [
  "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "pallet-bridgetransfer 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "pallet-collective",
- "pallet-daoportal",
+ "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?branch=feature/daoportal-cf)",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
  "pallet-elections-phragmen",
@@ -2040,7 +2055,7 @@ dependencies = [
  "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "pallet-bridgetransfer 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "pallet-collective",
- "pallet-daoportal",
+ "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
  "pallet-elections-phragmen",
@@ -4815,6 +4830,24 @@ dependencies = [
  "frame-system",
  "log",
  "parity-scale-codec",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-daoportal"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?branch=feature/daoportal-cf#f3ac748ceb285fe4a431af38ecdec996b77a8b92"
+dependencies = [
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=feature/daoportal-cf)",
+ "frame-support",
+ "frame-system",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "serde",
+ "serde_json",
  "sp-core",
  "sp-io",
  "sp-runtime",
