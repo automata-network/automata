@@ -443,7 +443,7 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
  "frame-system",
  "impl-trait-for-tuples 0.2.1",
@@ -4735,7 +4735,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridge"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
  "blake2-rfc",
  "frame-support",
@@ -4771,7 +4771,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridgetransfer"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4824,7 +4824,7 @@ dependencies = [
 [[package]]
 name = "pallet-daoportal"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "frame-support",
@@ -4960,7 +4960,7 @@ dependencies = [
 [[package]]
 name = "pallet-game"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "blake2",
@@ -9296,7 +9296,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
  "cfg-if 1.0.0",
- "rand 0.3.23",
+ "rand 0.8.5",
  "static_assertions",
 ]
 
