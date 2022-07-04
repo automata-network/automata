@@ -587,7 +587,6 @@ impl pallet_gmetadata::Config for Runtime {
     type Event = Event;
     type UnixTime = Timestamp;
     type MaxIndexLength = MaxIndexLength;
-
 }
 
 impl pallet_sudo::Config for Runtime {
