@@ -443,7 +443,7 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
+source = "git+https://github.com/automata-network/automata-common?branch=main#069922bf16b8a2c85b75f9bc9ffb6c35c776d30d"
 dependencies = [
  "frame-system",
  "impl-trait-for-tuples 0.2.1",
@@ -4750,7 +4750,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridge"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
+source = "git+https://github.com/automata-network/automata-common?branch=main#069922bf16b8a2c85b75f9bc9ffb6c35c776d30d"
 dependencies = [
  "blake2-rfc",
  "frame-support",
@@ -4786,7 +4786,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridgetransfer"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
+source = "git+https://github.com/automata-network/automata-common?branch=main#069922bf16b8a2c85b75f9bc9ffb6c35c776d30d"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4839,7 +4839,7 @@ dependencies = [
 [[package]]
 name = "pallet-daoportal"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
+source = "git+https://github.com/automata-network/automata-common?branch=main#069922bf16b8a2c85b75f9bc9ffb6c35c776d30d"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "frame-support",
@@ -4993,7 +4993,7 @@ dependencies = [
 [[package]]
 name = "pallet-game"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
+source = "git+https://github.com/automata-network/automata-common?branch=main#069922bf16b8a2c85b75f9bc9ffb6c35c776d30d"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "blake2",
@@ -5027,7 +5027,7 @@ dependencies = [
 [[package]]
 name = "pallet-gmetadata"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
+source = "git+https://github.com/automata-network/automata-common?branch=main#069922bf16b8a2c85b75f9bc9ffb6c35c776d30d"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "blake2",
