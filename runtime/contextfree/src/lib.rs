@@ -20,6 +20,7 @@ use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
 use frame_system::{EnsureOneOf, EnsureRoot};
 use pallet_daoportal::datastructures::{DAOProposal, Project, ProjectId, ProposalId};
+use pallet_gmetadata::datastructures::{GmetadataKey, GmetadataQueryResult, HexBytes};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlinedId;
@@ -126,7 +127,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 1005,
+    spec_version: 1006,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -182,6 +183,7 @@ impl Contains<Call> for CallFilter {
             | Call::ChainBridge(_)
             | Call::ElectionProviderMultiPhase(_)
             | Call::DAOPortal(_)
+            | Call::Gmetadata(_)
             | Call::Democracy(_)
             | Call::Council(_)
             | Call::TechnicalCommittee(_)
@@ -575,6 +577,16 @@ impl pallet_daoportal::Config for Runtime {
     type MaxStrategy = MaxStrategy;
     type UnixTime = Timestamp;
     type DAOPortalWeightInfo = pallet_daoportal::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+    pub const MaxIndexLength: u32 = 100000;
+}
+
+impl pallet_gmetadata::Config for Runtime {
+    type Event = Event;
+    type UnixTime = Timestamp;
+    type MaxIndexLength = MaxIndexLength;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -1076,6 +1088,7 @@ construct_runtime!(
         BridgeTransfer: pallet_bridgetransfer::{Pallet, Call, Event<T>},
         Game: pallet_game::{Pallet, Call, Storage, Event<T>},
         DAOPortal: pallet_daoportal::{Pallet, Call, Storage, Event<T>},
+        Gmetadata: pallet_gmetadata::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -1309,6 +1322,17 @@ impl_runtime_apis! {
 
         fn get_all_proposals() -> Vec<(ProjectId, ProposalId, DAOProposal<AccountId>)> {
             DAOPortal::get_all_proposals()
+        }
+    }
+
+    impl apis::GmetadataApi<Block> for Runtime {
+        fn query_with_index(
+            index_key: Vec<GmetadataKey>,
+            value_key: GmetadataKey,
+            cursor: HexBytes,
+            limit: u64
+        ) -> GmetadataQueryResult {
+            Gmetadata::query_with_indexes(index_key, value_key, cursor, limit)
         }
     }
 

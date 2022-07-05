@@ -443,7 +443,21 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
+dependencies = [
+ "frame-system",
+ "impl-trait-for-tuples 0.2.1",
+ "parity-scale-codec",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-runtime",
+ "uint",
+]
+
+[[package]]
+name = "automata-primitives"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced#2b56383496e416e176569a25bfeb6d9ef2c6dced"
 dependencies = [
  "frame-system",
  "impl-trait-for-tuples 0.2.1",
@@ -486,9 +500,11 @@ dependencies = [
  "jsonrpc-core-client 15.1.0",
  "jsonrpc-derive 15.1.0",
  "jsonrpc-pubsub 15.1.0",
- "pallet-daoportal",
+ "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
+ "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced)",
  "pallet-ethereum",
  "pallet-geode",
+ "pallet-gmetadata",
  "pallet-transaction-payment-rpc",
  "pallet-transfer",
  "sc-client-api",
@@ -1064,7 +1080,7 @@ dependencies = [
  "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "pallet-bridgetransfer 0.1.0 (git+https://github.com/automata-network/automata-common)",
  "pallet-collective",
- "pallet-daoportal",
+ "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced)",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
  "pallet-elections-phragmen",
@@ -1073,6 +1089,7 @@ dependencies = [
  "pallet-evm-precompile-simple",
  "pallet-game",
  "pallet-geode",
+ "pallet-gmetadata",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-indices",
@@ -2038,7 +2055,7 @@ dependencies = [
  "pallet-bridge 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "pallet-bridgetransfer 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "pallet-collective",
- "pallet-daoportal",
+ "pallet-daoportal 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "pallet-democracy",
  "pallet-election-provider-multi-phase",
  "pallet-elections-phragmen",
@@ -2047,6 +2064,7 @@ dependencies = [
  "pallet-evm-precompile-simple",
  "pallet-game",
  "pallet-geode",
+ "pallet-gmetadata",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-indices",
@@ -4732,7 +4750,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridge"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
  "blake2-rfc",
  "frame-support",
@@ -4768,7 +4786,7 @@ dependencies = [
 [[package]]
 name = "pallet-bridgetransfer"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4821,9 +4839,27 @@ dependencies = [
 [[package]]
 name = "pallet-daoportal"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
+ "frame-support",
+ "frame-system",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "serde",
+ "serde_json",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-daoportal"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced#2b56383496e416e176569a25bfeb6d9ef2c6dced"
+dependencies = [
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?rev=2b56383496e416e176569a25bfeb6d9ef2c6dced)",
  "frame-support",
  "frame-system",
  "pallet-timestamp",
@@ -4957,7 +4993,7 @@ dependencies = [
 [[package]]
 name = "pallet-game"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=main#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
  "blake2",
@@ -4984,6 +5020,25 @@ dependencies = [
  "parity-scale-codec",
  "serde",
  "serde_json",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-gmetadata"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?branch=main#f2ec8ca6166e0077592b1e6d9f0bf78afb621da0"
+dependencies = [
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=main)",
+ "blake2",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
