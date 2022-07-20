@@ -443,7 +443,7 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=gee#6965f91efec33c6018cde97781a24df53d03a87f"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#eda96e6b82c6e4eda42b0832cf5cfd5f5901e6f5"
 dependencies = [
  "frame-system",
  "impl-trait-for-tuples 0.2.1",
@@ -631,7 +631,7 @@ dependencies = [
 [[package]]
 name = "automata-traits"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=gee#6965f91efec33c6018cde97781a24df53d03a87f"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#eda96e6b82c6e4eda42b0832cf5cfd5f5901e6f5"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
@@ -4676,7 +4676,7 @@ dependencies = [
 [[package]]
 name = "pallet-attestor"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=gee#6965f91efec33c6018cde97781a24df53d03a87f"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#eda96e6b82c6e4eda42b0832cf5cfd5f5901e6f5"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=gee)",
  "automata-traits",
@@ -5021,7 +5021,7 @@ dependencies = [
 [[package]]
 name = "pallet-geode"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=gee#6965f91efec33c6018cde97781a24df53d03a87f"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#eda96e6b82c6e4eda42b0832cf5cfd5f5901e6f5"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=gee)",
  "automata-traits",
@@ -5040,7 +5040,7 @@ dependencies = [
 [[package]]
 name = "pallet-geodesession"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=gee#6965f91efec33c6018cde97781a24df53d03a87f"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#eda96e6b82c6e4eda42b0832cf5cfd5f5901e6f5"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=gee)",
  "automata-traits",
@@ -5160,7 +5160,7 @@ dependencies = [
 [[package]]
 name = "pallet-order"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common?branch=gee#6965f91efec33c6018cde97781a24df53d03a87f"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#eda96e6b82c6e4eda42b0832cf5cfd5f5901e6f5"
 dependencies = [
  "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=gee)",
  "automata-traits",
@@ -9340,7 +9340,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
  "cfg-if 1.0.0",
- "rand 0.8.5",
+ "rand 0.3.23",
  "static_assertions",
 ]
 

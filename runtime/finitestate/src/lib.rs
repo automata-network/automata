@@ -841,8 +841,6 @@ impl pallet_order::Config for Runtime {
 }
 
 parameter_types! {
-    pub const MinimumAttestorNum: u16 = 1;
-    pub const ExpectedAttestorNum: u16 = 2;
     pub const AttestorHeartbeatTimeoutBlockNumber: u32 = 5;
 }
 
@@ -850,8 +848,6 @@ impl pallet_attestor::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
     type Call = Call;
-    type MinimumAttestorNum = MinimumAttestorNum;
-    type ExpectedAttestorNum = ExpectedAttestorNum;
     type HeartbeatTimeoutBlockNumber = AttestorHeartbeatTimeoutBlockNumber;
     type ApplicationHandler = pallet_geode::Pallet<Self>;
 }
