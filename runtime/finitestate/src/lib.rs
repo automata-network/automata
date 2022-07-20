@@ -191,6 +191,9 @@ impl Contains<Call> for CallFilter {
             | Call::Treasury(_)
             | Call::PhragmenElection(_)
             | Call::Scheduler(_)
+            | Call::Attestor(_)
+            | Call::Geode(_)
+            | Call::GeodeSession(_)
             | Call::Balances(_) => true,
 
             // These modules are not allowed to be called by transactions:
@@ -833,6 +836,42 @@ impl pallet_treasury::Config for Runtime {
     type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_order::Config for Runtime {
+    type Event = Event;
+}
+
+parameter_types! {
+    pub const MinimumAttestorNum: u16 = 1;
+    pub const ExpectedAttestorNum: u16 = 2;
+    pub const AttestorHeartbeatTimeoutBlockNumber: u32 = 5;
+}
+
+impl pallet_attestor::Config for Runtime {
+    type Event = Event;
+    type Currency = Balances;
+    type Call = Call;
+    type MinimumAttestorNum = MinimumAttestorNum;
+    type ExpectedAttestorNum = ExpectedAttestorNum;
+    type HeartbeatTimeoutBlockNumber = AttestorHeartbeatTimeoutBlockNumber;
+    type ApplicationHandler = pallet_geode::Pallet<Self>;
+}
+
+impl pallet_geode::Config for Runtime {
+    type Event = Event;
+    type AttestorHandler = pallet_attestor::Pallet<Self>;
+    type OrderHandler = pallet_order::Pallet<Self>;
+}
+
+parameter_types!{
+    pub const SessionBlocks: u32 = 100;
+}
+
+impl pallet_geodesession::Config for Runtime {
+    type Event = Event;
+    type GeodeHandler = pallet_geode::Pallet<Runtime>;
+    type Blocks = SessionBlocks;
+}
+
 /// Fixed gas price of `1`.
 pub struct FixedGasPrice;
 
@@ -1089,6 +1128,11 @@ construct_runtime!(
         Game: pallet_game::{Pallet, Call, Storage, Event<T>},
         DAOPortal: pallet_daoportal::{Pallet, Call, Storage, Event<T>},
         Gmetadata: pallet_gmetadata::{Pallet, Call, Storage, Event<T>},
+
+        Order: pallet_order::{Pallet, Storage, Event<T>},
+        Attestor: pallet_attestor::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
+        Geode: pallet_geode::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
+        GeodeSession: pallet_geodesession::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -1333,6 +1377,50 @@ impl_runtime_apis! {
             limit: u64
         ) -> GmetadataQueryResult {
             Gmetadata::query_with_indexes(index_key, value_key, cursor, limit)
+        }
+    }
+
+    impl apis::AttestorApi<Block> for Runtime {
+        fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>, u32)> {
+            Attestor::attestor_list()
+        }
+
+        fn attestor_attested_appids(attestor: AccountId) -> Vec<AccountId> {
+            Attestor::attestor_attested_appids(attestor)
+        }
+
+        fn unsigned_attestor_heartbeat(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> bool {
+            match Attestor::unsigned_attestor_heartbeat(message, signature_raw_bytes) {
+                Ok(_) => true,
+                Err(_) => false,
+            }
+        }
+    }
+
+    impl apis::GeodeApi<Block> for Runtime {
+        fn unsigned_geode_ready(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> bool {
+            match Geode::rpc_unsigned_geode_ready(message, signature_raw_bytes) {
+                Ok(_) => true,
+                Err(_) => false,
+            }
+        }
+        fn unsigned_geode_finalizing(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> bool {
+            match Geode::rpc_unsigned_geode_finalizing(message, signature_raw_bytes) {
+                Ok(_) => true,
+                Err(_) => false,
+            }
+        }
+        fn unsigned_geode_finalized(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> bool {
+            match Geode::rpc_unsigned_geode_finalized(message, signature_raw_bytes) {
+                Ok(_) => true,
+                Err(_) => false,
+            }
+        }
+        fn unsigned_geode_finalize_failed(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> bool {
+            match Geode::rpc_unsigned_geode_finalize_failed(message, signature_raw_bytes) {
+                Ok(_) => true,
+                Err(_) => false,
+            }
         }
     }
 

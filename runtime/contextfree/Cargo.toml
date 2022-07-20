@@ -74,10 +74,7 @@ frame-election-provider-support = { default-features = false, git = 'https://git
 static_assertions = "1.1.0"
 
 # local dependencies
-pallet-attestor = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
-pallet-geode = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-transfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
-pallet-liveness = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-bridge = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 pallet-bridgetransfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0'}
 pallet-game = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'main' }
@@ -94,7 +91,6 @@ runtime-benchmarks = [
     'frame-system-benchmarking',
     'frame-system/runtime-benchmarks',
     'pallet-balances/runtime-benchmarks',
-    'pallet-attestor/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
     'pallet-election-provider-multi-phase/runtime-benchmarks'
@@ -119,8 +115,6 @@ std = [
     'pallet-staking/std',
     'pallet-election-provider-multi-phase/std',
     "pallet-session/std",
-    'pallet-attestor/std',
-    'pallet-attestor/full_crypto',
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',

@@ -74,10 +74,11 @@ frame-election-provider-support = { default-features = false, git = 'https://git
 static_assertions = "1.1.0"
 
 # local dependencies
-pallet-attestor = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
-pallet-geode = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
+pallet-attestor = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'gee' }
+pallet-geode = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'gee' }
+pallet-geodesession = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'gee' }
+pallet-order = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'gee' }
 pallet-transfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
-pallet-liveness = { default-features = false, git = 'https://github.com/automata-network/automata-common', version = '0.1.0' }
 pallet-bridge = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'main' }
 pallet-bridgetransfer = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'main' }
 pallet-game = { default-features = false, git = 'https://github.com/automata-network/automata-common', branch = 'main' }

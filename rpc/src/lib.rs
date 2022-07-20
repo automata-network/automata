@@ -29,6 +29,10 @@ use fc_rpc_core::types::PendingTransactions;
 use finitestate_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
 #[cfg(feature = "finitestate")]
 use finitestate_runtime::apis::GmetadataApi as GmetadataRuntimeApi;
+#[cfg(feature = "finitestate")]
+use finitestate_runtime::apis::GeodeApi as GeodeRuntimeApi;
+#[cfg(feature = "finitestate")]
+use finitestate_runtime::apis::AttestorApi as AttestorRuntimeApi;
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use pallet_ethereum::EthereumStorageSchema;
 use sc_client_api::{
@@ -70,6 +74,12 @@ pub mod gmetadata;
 
 #[cfg(feature = "finitestate")]
 pub mod gmetadata;
+
+#[cfg(feature = "finitestate")]
+pub mod geode;
+
+#[cfg(feature = "finitestate")]
+pub mod attestor;
 
 /// Extra dependencies for BABE.
 pub struct BabeDeps {
@@ -144,6 +154,8 @@ where
     C::Api: BlockBuilder<Block>,
     C::Api: DAOPortalRuntimeApi<Block>,
     C::Api: GmetadataRuntimeApi<Block>,
+    C::Api: GeodeRuntimeApi<Block>,
+    C::Api: AttestorRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
@@ -163,6 +175,14 @@ where
     io.extend_with(GmetadataServer::to_delegate(gmetadata::GmetadataApi::new(
         _client.clone(),
     )));
+
+    use attestor::AttestorServer;
+    io.extend_with(AttestorServer::to_delegate(attestor::AttestorApi::new(
+        _client.clone(),
+    )));
+
+    use geode::GeodeServer;
+    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(_client.clone())));
 
     // Ok(create_full_base::<C, P, BE, B, SC>(
     //     deps,
