@@ -26,13 +26,13 @@ use fc_rpc_core::types::PendingTransactions;
 // #[cfg(feature = "finitestate")]
 // use finitestate_runtime::apis::TransferApi as TransferRuntimeApi;
 #[cfg(feature = "finitestate")]
-use finitestate_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
+use finitestate_runtime::apis::AttestorApi as AttestorRuntimeApi;
 #[cfg(feature = "finitestate")]
-use finitestate_runtime::apis::GmetadataApi as GmetadataRuntimeApi;
+use finitestate_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
 #[cfg(feature = "finitestate")]
 use finitestate_runtime::apis::GeodeApi as GeodeRuntimeApi;
 #[cfg(feature = "finitestate")]
-use finitestate_runtime::apis::AttestorApi as AttestorRuntimeApi;
+use finitestate_runtime::apis::GmetadataApi as GmetadataRuntimeApi;
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use pallet_ethereum::EthereumStorageSchema;
 use sc_client_api::{
@@ -182,7 +182,9 @@ where
     )));
 
     use geode::GeodeServer;
-    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(_client.clone())));
+    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
+        _client.clone(),
+    )));
 
     // Ok(create_full_base::<C, P, BE, B, SC>(
     //     deps,

@@ -1,6 +1,6 @@
+use automata_primitives::{AccountId, Block, BlockId};
 use jsonrpc_core::{Error, ErrorCode, Result};
 use jsonrpc_derive::rpc;
-use automata_primitives::{Block, BlockId, AccountId};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::traits::Block as BlockT;

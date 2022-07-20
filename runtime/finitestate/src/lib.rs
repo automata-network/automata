@@ -862,7 +862,7 @@ impl pallet_geode::Config for Runtime {
     type OrderHandler = pallet_order::Pallet<Self>;
 }
 
-parameter_types!{
+parameter_types! {
     pub const SessionBlocks: u32 = 100;
 }
 

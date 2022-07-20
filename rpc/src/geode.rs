@@ -1,12 +1,12 @@
+use automata_primitives::Block;
+#[cfg(feature = "finitestate")]
+use finitestate_runtime::apis::GeodeApi as GeodeRuntimeApi;
 use jsonrpc_core::{Error, ErrorCode, Result};
 use jsonrpc_derive::rpc;
-use automata_primitives::{Block};
 use sp_api::BlockId;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::traits::Block as BlockT;
-#[cfg(feature = "finitestate")]
-use finitestate_runtime::apis::GeodeApi as GeodeRuntimeApi;
 use std::sync::Arc;
 
 const RUNTIME_ERROR: i64 = 1;
