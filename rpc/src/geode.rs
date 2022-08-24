@@ -1,4 +1,6 @@
 use automata_primitives::Block;
+#[cfg(feature = "contextfree")]
+use contextfree_runtime::apis::GeodeApi as GeodeRuntimeApi;
 #[cfg(feature = "finitestate")]
 use finitestate_runtime::apis::GeodeApi as GeodeRuntimeApi;
 use jsonrpc_core::{Error, ErrorCode, Result};

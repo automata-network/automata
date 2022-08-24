@@ -6,6 +6,8 @@ use sp_blockchain::HeaderBackend;
 use sp_runtime::traits::Block as BlockT;
 use std::sync::Arc;
 
+#[cfg(feature = "contextfree")]
+use contextfree_runtime::apis::AttestorApi as AttestorRuntimeApi;
 #[cfg(feature = "finitestate")]
 use finitestate_runtime::apis::AttestorApi as AttestorRuntimeApi;
 
