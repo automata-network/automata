@@ -246,6 +246,16 @@ where
         _client.clone(),
     )));
 
+    use attestor::AttestorServer;
+    io.extend_with(AttestorServer::to_delegate(attestor::AttestorApi::new(
+        _client.clone(),
+    )));
+
+    use geode::GeodeServer;
+    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
+        _client.clone(),
+    )));
+
     Ok(io)
 }
 
