@@ -443,6 +443,20 @@ dependencies = [
 [[package]]
 name = "automata-primitives"
 version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#b4a7d94526d5203f5f4f130002f99da55315246c"
+dependencies = [
+ "frame-system",
+ "impl-trait-for-tuples 0.2.1",
+ "parity-scale-codec",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-runtime",
+ "uint",
+]
+
+[[package]]
+name = "automata-primitives"
+version = "0.1.0"
 source = "git+https://github.com/automata-network/automata-common?branch=main#069922bf16b8a2c85b75f9bc9ffb6c35c776d30d"
 dependencies = [
  "frame-system",
@@ -548,7 +562,6 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal",
- "pallet-attestor",
  "pallet-authority-discovery",
  "pallet-authorship",
  "pallet-babe",
@@ -562,11 +575,9 @@ dependencies = [
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-precompile-simple",
- "pallet-geode",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-indices",
- "pallet-liveness",
  "pallet-membership",
  "pallet-offences",
  "pallet-randomness-collective-flip",
@@ -620,7 +631,7 @@ dependencies = [
 [[package]]
 name = "automata-traits"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#b4a7d94526d5203f5f4f130002f99da55315246c"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
@@ -1089,13 +1100,14 @@ dependencies = [
  "pallet-evm-precompile-simple",
  "pallet-game",
  "pallet-geode",
+ "pallet-geodesession",
  "pallet-gmetadata",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-indices",
- "pallet-liveness",
  "pallet-membership",
  "pallet-offences",
+ "pallet-order",
  "pallet-randomness-collective-flip",
  "pallet-scheduler",
  "pallet-session",
@@ -2064,13 +2076,14 @@ dependencies = [
  "pallet-evm-precompile-simple",
  "pallet-game",
  "pallet-geode",
+ "pallet-geodesession",
  "pallet-gmetadata",
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-indices",
- "pallet-liveness",
  "pallet-membership",
  "pallet-offences",
+ "pallet-order",
  "pallet-randomness-collective-flip",
  "pallet-scheduler",
  "pallet-session",
@@ -4667,15 +4680,17 @@ dependencies = [
 [[package]]
 name = "pallet-attestor"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#b4a7d94526d5203f5f4f130002f99da55315246c"
 dependencies = [
- "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=gee)",
  "automata-traits",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "hex-literal",
+ "log",
  "parity-scale-codec",
+ "serde",
  "sp-core",
  "sp-runtime",
  "sp-std",
@@ -5010,16 +5025,33 @@ dependencies = [
 [[package]]
 name = "pallet-geode"
 version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#32c60ead64859cdbfab8f2c5965bc6288816b159"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#b4a7d94526d5203f5f4f130002f99da55315246c"
 dependencies = [
- "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=gee)",
  "automata-traits",
  "frame-support",
  "frame-system",
+ "log",
  "pallet-attestor",
  "parity-scale-codec",
  "serde",
  "serde_json",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-geodesession"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#b4a7d94526d5203f5f4f130002f99da55315246c"
+dependencies = [
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=gee)",
+ "automata-traits",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
  "sp-runtime",
  "sp-std",
 ]
@@ -5099,23 +5131,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-liveness"
-version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#32c60ead64859cdbfab8f2c5965bc6288816b159"
-dependencies = [
- "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
- "automata-traits",
- "frame-support",
- "frame-system",
- "pallet-attestor",
- "pallet-geode",
- "pallet-service",
- "parity-scale-codec",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-membership"
 version = "4.0.0-dev"
 source = "git+https://github.com/automata-network/substrate.git?branch=polkadot-v0.9.10#d49cdc05f6b784049b9ee48d0b787cfbda7e80b8"
@@ -5147,6 +5162,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-order"
+version = "0.1.0"
+source = "git+https://github.com/automata-network/automata-common?branch=gee#b4a7d94526d5203f5f4f130002f99da55315246c"
+dependencies = [
+ "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common?branch=gee)",
+ "automata-traits",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-randomness-collective-flip"
 version = "4.0.0-dev"
 source = "git+https://github.com/automata-network/substrate.git?branch=polkadot-v0.9.10#d49cdc05f6b784049b9ee48d0b787cfbda7e80b8"
@@ -5170,22 +5201,6 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-service"
-version = "0.1.0"
-source = "git+https://github.com/automata-network/automata-common#32c60ead64859cdbfab8f2c5965bc6288816b159"
-dependencies = [
- "automata-primitives 0.1.0 (git+https://github.com/automata-network/automata-common)",
- "frame-support",
- "frame-system",
- "pallet-geode",
- "parity-scale-codec",
- "sha2 0.9.9",
- "sp-core",
  "sp-runtime",
  "sp-std",
 ]
@@ -9329,7 +9344,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
  "cfg-if 1.0.0",
- "rand 0.8.5",
+ "rand 0.3.23",
  "static_assertions",
 ]
 

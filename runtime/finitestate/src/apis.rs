@@ -29,4 +29,17 @@ sp_api::decl_runtime_apis! {
             limit: u64
         ) -> GmetadataQueryResult;
     }
+
+    pub trait AttestorApi {
+        fn attestor_list() -> Vec<(Vec<u8>, Vec<u8>, u32)>;
+        fn attestor_attested_appids(attestor: AccountId) -> Vec<AccountId>;
+        fn unsigned_attestor_heartbeat(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> bool;
+    }
+
+    pub trait GeodeApi {
+        fn unsigned_geode_ready(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> bool;
+        fn unsigned_geode_finalizing(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> bool;
+        fn unsigned_geode_finalized(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> bool;
+        fn unsigned_geode_finalize_failed(message: Vec<u8>, signature_raw_bytes: [u8; 64]) -> bool;
+    }
 }

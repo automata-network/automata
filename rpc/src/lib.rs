@@ -18,7 +18,11 @@ use automata_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 // #[cfg(feature = "contextfree")]
 // use contextfree_runtime::apis::TransferApi as TransferRuntimeApi;
 #[cfg(feature = "contextfree")]
+use contextfree_runtime::apis::AttestorApi as AttestorRuntimeApi;
+#[cfg(feature = "contextfree")]
 use contextfree_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
+#[cfg(feature = "contextfree")]
+use contextfree_runtime::apis::GeodeApi as GeodeRuntimeApi;
 #[cfg(feature = "contextfree")]
 use contextfree_runtime::apis::GmetadataApi as GmetadataRuntimeApi;
 use fc_rpc::{OverrideHandle, RuntimeApiStorageOverride, SchemaV1Override, StorageOverride};
@@ -26,7 +30,11 @@ use fc_rpc_core::types::PendingTransactions;
 // #[cfg(feature = "finitestate")]
 // use finitestate_runtime::apis::TransferApi as TransferRuntimeApi;
 #[cfg(feature = "finitestate")]
+use finitestate_runtime::apis::AttestorApi as AttestorRuntimeApi;
+#[cfg(feature = "finitestate")]
 use finitestate_runtime::apis::DAOPortalApi as DAOPortalRuntimeApi;
+#[cfg(feature = "finitestate")]
+use finitestate_runtime::apis::GeodeApi as GeodeRuntimeApi;
 #[cfg(feature = "finitestate")]
 use finitestate_runtime::apis::GmetadataApi as GmetadataRuntimeApi;
 use jsonrpc_pubsub::manager::SubscriptionManager;
@@ -68,8 +76,20 @@ pub mod daoportal;
 #[cfg(feature = "contextfree")]
 pub mod gmetadata;
 
+#[cfg(feature = "contextfree")]
+pub mod geode;
+
+#[cfg(feature = "contextfree")]
+pub mod attestor;
+
 #[cfg(feature = "finitestate")]
 pub mod gmetadata;
+
+#[cfg(feature = "finitestate")]
+pub mod geode;
+
+#[cfg(feature = "finitestate")]
+pub mod attestor;
 
 /// Extra dependencies for BABE.
 pub struct BabeDeps {
@@ -144,6 +164,8 @@ where
     C::Api: BlockBuilder<Block>,
     C::Api: DAOPortalRuntimeApi<Block>,
     C::Api: GmetadataRuntimeApi<Block>,
+    C::Api: GeodeRuntimeApi<Block>,
+    C::Api: AttestorRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
@@ -161,6 +183,16 @@ where
     use gmetadata::GmetadataServer;
 
     io.extend_with(GmetadataServer::to_delegate(gmetadata::GmetadataApi::new(
+        _client.clone(),
+    )));
+
+    use attestor::AttestorServer;
+    io.extend_with(AttestorServer::to_delegate(attestor::AttestorApi::new(
+        _client.clone(),
+    )));
+
+    use geode::GeodeServer;
+    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
         _client.clone(),
     )));
 
@@ -192,6 +224,8 @@ where
     C::Api: BlockBuilder<Block>,
     C::Api: DAOPortalRuntimeApi<Block>,
     C::Api: GmetadataRuntimeApi<Block>,
+    C::Api: GeodeRuntimeApi<Block>,
+    C::Api: AttestorRuntimeApi<Block>,
     P: TransactionPool<Block = Block> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::StateBackend<sp_runtime::traits::HashFor<Block>>,
@@ -209,6 +243,16 @@ where
     use gmetadata::GmetadataServer;
 
     io.extend_with(GmetadataServer::to_delegate(gmetadata::GmetadataApi::new(
+        _client.clone(),
+    )));
+
+    use attestor::AttestorServer;
+    io.extend_with(AttestorServer::to_delegate(attestor::AttestorApi::new(
+        _client.clone(),
+    )));
+
+    use geode::GeodeServer;
+    io.extend_with(GeodeServer::to_delegate(geode::GeodeApi::new(
         _client.clone(),
     )));
 
