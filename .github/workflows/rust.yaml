@@ -19,7 +19,7 @@ jobs:
     name: Format
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly-2021-06-16
@@ -176,7 +176,7 @@ jobs:
     name: Clippy
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: actions/cache@v2
         id: cache-sgx
         with:
