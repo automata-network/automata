@@ -35,7 +35,7 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
     pub enum ReportType {
-        /// Geode failed challange check
+        /// Geode failed challenge check
         Challenge = 0x00,
         /// Geode failed service check
         Service,
@@ -263,7 +263,7 @@ pub mod pallet {
             _proof: Vec<u8>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            // check attestor existance and whether attested
+            // check attestor existence and whether attested
             ensure!(
                 pallet_attestor::Attestors::<T>::contains_key(&who),
                 pallet_attestor::Error::<T>::InvalidAttestor
@@ -318,7 +318,7 @@ pub mod pallet {
             geode: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            // check attestor existance and whether atteseted
+            // check attestor existence and whether atteseted
             ensure!(
                 pallet_attestor::Attestors::<T>::contains_key(&who),
                 pallet_attestor::Error::<T>::InvalidAttestor
@@ -329,7 +329,7 @@ pub mod pallet {
                 Error::<T>::AlreadyAttestFor
             );
 
-            // check geode existance and state
+            // check geode existence and state
             ensure!(
                 pallet_geode::Geodes::<T>::contains_key(&geode),
                 pallet_geode::Error::<T>::InvalidGeode
