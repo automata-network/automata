@@ -25,7 +25,7 @@ CACHE_DIR="${DOCKER_CACHE_DIR:-${PWD}/target/docker-cache}"
 ##
 ## The default tag is automata
 ##
-## This can be set throught environment variable DOCKER_TAG
+## This can be set through environment variable DOCKER_TAG
 TAG="${DOCKER_TAG:-automata}"
 
 ## Use cache from docker registry, if local cache is not found
@@ -49,7 +49,7 @@ then
 else
     ## No docker buildx plugin found, fallback to default docker build command
     ##
-    ## Use DOCKER_BUILDKIT environment variable for backward compatiblity.
+    ## Use DOCKER_BUILDKIT environment variable for backward compatibility.
     DOCKER_BUILDKIT=1 docker build --tag "${TAG}" .
 fi
 
